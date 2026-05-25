@@ -16,9 +16,9 @@ app.get("/api/test", (req, res) => {
     res.json({ message: "Backend Connected Successfully" });
 });
 
-const userRoutes = require("./routes/UserRoutes");
+const apiRoutes = require("./routes");
 
-app.use("/api/users", userRoutes);
+app.use("/api", apiRoutes);
 
 mongoose
     .connect(process.env.MONGO_URI)
