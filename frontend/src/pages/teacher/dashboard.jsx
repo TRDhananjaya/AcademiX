@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import Sidebar from '../components/common/Sidebar';
-import TopBar from '../components/dashboard/TopBar';
-import QuizReportContent from '../components/dashboard/QuizReportContent';
+import Sidebar from '../../components/common/Sidebar';
+import TopBar from '../../components/dashboard/TopBar';
+import QuizManagement from '../../components/dashboard/QuizManagement';
 
-export default function QuizReport() {
-  const [activeNav, setActiveNav] = useState('quiz-report');
+export default function Dashboard() {
+  const [activeNav, setActiveNav] = useState('quizzes');
 
   return (
     <div className="flex min-h-screen font-sans bg-[#f8f9fb]" id="dashboard-layout">
@@ -12,7 +12,7 @@ export default function QuizReport() {
       <div className="flex-1 flex flex-col min-w-0 ml-0 md:ml-[72px] lg:ml-[240px]">
         <TopBar />
         <main className="flex-1 p-[20px_16px] md:p-[32px_40px_40px] overflow-y-auto">
-          <QuizReportContent />
+          <QuizManagement />
         </main>
       </div>
     </div>

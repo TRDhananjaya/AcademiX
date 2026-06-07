@@ -1,15 +1,54 @@
 import { useState } from 'react';
 import { navigate } from '../../App';
+import { login } from '../../services/authService';
+import { useAuth } from '../../context/AuthContext';
 
 export default function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { setUser } = useAuth();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/dashboard');
+    setError('');
+
+    if (!username || !password) {
+      setError('Please enter both username and password');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const result = await login(username, password);
+
+      if (!result.ok) {
+        setError(result.message);
+        setLoading(false);
+        return;
+      }
+
+      // Store token in localStorage
+      localStorage.setItem('token', result.data.token);
+
+      if (rememberMe) {
+        localStorage.setItem('user', JSON.stringify(result.data));
+      }
+
+      // Set user in AuthContext
+      setUser(result.data);
+
+      // Redirect based on role
+      const dashboard = result.data.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
+      navigate(dashboard);
+    } catch (err) {
+      setError('An unexpected error occurred');
+      setLoading(false);
+    }
   };
 
   return (
@@ -59,6 +98,13 @@ export default function LoginForm() {
 
           <h2 className="text-4xl font-bold text-text-primary mb-2 text-center">Welcome</h2>
           <p className="text-text-secondary text-center mb-8 leading-relaxed">Log in or create an account to continue your learning journey.</p>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm text-center">
+              {error}
+            </div>
+          )}
 
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6 mb-8">
@@ -113,7 +159,13 @@ export default function LoginForm() {
               <label htmlFor="remember" className="text-sm text-text-secondary font-medium cursor-pointer">Remember me for 30 days</label>
             </div>
 
-            <button type="submit" className="w-full bg-gradient-primary text-white py-3 rounded-lg font-semibold hover:shadow-lg-custom hover:-translate-y-0.5 transition-all">Sign In →</button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-primary text-white py-3 rounded-lg font-semibold hover:shadow-lg-custom hover:-translate-y-0.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
+            >
+              {loading ? 'Signing In...' : 'Sign In →'}
+            </button>
           </form>
 
           <p className="text-xs text-text-tertiary text-center">

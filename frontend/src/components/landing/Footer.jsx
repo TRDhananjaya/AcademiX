@@ -153,7 +153,7 @@ export default function Footer() {
 
         {/* Bottom Footer */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-gray-400 text-sm">
-          <p>&copy; 2024 AcademiX. All rights reserved.</p>
+          <p>&copy; 2026 AcademiX. All rights reserved.</p>
 
           <div className="flex gap-6">
             <a

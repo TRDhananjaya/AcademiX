@@ -1,8 +1,8 @@
-import Header from '../components/home/Header';
-import HeroSection from '../components/home/HeroSection';
-import FeaturedImage from '../components/home/FeaturedImage';
-import EcosystemSection from '../components/home/EcosystemSection';
-import Footer from '../components/home/Footer';
+import Header from '../components/landing/Header';
+import HeroSection from '../components/landing/HeroSection';
+import FeaturedImage from '../components/landing/FeaturedImage';
+import EcosystemSection from '../components/landing/EcosystemSection';
+import Footer from '../components/landing/Footer';
 
 export default function Home() {
   return (
