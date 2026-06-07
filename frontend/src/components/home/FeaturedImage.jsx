@@ -1,4 +1,4 @@
-import home_pic from '../assets/home_pic.png';
+import home_pic from '../../assets/home_pic.png';
 
 export default function FeaturedImage() {
   return (

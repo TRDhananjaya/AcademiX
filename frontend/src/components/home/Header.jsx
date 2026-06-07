@@ -1,4 +1,4 @@
-import { navigate } from '../App';
+import { navigate } from '../../App';
 
 export default function Header() {
   const handleClick = (path) => (e) => {
@@ -12,7 +12,7 @@ export default function Header() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <a href="/" onClick={handleClick('/')} className="flex items-center">
-            <img src="/logo.png" alt="AcademiX" className="h-16 w-auto" />
+            <img src="/logo.png" alt="AcademiX" className="h-10 w-auto" />
           </a>
 
           {/* Navigation */}

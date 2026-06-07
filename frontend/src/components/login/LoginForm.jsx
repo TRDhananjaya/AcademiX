@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { navigate } from '../App';
+import { navigate } from '../../App';
 
 export default function LoginForm() {
   const [username, setUsername] = useState('');
@@ -9,7 +9,7 @@ export default function LoginForm() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Login attempt:', { username, password, rememberMe });
+    navigate('/dashboard');
   };
 
   return (
