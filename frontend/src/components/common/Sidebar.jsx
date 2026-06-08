@@ -117,7 +117,10 @@ export default function Sidebar({ activeItem = 'quizzes', onNavigate }) {
                   window.history.pushState({}, '', '/quiz-report');
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 } else if (item.id === 'quizzes') {
-                  window.history.pushState({}, '', '/dashboard');
+                  window.history.pushState({}, '', '/teacher/dashboard');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                } else if (item.id === 'analytics') {
+                  window.history.pushState({}, '', '/analytics');
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 }
                 onNavigate?.(item.id);

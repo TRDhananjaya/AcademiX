@@ -8,6 +8,9 @@ import QuizReport from './pages/teacher/quiz-report';
 import { useAuth } from './context/AuthContext';
 
 
+import Analytics from './pages/teacher/Analytics';
+import ExamPrediction from './pages/teacher/ExamPrediction';
+
 // Shared navigate helper — use this instead of <a href>
 export function navigate(path) {
   window.history.pushState({}, '', path);
@@ -37,6 +40,10 @@ function App() {
       return <CreateQuiz />;
     case 'quiz-report':
       return <QuizReport />;  
+    case 'analytics':
+      return <Analytics />;
+    case 'exam-prediction':
+      return <ExamPrediction />;
     default:
       return <Home />;
   }
