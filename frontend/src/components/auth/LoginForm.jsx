@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { navigate } from '../../App';
 import { login } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
+import logoBlack from '../../assets/logo_black.png';
 
 export default function LoginForm() {
   const [username, setUsername] = useState('');
@@ -67,7 +68,9 @@ export default function LoginForm() {
           {/* Study Assistant Card */}
           <div className="bg-white rounded-2xl p-4 shadow-md-custom mb-6">
             <div className="flex gap-3 mb-4">
-              <span className="text-3xl">🤖</span>
+              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xl">
+                AI
+              </div>
               <div>
                 <h4 className="font-bold text-text-primary mb-1">AI Study Assistant Active</h4>
                 <p className="text-sm text-text-tertiary">Analyzing learning patterns...</p>
@@ -93,7 +96,7 @@ export default function LoginForm() {
       <div className="bg-white p-8 lg:p-12 flex items-center justify-center relative">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <img src="/logo.png" alt="AcademiX" className="h-20 w-auto mx-auto mb-6" />
+            <img src={logoBlack} alt="AcademiX" className="h-20 w-auto mx-auto mb-6 object-contain" />
           </div>
 
           <h2 className="text-4xl font-bold text-text-primary mb-2 text-center">Welcome</h2>

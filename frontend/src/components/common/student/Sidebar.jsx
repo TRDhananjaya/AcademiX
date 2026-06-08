@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { navigate } from '../../../App';
+import favicon from '../../../assets/favicon.png';
+import logoBlack from '../../../assets/logo_black.png';
 
 const navItems = [
   {
@@ -76,8 +78,8 @@ export default function Sidebar({ activeItem = 'dashboard', onNavigate }) {
     <aside className="fixed top-0 left-0 h-screen bg-white border-r border-slate-100 flex-col z-40 overflow-y-auto hidden md:flex md:w-[72px] lg:w-[240px]">
       {/* Logo */}
       <div className="flex items-center gap-2 p-[20px_12px_16px] md:justify-center lg:p-[28px_24px_24px] lg:justify-start">
-        <img src="/src/assets/favicon.png" alt="AcademiX" className="w-8 h-8 object-contain" />
-        <img src="/src/assets/logo_black.png" alt="AcademiX" className="h-[64px] object-contain hidden lg:block" />
+        <img src={favicon} alt="AcademiX" className="w-8 h-8 object-contain" />
+        <img src={logoBlack} alt="AcademiX" className="h-[64px] object-contain hidden lg:block" />
       </div>
 
       {/* Navigation */}
@@ -102,6 +104,10 @@ export default function Sidebar({ activeItem = 'dashboard', onNavigate }) {
                   navigate('/student/lessons');
                 } else if (item.id === 'quizzes') {
                   navigate('/student/quizzes');
+                } else if (item.id === 'community') {
+                  navigate('/student/community');
+                } else if (item.id === 'notifications') {
+                  navigate('/student/notifications');
                 }
                 onNavigate?.(item.id);
               }}

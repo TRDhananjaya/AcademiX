@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import favicon from '../../../assets/favicon.png';
+import logoBlack from '../../../assets/logo_black.png';
 
 const navItems = [
   {
@@ -68,6 +70,29 @@ const navItems = [
     ),
   },
   {
+    id: 'students',
+    label: 'Students',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M6 6C6 4.34315 7.34315 3 9 3C10.6569 3 12 4.34315 12 6C12 7.65685 10.6569 9 9 9C7.34315 9 6 7.65685 6 6Z" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M3 15C3 12.2386 5.23858 10 8 10H10C12.7614 10 15 12.2386 15 15V17H3V15Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M14 5.5C14 4.67157 14.6716 4 15.5 4C16.3284 4 17 4.67157 17 5.5C17 6.32843 16.3284 7 15.5 7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M13.5 11.5C14.9 11.8 16 13.2 16 15V17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    id: 'attendance',
+    label: 'Attendance',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2" strokeLinecap="round" strokeLinejoin="round" />
+        <rect x="7" y="7" width="10" height="10" rx="1" strokeWidth="1.5" />
+        <path d="M10 12h4" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
     id: 'community',
     label: 'Community',
     icon: (
@@ -96,8 +121,8 @@ export default function Sidebar({ activeItem = 'quizzes', onNavigate }) {
     <aside className="fixed top-0 left-0 h-screen bg-white border-r border-slate-100 flex-col z-40 overflow-y-auto hidden md:flex md:w-[72px] lg:w-[240px]">
       {/* Logo */}
       <div className="flex items-center gap-2 p-[20px_12px_16px] md:justify-center lg:p-[28px_24px_24px] lg:justify-start">
-        <img src="/src/assets/favicon.png" alt="AcademiX" className="w-8 h-8 object-contain" />
-        <img src="/src/assets/logo_black.png" alt="AcademiX" className="h-[64px] object-contain hidden lg:block" />
+        <img src={favicon} alt="AcademiX" className="w-8 h-8 object-contain" />
+        <img src={logoBlack} alt="AcademiX" className="h-[64px] object-contain hidden lg:block" />
       </div>
 
       {/* Navigation */}
@@ -114,14 +139,32 @@ export default function Sidebar({ activeItem = 'quizzes', onNavigate }) {
                 }
               `}
               onClick={() => {
-                if (item.id === 'quiz-report') {
+                if (item.id === 'dashboard') {
+                  window.history.pushState({}, '', '/teacher/dashboard');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                } else if (item.id === 'quiz-report') {
                   window.history.pushState({}, '', '/quiz-report');
                   window.dispatchEvent(new PopStateEvent('popstate'));
+                } else if (item.id === 'lessons') {
+                  window.history.pushState({}, '', '/teacher/resources');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
                 } else if (item.id === 'quizzes') {
-                  window.history.pushState({}, '', '/teacher/dashboard');
+                  window.history.pushState({}, '', '/teacher/quizzes');
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 } else if (item.id === 'analytics') {
                   window.history.pushState({}, '', '/analytics');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                } else if (item.id === 'students') {
+                  window.history.pushState({}, '', '/teacher/students');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                } else if (item.id === 'attendance') {
+                  window.history.pushState({}, '', '/teacher/attendance');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                } else if (item.id === 'notifications') {
+                  window.history.pushState({}, '', '/teacher/notifications');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                } else if (item.id === 'community') {
+                  window.history.pushState({}, '', '/teacher/community');
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 }
                 onNavigate?.(item.id);
@@ -136,13 +179,20 @@ export default function Sidebar({ activeItem = 'quizzes', onNavigate }) {
       </nav>
 
       {/* User Profile */}
-      <div className="p-4 border-t border-slate-100 flex items-center gap-3 justify-center lg:p-[20px_24px] lg:justify-start">
+      <button 
+        onClick={() => {
+          window.history.pushState({}, '', '/teacher/profile');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+          onNavigate?.('profile');
+        }}
+        className="p-4 border-t border-slate-100 flex items-center gap-3 justify-center lg:p-[20px_24px] lg:justify-start w-full text-left bg-transparent hover:bg-slate-50 transition-colors cursor-pointer border-none shrink-0"
+      >
         <img src="https://i.pravatar.cc/150?img=44" alt="Dr. Sarah Jenkins" className="w-10 h-10 rounded-full" />
         <div className="flex-col hidden lg:flex">
           <span className="text-[14px] font-semibold text-slate-800">Dr. Sarah Jenkins</span>
           <span className="text-[12px] text-slate-500">Department Head</span>
         </div>
-      </div>
+      </button>
     </aside>
   );
 }

@@ -40,7 +40,15 @@ export default function TopBar() {
         </button>
 
         {/* User Avatar */}
-        <button className="flex items-center justify-center w-[38px] h-[38px] rounded-full border-2 border-slate-200 bg-slate-50 text-slate-500 cursor-pointer transition-all ml-1 hover:border-indigo-500 hover:text-indigo-500 p-0 overflow-hidden" id="btn-user-profile" aria-label="User profile">
+        <button 
+          onClick={() => {
+            window.history.pushState({}, '', '/teacher/profile');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          className="flex items-center justify-center w-[38px] h-[38px] rounded-full border-2 border-slate-200 bg-slate-50 text-slate-500 cursor-pointer transition-all ml-1 hover:border-indigo-500 hover:text-indigo-500 p-0 overflow-hidden" 
+          id="btn-user-profile" 
+          aria-label="User profile"
+        >
           <img src="https://i.pravatar.cc/150?img=47" alt="User Profile" className="w-full h-full object-cover" />
         </button>
         {/* Logout */}

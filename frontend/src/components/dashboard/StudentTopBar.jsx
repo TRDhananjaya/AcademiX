@@ -53,7 +53,11 @@ export default function StudentTopBar() {
         </button>
 
         {/* User Avatar */}
-        <button className="flex items-center justify-center w-[40px] h-[40px] rounded-full border-2 border-slate-200 bg-slate-50 text-slate-500 cursor-pointer transition-all hover:border-indigo-500 hover:text-indigo-500 p-0 overflow-hidden" aria-label="User profile">
+        <button 
+          onClick={() => navigate('/student/profile')}
+          className="flex items-center justify-center w-[40px] h-[40px] rounded-full border-2 border-slate-200 bg-slate-50 text-slate-500 cursor-pointer transition-all hover:border-indigo-500 hover:text-indigo-500 p-0 overflow-hidden" 
+          aria-label="User profile"
+        >
           <img src="https://i.pravatar.cc/150?img=11" alt="Alex" className="w-full h-full object-cover" />
         </button>
 

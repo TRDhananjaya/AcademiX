@@ -1,4 +1,5 @@
 import { navigate } from '../../App';
+import logoWhite from '../../assets/logo_white.png';
 
 export default function Footer() {
   const handleClick = (path) => (e) => {
@@ -7,10 +8,7 @@ export default function Footer() {
   };
 
   return (
-    <footer
-      id="about"
-      className="bg-[#1a1a2e] text-white py-16 mt-16"
-    >
+    <footer className="bg-[#1a1a2e] text-white py-16 mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8 pb-8 border-b border-white/10">
 
@@ -22,7 +20,7 @@ export default function Footer() {
               className="inline-block mb-4 hover:opacity-80 transition-opacity"
             >
               <img
-                src="/logo.png"
+                src={logoWhite}
                 alt="AcademiX"
                 className="h-10 w-auto object-contain"
               />
