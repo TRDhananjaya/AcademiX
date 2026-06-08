@@ -43,6 +43,22 @@ export default function TopBar() {
         <button className="flex items-center justify-center w-[38px] h-[38px] rounded-full border-2 border-slate-200 bg-slate-50 text-slate-500 cursor-pointer transition-all ml-1 hover:border-indigo-500 hover:text-indigo-500 p-0 overflow-hidden" id="btn-user-profile" aria-label="User profile">
           <img src="https://i.pravatar.cc/150?img=47" alt="User Profile" className="w-full h-full object-cover" />
         </button>
+        {/* Logout */}
+        <button 
+          onClick={() => {
+            if (window.confirm('Are you sure you want to log out?')) {
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              // To handle auth context and navigation properly we trigger a custom event or rely on App.js routing
+              // Since useAuth is not currently imported here, let's just clear storage and redirect
+              window.location.href = '/login';
+            }
+          }}
+          className="flex items-center justify-center h-[38px] px-3 rounded-lg border-2 border-slate-200 bg-white text-red-500 font-medium cursor-pointer transition-all ml-2 hover:border-red-500 hover:text-white hover:bg-red-500" 
+          aria-label="Logout"
+        >
+          Logout
+        </button>
       </div>
     </header>
   );

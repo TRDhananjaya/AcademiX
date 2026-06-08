@@ -15,7 +15,7 @@ const navItems = [
   },
   {
     id: 'lessons',
-    label: 'Lessons',
+    label: 'Resources',
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M3 4C3 3.44772 3.44772 3 4 3H12C12.5523 3 13 3.44772 13 4V16C13 16.5523 12.5523 17 12 17H4C3.44772 17 3 16.5523 3 16V4Z" stroke="currentColor" strokeWidth="1.5"/>
@@ -51,6 +51,19 @@ const navItems = [
         <rect x="6" y="9.5" width="3" height="2.5" rx="0.5" stroke="currentColor" strokeWidth="1"/>
         <rect x="11" y="9.5" width="3" height="2.5" rx="0.5" stroke="currentColor" strokeWidth="1"/>
         <rect x="6" y="13.5" width="3" height="2.5" rx="0.5" stroke="currentColor" strokeWidth="1"/>
+      </svg>
+    ),
+  },
+  {
+    id: 'analytics',
+    label: 'Analytics',
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 17H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M15 7L11 11L8 8L3 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <circle cx="15" cy="7" r="1.5" fill="currentColor"/>
+        <circle cx="11" cy="11" r="1.5" fill="currentColor"/>
+        <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
       </svg>
     ),
   },
