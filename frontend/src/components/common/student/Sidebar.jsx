@@ -98,6 +98,8 @@ export default function Sidebar({ activeItem = 'dashboard', onNavigate }) {
                   navigate('/student/dashboard');
                 } else if (item.id === 'study-plans') {
                   navigate('/student/study-plans');
+                } else if (item.id === 'lessons') {
+                  navigate('/student/lessons');
                 }
                 onNavigate?.(item.id);
               }}
