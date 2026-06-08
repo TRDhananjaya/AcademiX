@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Sidebar from '../../components/common/Sidebar';
+import Sidebar from "../../components/common/teacher/Sidebar";
 import TopBar from '../../components/dashboard/TopBar';
 import CreateQuizContent from '../../components/dashboard/CreateQuizContent';
 

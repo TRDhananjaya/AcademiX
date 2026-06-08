@@ -6,10 +6,10 @@ const navItems = [
     label: 'Dashboard',
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
-        <rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
-        <rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
-        <rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+        <rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
       </svg>
     ),
   },
@@ -18,11 +18,11 @@ const navItems = [
     label: 'Resources',
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3 4C3 3.44772 3.44772 3 4 3H12C12.5523 3 13 3.44772 13 4V16C13 16.5523 12.5523 17 12 17H4C3.44772 17 3 16.5523 3 16V4Z" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M13 5H15C15.5523 5 16 5.44772 16 6V18C16 18.5523 15.5523 19 15 19H7C6.44772 19 6 18.5523 6 18V17" stroke="currentColor" strokeWidth="1.5"/>
-        <line x1="6" y1="7" x2="10" y2="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="6" y1="10" x2="10" y2="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <line x1="6" y1="13" x2="9" y2="13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <path d="M3 4C3 3.44772 3.44772 3 4 3H12C12.5523 3 13 3.44772 13 4V16C13 16.5523 12.5523 17 12 17H4C3.44772 17 3 16.5523 3 16V4Z" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M13 5H15C15.5523 5 16 5.44772 16 6V18C16 18.5523 15.5523 19 15 19H7C6.44772 19 6 18.5523 6 18V17" stroke="currentColor" strokeWidth="1.5" />
+        <line x1="6" y1="7" x2="10" y2="7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="6" y1="10" x2="10" y2="10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <line x1="6" y1="13" x2="9" y2="13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -31,11 +31,11 @@ const navItems = [
     label: 'Quizzes',
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M7 6H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M7 9.5H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M7 13H10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M12 13L13 14L15 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M7 6H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M7 9.5H13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M7 13H10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M12 13L13 14L15 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
@@ -44,13 +44,13 @@ const navItems = [
     label: 'Quiz Report',
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M3 7H17" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M7 3V7" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M13 3V7" stroke="currentColor" strokeWidth="1.5"/>
-        <rect x="6" y="9.5" width="3" height="2.5" rx="0.5" stroke="currentColor" strokeWidth="1"/>
-        <rect x="11" y="9.5" width="3" height="2.5" rx="0.5" stroke="currentColor" strokeWidth="1"/>
-        <rect x="6" y="13.5" width="3" height="2.5" rx="0.5" stroke="currentColor" strokeWidth="1"/>
+        <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M3 7H17" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M7 3V7" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M13 3V7" stroke="currentColor" strokeWidth="1.5" />
+        <rect x="6" y="9.5" width="3" height="2.5" rx="0.5" stroke="currentColor" strokeWidth="1" />
+        <rect x="11" y="9.5" width="3" height="2.5" rx="0.5" stroke="currentColor" strokeWidth="1" />
+        <rect x="6" y="13.5" width="3" height="2.5" rx="0.5" stroke="currentColor" strokeWidth="1" />
       </svg>
     ),
   },
@@ -59,11 +59,11 @@ const navItems = [
     label: 'Analytics',
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M3 17H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M15 7L11 11L8 8L3 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <circle cx="15" cy="7" r="1.5" fill="currentColor"/>
-        <circle cx="11" cy="11" r="1.5" fill="currentColor"/>
-        <circle cx="8" cy="8" r="1.5" fill="currentColor"/>
+        <path d="M3 17H17" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M15 7L11 11L8 8L3 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="15" cy="7" r="1.5" fill="currentColor" />
+        <circle cx="11" cy="11" r="1.5" fill="currentColor" />
+        <circle cx="8" cy="8" r="1.5" fill="currentColor" />
       </svg>
     ),
   },
@@ -72,10 +72,10 @@ const navItems = [
     label: 'Community',
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="7" cy="7" r="2.5" stroke="currentColor" strokeWidth="1.5"/>
-        <circle cx="14" cy="7" r="2" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M2 16C2 13.2386 4.23858 11 7 11C9.76142 11 12 13.2386 12 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M12 14C12 12.3431 13.3431 11 15 11C16.6569 11 18 12.3431 18 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        <circle cx="7" cy="7" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+        <circle cx="14" cy="7" r="2" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M2 16C2 13.2386 4.23858 11 7 11C9.76142 11 12 13.2386 12 16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M12 14C12 12.3431 13.3431 11 15 11C16.6569 11 18 12.3431 18 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     ),
   },
@@ -84,8 +84,8 @@ const navItems = [
     label: 'Notifications',
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10 2C7.23858 2 5 4.23858 5 7V10.5858L3.29289 12.2929C3.10536 12.4804 3 12.7348 3 13V14C3 14.5523 3.44772 15 4 15H16C16.5523 15 17 14.5523 17 14V13C17 12.7348 16.8946 12.4804 16.7071 12.2929L15 10.5858V7C15 4.23858 12.7614 2 10 2Z" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M8 15C8 16.1046 8.89543 17 10 17C11.1046 17 12 16.1046 12 15" stroke="currentColor" strokeWidth="1.5"/>
+        <path d="M10 2C7.23858 2 5 4.23858 5 7V10.5858L3.29289 12.2929C3.10536 12.4804 3 12.7348 3 13V14C3 14.5523 3.44772 15 4 15H16C16.5523 15 17 14.5523 17 14V13C17 12.7348 16.8946 12.4804 16.7071 12.2929L15 10.5858V7C15 4.23858 12.7614 2 10 2Z" stroke="currentColor" strokeWidth="1.5" />
+        <path d="M8 15C8 16.1046 8.89543 17 10 17C11.1046 17 12 16.1046 12 15" stroke="currentColor" strokeWidth="1.5" />
       </svg>
     ),
   },
@@ -107,8 +107,8 @@ export default function Sidebar({ activeItem = 'quizzes', onNavigate }) {
             <button
               key={item.id}
               className={`flex items-center gap-3 rounded-[10px] bg-transparent cursor-pointer text-[14.5px] transition-all relative text-left w-full p-[11px] md:justify-center lg:justify-start lg:p-[11px_16px]
-                ${isActive 
-                  ? 'bg-indigo-50/80 text-indigo-600 font-semibold before:content-[""] before:absolute before:left-[-8px] lg:before:left-[-12px] before:top-1.5 before:bottom-1.5 before:w-[3.5px] before:rounded-r-md before:bg-indigo-500' 
+                ${isActive
+                  ? 'bg-indigo-50/80 text-indigo-600 font-semibold before:content-[""] before:absolute before:left-[-8px] lg:before:left-[-12px] before:top-1.5 before:bottom-1.5 before:w-[3.5px] before:rounded-r-md before:bg-indigo-500'
                   : 'font-medium text-slate-500 hover:bg-indigo-50/50 hover:text-indigo-600'
                 }
               `}

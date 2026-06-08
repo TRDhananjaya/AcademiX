@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
-import Sidebar from '../../components/common/Sidebar';
+import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
 import { navigate } from '../../App';
 
@@ -26,13 +26,13 @@ export default function ExamPrediction() {
   return (
     <div className="flex min-h-screen font-sans bg-[#f8f9fb]" id="exam-prediction-layout">
       <Sidebar activeItem={activeNav} onNavigate={(id) => {
-          setActiveNav(id);
-          if (id !== 'analytics') navigate(`/${id}`);
+        setActiveNav(id);
+        if (id !== 'analytics') navigate(`/${id}`);
       }} />
       <div className="flex-1 flex flex-col min-w-0 ml-0 md:ml-[72px] lg:ml-[240px]">
         <TopBar />
         <main className="flex-1 p-[20px_16px] md:p-[32px_40px_40px] overflow-y-auto">
-          
+
           {/* Back Navigation */}
           <button onClick={() => navigate('/analytics')} className="flex items-center text-indigo-600 text-sm font-semibold mb-6 hover:underline">
             <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -47,7 +47,7 @@ export default function ExamPrediction() {
             </div>
             <div className="flex gap-3">
               <button className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-lg text-sm font-semibold hover:bg-indigo-100 transition-colors">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
                 Export Report
               </button>
               <select className="border border-slate-200 text-slate-600 text-sm font-medium rounded-lg px-4 py-2 bg-slate-50 focus:outline-none">
@@ -65,7 +65,7 @@ export default function ExamPrediction() {
                 <h3 className="text-lg font-bold text-slate-800">Predicted Final Score</h3>
                 <svg className="text-slate-400 w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               </div>
-              
+
               <div className="relative w-48 h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -102,7 +102,7 @@ export default function ExamPrediction() {
                 <h3 className="text-lg font-bold text-slate-800">Student Risk Profile</h3>
                 <a href="#" className="text-indigo-600 text-xs font-semibold hover:underline">View Details</a>
               </div>
-              
+
               <div className="grid grid-cols-3 gap-4 flex-1">
                 <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex flex-col justify-center border-l-4 border-l-emerald-500 relative">
                   <div className="flex justify-between items-start mb-2">
@@ -149,11 +149,11 @@ export default function ExamPrediction() {
               <div className="h-72 mt-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={lineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
-                    <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
-                    <Tooltip contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
-                    <Legend iconType="circle" wrapperStyle={{fontSize: '12px'}} />
-                    <Line type="monotone" dataKey="predicted" name="Amanda's Predicted Path" stroke="#4f46e5" strokeWidth={3} dot={{r: 4, strokeWidth: 2, fill: 'white'}} activeDot={{r: 6}} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} dy={10} />
+                    <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                    <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
+                    <Line type="monotone" dataKey="predicted" name="Amanda's Predicted Path" stroke="#4f46e5" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: 'white' }} activeDot={{ r: 6 }} />
                     <Line type="monotone" dataKey="baseline" name="Class Historic Average" stroke="#cbd5e1" strokeWidth={2} strokeDasharray="5 5" dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
@@ -168,7 +168,7 @@ export default function ExamPrediction() {
                   <svg className="text-purple-600 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
                   <h3 className="text-lg font-bold text-slate-800">Early Interventions</h3>
                 </div>
-                
+
                 <div className="space-y-4">
                   <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-100 flex gap-3">
                     <div className="w-8 h-8 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0 mt-0.5">
@@ -207,7 +207,7 @@ export default function ExamPrediction() {
                       <span className="text-red-500">42% Mastery</span>
                     </div>
                     <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-red-500 h-full rounded-full" style={{width: '42%'}}></div>
+                      <div className="bg-red-500 h-full rounded-full" style={{ width: '42%' }}></div>
                     </div>
                   </div>
 
@@ -217,7 +217,7 @@ export default function ExamPrediction() {
                       <span className="text-amber-500">61% Mastery</span>
                     </div>
                     <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-amber-500 h-full rounded-full" style={{width: '61%'}}></div>
+                      <div className="bg-amber-500 h-full rounded-full" style={{ width: '61%' }}></div>
                     </div>
                   </div>
 
@@ -227,7 +227,7 @@ export default function ExamPrediction() {
                       <span className="text-emerald-500">88% Mastery</span>
                     </div>
                     <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-emerald-500 h-full rounded-full" style={{width: '88%'}}></div>
+                      <div className="bg-emerald-500 h-full rounded-full" style={{ width: '88%' }}></div>
                     </div>
                   </div>
                 </div>
