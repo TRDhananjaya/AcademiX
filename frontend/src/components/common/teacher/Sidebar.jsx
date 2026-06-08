@@ -95,8 +95,9 @@ export default function Sidebar({ activeItem = 'quizzes', onNavigate }) {
   return (
     <aside className="fixed top-0 left-0 h-screen bg-white border-r border-slate-100 flex-col z-40 overflow-y-auto hidden md:flex md:w-[72px] lg:w-[240px]">
       {/* Logo */}
-      <div className="flex items-center gap-2.5 p-[20px_12px_16px] md:justify-center lg:p-[24px_24px_20px] lg:justify-start">
-        <img src="/logo.png" alt="AcademiX" className="w-auto h-7 lg:h-9" />
+      <div className="flex items-center gap-2 p-[20px_12px_16px] md:justify-center lg:p-[28px_24px_24px] lg:justify-start">
+        <img src="/src/assets/favicon.png" alt="AcademiX" className="w-8 h-8 object-contain" />
+        <img src="/src/assets/logo_black.png" alt="AcademiX" className="h-[64px] object-contain hidden lg:block" />
       </div>
 
       {/* Navigation */}

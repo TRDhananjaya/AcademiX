@@ -25,16 +25,16 @@ export default function TopBar() {
         {/* Messages */}
         <button className="flex items-center justify-center w-[38px] h-[38px] rounded-lg border-none bg-transparent text-slate-500 cursor-pointer transition-all hover:bg-slate-100 hover:text-indigo-600 relative" id="btn-messages" aria-label="Messages">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M5 6C5 5.44772 5.44772 5 6 5H14C14.5523 5 15 5.44772 15 6V11C15 11.5523 14.5523 12 14 12H7.41421L5 14.4142V6Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M8 8.5H12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            <path d="M5 6C5 5.44772 5.44772 5 6 5H14C14.5523 5 15 5.44772 15 6V11C15 11.5523 14.5523 12 14 12H7.41421L5 14.4142V6Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M8 8.5H12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </button>
 
         {/* Notifications */}
         <button className="flex items-center justify-center w-[38px] h-[38px] rounded-lg border-none bg-transparent text-slate-500 cursor-pointer transition-all hover:bg-slate-100 hover:text-indigo-600 relative" id="btn-notifications" aria-label="Notifications">
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 2C7.23858 2 5 4.23858 5 7V10.5858L3.29289 12.2929C3.10536 12.4804 3 12.7348 3 13V14C3 14.5523 3.44772 15 4 15H16C16.5523 15 17 14.5523 17 14V13C17 12.7348 16.8946 12.4804 16.7071 12.2929L15 10.5858V7C15 4.23858 12.7614 2 10 2Z" stroke="currentColor" strokeWidth="1.5"/>
-            <path d="M8 15C8 16.1046 8.89543 17 10 17C11.1046 17 12 16.1046 12 15" stroke="currentColor" strokeWidth="1.5"/>
+            <path d="M10 2C7.23858 2 5 4.23858 5 7V10.5858L3.29289 12.2929C3.10536 12.4804 3 12.7348 3 13V14C3 14.5523 3.44772 15 4 15H16C16.5523 15 17 14.5523 17 14V13C17 12.7348 16.8946 12.4804 16.7071 12.2929L15 10.5858V7C15 4.23858 12.7614 2 10 2Z" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M8 15C8 16.1046 8.89543 17 10 17C11.1046 17 12 16.1046 12 15" stroke="currentColor" strokeWidth="1.5" />
           </svg>
           <span className="absolute top-[8px] right-[9px] w-[7px] h-[7px] bg-red-500 rounded-full border-[1.5px] border-white flex items-center justify-center text-[9px] text-white font-bold"></span>
         </button>
@@ -44,7 +44,7 @@ export default function TopBar() {
           <img src="https://i.pravatar.cc/150?img=47" alt="User Profile" className="w-full h-full object-cover" />
         </button>
         {/* Logout */}
-        <button 
+        <button
           onClick={() => {
             if (window.confirm('Are you sure you want to log out?')) {
               localStorage.removeItem('token');
@@ -54,10 +54,10 @@ export default function TopBar() {
               window.location.href = '/login';
             }
           }}
-          className="flex items-center justify-center h-[38px] px-3 rounded-lg border-2 border-slate-200 bg-white text-red-500 font-medium cursor-pointer transition-all ml-2 hover:border-red-500 hover:text-white hover:bg-red-500" 
+          className="hidden lg:flex items-center justify-center h-[38px] px-3 rounded-lg border-2 border-slate-200 bg-white text-slate-600 font-medium cursor-pointer transition-all ml-1 hover:border-red-500 hover:text-red-500"
           aria-label="Logout"
         >
-          Logout
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
         </button>
       </div>
     </header>
