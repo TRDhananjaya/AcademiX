@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Home from './pages/home';
 import Login from './pages/login';
 import StudentDashboard from './pages/student/dashboard';
+import StudyPlans from './pages/student/StudyPlans';
 import TeacherDashboard from './pages/teacher/dashboard';
 import CreateQuiz from './pages/teacher/create-quiz';
 import QuizReport from './pages/teacher/quiz-report';
@@ -42,6 +43,8 @@ function App() {
       return <QuizReport />;  
     case 'analytics':
       return <Analytics />;
+    case 'student/study-plans':
+      return <StudyPlans />;
     case 'exam-prediction':
       return <ExamPrediction />;
     default:

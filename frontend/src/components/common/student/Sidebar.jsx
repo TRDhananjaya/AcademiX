@@ -96,6 +96,8 @@ export default function Sidebar({ activeItem = 'dashboard', onNavigate }) {
               onClick={() => {
                 if (item.id === 'dashboard') {
                   navigate('/student/dashboard');
+                } else if (item.id === 'study-plans') {
+                  navigate('/student/study-plans');
                 }
                 onNavigate?.(item.id);
               }}
