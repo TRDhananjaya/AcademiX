@@ -77,4 +77,54 @@ const getMe = async (req, res) => {
 	}
 };
 
-module.exports = { loginUser, getMe };
+/**
+ * @desc    Register a new user
+ * @route   POST /api/auth/register
+ * @access  Public
+ */
+const registerUser = async (req, res) => {
+	try {
+		const { username, email, password, role, firstName, lastName } = req.body;
+
+		// Validate required fields
+		if (!username || !email || !password) {
+			return res.status(400).json({ message: 'Please provide username, email and password' });
+		}
+
+		// Check if user exists
+		const userExists = await User.findOne({ $or: [{ email }, { username }] });
+
+		if (userExists) {
+			return res.status(400).json({ message: 'User already exists' });
+		}
+
+		// Create user
+		const user = await User.create({
+			username,
+			email,
+			password,
+			role: role || 'student',
+			firstName: firstName || '',
+			lastName: lastName || '',
+		});
+
+		if (user) {
+			res.status(201).json({
+				_id: user._id,
+				username: user.username,
+				email: user.email,
+				role: user.role,
+				firstName: user.firstName,
+				lastName: user.lastName,
+				token: generateToken(user._id, user.role),
+			});
+		} else {
+			res.status(400).json({ message: 'Invalid user data' });
+		}
+	} catch (error) {
+		console.error('Register error:', error);
+		res.status(500).json({ message: 'Server error' });
+	}
+};
+
+module.exports = { loginUser, getMe, registerUser };

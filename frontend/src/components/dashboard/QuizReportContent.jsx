@@ -1,59 +1,86 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-const quizzes = [
-  {
-    id: 1,
-    title: "Logic Gates with Boolean Functions",
-    unit: "Unit 4 • 25 Questions • Date: Oct 24, 2023",
-    metrics: { avgScore: "76.5%", avgTrend: "+1.2%", submissions: 142, max: 150, highest: "98%", hardestQ: "Q. 14", hardestQScore: "32% Correct" },
-    gradeData: [
-      { name: 'A (90-100)', count: 24, color: '#34d399' },
-      { name: 'B (80-89)', count: 48, color: '#6ee7b7' },
-      { name: 'C (70-79)', count: 42, color: '#93c5fd' },
-      { name: 'D (60-69)', count: 18, color: '#fcd34d' },
-      { name: 'F (<60)', count: 10, color: '#f87171' },
-    ]
-  },
-  {
-    id: 2,
-    title: "Data Representation Methods",
-    unit: "Unit 3 • 20 Questions • Date: Oct 18, 2023",
-    metrics: { avgScore: "82.1%", avgTrend: "+3.4%", submissions: 138, max: 150, highest: "100%", hardestQ: "Q. 7", hardestQScore: "45% Correct" },
-    gradeData: [
-      { name: 'A (90-100)', count: 45, color: '#34d399' },
-      { name: 'B (80-89)', count: 50, color: '#6ee7b7' },
-      { name: 'C (70-79)', count: 28, color: '#93c5fd' },
-      { name: 'D (60-69)', count: 10, color: '#fcd34d' },
-      { name: 'F (<60)', count: 5, color: '#f87171' },
-    ]
-  },
-  {
-    id: 3,
-    title: "Operating Systems Basics",
-    unit: "Unit 5 • 30 Questions • Date: Nov 02, 2023",
-    metrics: { avgScore: "69.8%", avgTrend: "-2.1%", submissions: 145, max: 150, highest: "95%", hardestQ: "Q. 22", hardestQScore: "28% Correct" },
-    gradeData: [
-      { name: 'A (90-100)', count: 12, color: '#34d399' },
-      { name: 'B (80-89)', count: 35, color: '#6ee7b7' },
-      { name: 'C (70-79)', count: 55, color: '#93c5fd' },
-      { name: 'D (60-69)', count: 28, color: '#fcd34d' },
-      { name: 'F (<60)', count: 15, color: '#f87171' },
-    ]
-  }
-];
-
-const studentSubmissions = [
-  { id: 1, name: 'Alice Smith', studentId: 'S-1001', score: 92, timeTaken: '34m 12s', status: 'Pass' },
-  { id: 2, name: 'Bob Johnson', studentId: 'S-1002', score: 78, timeTaken: '41m 05s', status: 'Pass' },
-  { id: 3, name: 'Charlie Davis', studentId: 'S-1003', score: 45, timeTaken: '45m 00s', status: 'Fail' },
-  { id: 4, name: 'Diana Prince', studentId: 'S-1004', score: 88, timeTaken: '28m 45s', status: 'Pass' },
-  { id: 5, name: 'Evan Wright', studentId: 'S-1005', score: 64, timeTaken: '42m 20s', status: 'Pass' },
-];
-
 export default function QuizReportContent() {
-  const [selectedQuizId, setSelectedQuizId] = useState(1);
-  const selectedQuiz = quizzes.find(q => q.id === selectedQuizId) || quizzes[0];
+  const [quizzes, setQuizzes] = useState([]);
+  const [selectedQuizId, setSelectedQuizId] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('http://localhost:5000/api/quizzes')
+      .then(res => res.json())
+      .then(data => {
+        setQuizzes(data);
+        if (data.length > 0) {
+          setSelectedQuizId(data[0]._id);
+        }
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setIsLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (selectedQuizId) {
+      fetch(`http://localhost:5000/api/quiz-results/quiz/${selectedQuizId}`)
+        .then(res => res.json())
+        .then(data => {
+          setSubmissions(data);
+        })
+        .catch(err => console.error(err));
+    }
+  }, [selectedQuizId]);
+
+  if (isLoading) {
+    return <div className="p-10 text-center font-bold text-slate-500">Loading Report...</div>;
+  }
+
+  const selectedQuiz = quizzes.find(q => q._id === selectedQuizId) || quizzes[0];
+  
+  if (!selectedQuiz) {
+    return <div className="p-10 text-center font-bold text-slate-500">No Quizzes Found</div>;
+  }
+
+  // Calculate metrics
+  const maxScore = selectedQuiz.questions ? selectedQuiz.questions.length : 100;
+  const totalSubmissions = submissions.length;
+  
+  let avgScore = 0;
+  let highest = 0;
+  let highestName = 'N/A';
+
+  const grades = {
+    A: 0, B: 0, C: 0, D: 0, F: 0
+  };
+
+  submissions.forEach(sub => {
+    avgScore += sub.percentage;
+    if (sub.percentage > highest) {
+      highest = sub.percentage;
+      highestName = sub.studentName;
+    }
+    
+    if (sub.percentage >= 90) grades.A++;
+    else if (sub.percentage >= 80) grades.B++;
+    else if (sub.percentage >= 70) grades.C++;
+    else if (sub.percentage >= 60) grades.D++;
+    else grades.F++;
+  });
+
+  if (totalSubmissions > 0) {
+    avgScore = Math.round(avgScore / totalSubmissions);
+  }
+
+  const gradeData = [
+    { name: 'A (90-100)', count: grades.A, color: '#34d399' },
+    { name: 'B (80-89)', count: grades.B, color: '#6ee7b7' },
+    { name: 'C (70-79)', count: grades.C, color: '#93c5fd' },
+    { name: 'D (60-69)', count: grades.D, color: '#fcd34d' },
+    { name: 'F (<60)', count: grades.F, color: '#f87171' },
+  ];
 
   return (
     <div className="max-w-[1200px] mx-auto font-sans pb-8">
@@ -72,16 +99,16 @@ export default function QuizReportContent() {
             </button>
             <select 
               value={selectedQuizId}
-              onChange={(e) => setSelectedQuizId(parseInt(e.target.value))}
+              onChange={(e) => setSelectedQuizId(e.target.value)}
               className="text-[24px] sm:text-[28px] font-extrabold text-slate-800 m-0 bg-transparent border-none outline-none cursor-pointer hover:bg-slate-50 transition-colors rounded-lg py-1 px-2 appearance-none pr-8 relative -ml-2"
               style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right center', backgroundSize: '20px' }}
             >
               {quizzes.map(q => (
-                <option key={q.id} value={q.id}>{q.title}</option>
+                <option key={q._id} value={q._id}>{q.title}</option>
               ))}
             </select>
           </div>
-          <p className="text-[15px] text-slate-500 m-0 sm:ml-10 ml-0 px-2 sm:px-0">{selectedQuiz.unit}</p>
+          <p className="text-[15px] text-slate-500 m-0 sm:ml-10 ml-0 px-2 sm:px-0">{selectedQuiz.bundleTopic} • {maxScore} Questions</p>
         </div>
         <div className="flex gap-3">
           <button className="bg-white border border-slate-300 text-slate-700 px-5 py-2.5 rounded-lg font-semibold text-sm hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer shadow-sm">
@@ -98,32 +125,30 @@ export default function QuizReportContent() {
         <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all">
           <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Average Score</h3>
           <div className="flex items-baseline gap-2">
-            <span className="text-[32px] font-bold text-slate-800">{selectedQuiz.metrics.avgScore}</span>
-            <span className={`text-[13px] font-semibold ${selectedQuiz.metrics.avgTrend.startsWith('+') ? 'text-emerald-500' : 'text-red-500'}`}>{selectedQuiz.metrics.avgTrend}</span>
+            <span className="text-[32px] font-bold text-slate-800">{avgScore}%</span>
           </div>
         </div>
         
         <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all">
           <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Submissions</h3>
           <div className="flex items-baseline gap-2">
-            <span className="text-[32px] font-bold text-slate-800">{selectedQuiz.metrics.submissions}</span>
-            <span className="text-[14px] font-medium text-slate-500">/ {selectedQuiz.metrics.max}</span>
+            <span className="text-[32px] font-bold text-slate-800">{totalSubmissions}</span>
           </div>
         </div>
 
         <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all">
           <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Highest Score</h3>
           <div className="flex items-baseline gap-2">
-            <span className="text-[32px] font-bold text-slate-800">{selectedQuiz.metrics.highest}</span>
-            <span className="text-[14px] font-medium text-slate-500">Sarah J.</span>
+            <span className="text-[32px] font-bold text-slate-800">{highest}%</span>
+            <span className="text-[14px] font-medium text-slate-500">{highestName}</span>
           </div>
         </div>
 
         <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all">
           <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Hardest Question</h3>
           <div className="flex items-baseline gap-2">
-            <span className="text-[32px] font-bold text-slate-800">{selectedQuiz.metrics.hardestQ}</span>
-            <span className="text-[13px] font-semibold text-red-500">{selectedQuiz.metrics.hardestQScore}</span>
+            <span className="text-[32px] font-bold text-slate-800">N/A</span>
+            <span className="text-[13px] font-semibold text-red-500">More data needed</span>
           </div>
         </div>
       </div>
@@ -134,7 +159,7 @@ export default function QuizReportContent() {
           <h2 className="text-lg font-bold text-slate-800 mb-6">Grade Distribution</h2>
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={selectedQuiz.gradeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <BarChart data={gradeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} dy={10} />
                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
                 <Tooltip 
@@ -142,7 +167,7 @@ export default function QuizReportContent() {
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)', fontSize: '13px', fontWeight: '600', color: '#1e293b' }}
                 />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]} animationDuration={500}>
-                  {selectedQuiz.gradeData.map((entry, index) => (
+                  {gradeData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Bar>
@@ -163,14 +188,14 @@ export default function QuizReportContent() {
           <div className="flex flex-col gap-5 relative z-10">
             <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm border border-white/10">
               <p className="text-[13px] text-indigo-100 m-0 mb-1 font-medium">Topic to Review</p>
-              <h4 className="text-[15px] font-semibold m-0 text-white">De Morgan's Laws</h4>
-              <p className="text-[12px] text-indigo-200 mt-2 m-0">68% of students struggled with questions 14 and 17 related to this topic.</p>
+              <h4 className="text-[15px] font-semibold m-0 text-white">N/A</h4>
+              <p className="text-[12px] text-indigo-200 mt-2 m-0">No item-level analytics available yet.</p>
             </div>
             
             <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm border border-white/10">
               <p className="text-[13px] text-indigo-100 m-0 mb-1 font-medium">Positive Trend</p>
-              <h4 className="text-[15px] font-semibold m-0 text-white">Truth Tables</h4>
-              <p className="text-[12px] text-indigo-200 mt-2 m-0">Excellent performance. 94% average score on truth table analysis.</p>
+              <h4 className="text-[15px] font-semibold m-0 text-white">Overall Performance</h4>
+              <p className="text-[12px] text-indigo-200 mt-2 m-0">The class is averaging {avgScore}% on this quiz.</p>
             </div>
           </div>
         </div>
@@ -206,19 +231,24 @@ export default function QuizReportContent() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {studentSubmissions.map((student) => (
-                <tr key={student.id} className="hover:bg-slate-50/50 transition-colors">
+              {submissions.length === 0 && (
+                <tr>
+                  <td colSpan="6" className="p-10 text-center text-slate-500 font-medium">No submissions yet.</td>
+                </tr>
+              )}
+              {submissions.map((student) => (
+                <tr key={student._id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="p-[16px_24px]">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs">
-                        {student.name.charAt(0)}
+                        {student.studentName.charAt(0)}
                       </div>
-                      <span className="font-semibold text-slate-800 text-[14.5px]">{student.name}</span>
+                      <span className="font-semibold text-slate-800 text-[14.5px]">{student.studentName}</span>
                     </div>
                   </td>
                   <td className="p-[16px_24px] text-[14px] text-slate-500 font-medium">{student.studentId}</td>
                   <td className="p-[16px_24px]">
-                    <span className="font-bold text-slate-800 text-[14.5px]">{student.score}%</span>
+                    <span className="font-bold text-slate-800 text-[14.5px]">{student.percentage}%</span>
                   </td>
                   <td className="p-[16px_24px] text-[14px] text-slate-500">{student.timeTaken}</td>
                   <td className="p-[16px_24px]">
@@ -241,7 +271,7 @@ export default function QuizReportContent() {
         
         {/* Pagination mock */}
         <div className="p-4 border-t border-slate-100 flex justify-between items-center bg-white text-[13px] text-slate-500 font-medium">
-          <span>Showing 1 to 5 of 142 entries</span>
+          <span>Showing 1 to {submissions.length} of {submissions.length} entries</span>
           <div className="flex gap-1">
             <button className="w-8 h-8 rounded border border-slate-200 flex items-center justify-center hover:bg-slate-50 cursor-pointer disabled:opacity-50" disabled>
               &lt;

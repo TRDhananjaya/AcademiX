@@ -4,6 +4,11 @@ const { connectDb } = require('./config/db');
 const { errorMiddleware } = require('./middleware/errorMiddleware');
 require('dotenv').config();
 
+const authRoutes = require('./routes/authRoutes');
+const quizRoutes = require('./routes/quizRoutes');
+const quizResultRoutes = require('./routes/quizResultRoutes');
+const userRoutes = require('./routes/userRoutes');
+
 const app = express();
 
 // Middleware
@@ -18,7 +23,10 @@ app.get('/', (req, res) => {
 });
 
 // Routes
-app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/auth', authRoutes);
+app.use('/api/quizzes', quizRoutes);
+app.use('/api/quiz-results', quizResultRoutes);
+app.use('/api/users', userRoutes);
 
 // Error handling middleware (must be after routes)
 app.use(errorMiddleware);

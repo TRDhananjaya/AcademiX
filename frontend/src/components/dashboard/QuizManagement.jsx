@@ -1,39 +1,4 @@
-import React from 'react';
-
-const existingQuizzes = [
-  {
-    id: 1,
-    name: 'Logic Gates with Boolean Functions',
-    section: 'Unit 4',
-    difficulty: 'Hard',
-    status: 'Active',
-    score: '82%',
-  },
-  {
-    id: 2,
-    name: 'Operating Systems',
-    section: 'Unit 5',
-    difficulty: 'Moderate',
-    status: 'Closed',
-    score: '74%',
-  },
-  {
-    id: 3,
-    name: 'Word Processing',
-    section: 'Unit 6',
-    difficulty: 'Easy',
-    status: 'Draft',
-    score: '--',
-  },
-  {
-    id: 4,
-    name: 'Electronic Spreadsheet',
-    section: 'Unit 7',
-    difficulty: 'Hard',
-    status: 'Active',
-    score: '68%',
-  },
-];
+import React, { useState, useEffect } from 'react';
 
 const questionBundles = [
   {
@@ -54,6 +19,25 @@ const questionBundles = [
 ];
 
 export default function QuizManagement() {
+  const [existingQuizzes, setExistingQuizzes] = useState([]);
+
+  useEffect(() => {
+    fetch('http://localhost:5000/api/quizzes')
+      .then(res => res.json())
+      .then(data => {
+        const mapped = data.map(q => ({
+          id: q._id,
+          name: q.title,
+          section: q.bundleTopic,
+          difficulty: 'Moderate',
+          status: 'Active',
+          score: '--'
+        }));
+        setExistingQuizzes(mapped);
+      })
+      .catch(err => console.error(err));
+  }, []);
+
   return (
     <div className="max-w-[1100px] mx-auto">
       {/* Header */}
