@@ -1,22 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
-import { FiUserPlus, FiTrash2, FiSearch, FiSliders, FiUsers, FiCheckCircle, FiAlertTriangle, FiBookOpen } from 'react-icons/fi';
-
-const initialStudents = [
-  { id: 1, name: 'Alice Smith', email: 'alice.smith@university.edu', level: 'Level 3', enrolled: '2024-09-01', status: 'Active', initials: 'AS', color: 'bg-teal-500' },
-  { id: 2, name: 'Bob Johnson', email: 'bob.johnson@university.edu', level: 'Level 2', enrolled: '2025-01-15', status: 'At Risk', initials: 'BJ', color: 'bg-red-500' },
-  { id: 3, name: 'Clara Oswald', email: 'clara.o@university.edu', level: 'Level 3', enrolled: '2024-09-01', status: 'Active', initials: 'CO', color: 'bg-indigo-500' },
-  { id: 4, name: 'David Miller', email: 'd.miller@university.edu', level: 'Level 1', enrolled: '2025-05-10', status: 'Active', initials: 'DM', color: 'bg-purple-500' },
-  { id: 5, name: 'Emma Watson', email: 'emma.w@university.edu', level: 'Level 2', enrolled: '2025-01-20', status: 'Suspended', initials: 'EW', color: 'bg-amber-500' },
-  { id: 6, name: 'Frank Castle', email: 'f.castle@university.edu', level: 'Level 3', enrolled: '2024-09-05', status: 'Active', initials: 'FC', color: 'bg-slate-500' }
-];
+import { FiUserPlus, FiEdit, FiSearch, FiSliders, FiUsers, FiCheckCircle, FiAlertTriangle, FiBookOpen } from 'react-icons/fi';
 
 export default function StudentManagement() {
   const [activeNav, setActiveNav] = useState('students');
-  const [students, setStudents] = useState(initialStudents);
+  const [students, setStudents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [levelFilter, setLevelFilter] = useState('All Levels');
+  const [gradeFilter, setGradeFilter] = useState('All Grades');
   const [statusFilter, setStatusFilter] = useState('All Statuses');
   
   // Modal State
@@ -24,61 +15,99 @@ export default function StudentManagement() {
   const [newStudent, setNewStudent] = useState({
     name: '',
     email: '',
-    level: 'Level 1',
-    status: 'Active'
+    studentMobile: '',
+    parentMobile: '',
+    grade: 'Grade 11',
+    status: 'Active',
+    _id: null
   });
 
-  // Handlers
-  const handleDeleteStudent = (id, name) => {
-    if (window.confirm(`Are you sure you want to remove student "${name}" from the system?`)) {
-      setStudents(students.filter(s => s.id !== id));
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const fetchStudents = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/students');
+      if (response.ok) {
+        const data = await response.json();
+        setStudents(data);
+      }
+    } catch (error) {
+      console.error('Error fetching students:', error);
     }
   };
 
-  const handleAddStudent = (e) => {
-    e.preventDefault();
-    if (!newStudent.name.trim() || !newStudent.email.trim()) return;
-
-    const names = newStudent.name.split(' ');
-    const initials = names.map(n => n[0]).join('').toUpperCase().substring(0, 2);
-    const colors = ['bg-indigo-500', 'bg-teal-500', 'bg-purple-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500'];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-
-    const studentToAdd = {
-      id: Date.now(),
-      name: newStudent.name,
-      email: newStudent.email,
-      level: newStudent.level,
-      enrolled: new Date().toISOString().split('T')[0],
-      status: newStudent.status,
-      initials: initials || 'ST',
-      color: randomColor
-    };
-
-    setStudents([studentToAdd, ...students]);
-    setIsModalOpen(false);
+  // Handlers
+  const handleEditStudent = (student) => {
     setNewStudent({
-      name: '',
-      email: '',
-      level: 'Level 1',
-      status: 'Active'
+      name: student.name,
+      email: student.email,
+      studentMobile: student.studentMobile,
+      parentMobile: student.parentMobile,
+      grade: student.grade,
+      status: student.status,
+      _id: student._id
     });
+    setIsModalOpen(true);
   };
 
-  // Filter students
+  const handleAddStudent = async (e) => {
+    e.preventDefault();
+    if (!newStudent.name.trim() || !newStudent.email.trim() || !newStudent.studentMobile.trim() || !newStudent.parentMobile.trim()) return;
+
+    try {
+      const url = newStudent._id ? `http://localhost:5000/api/students/${newStudent._id}` : 'http://localhost:5000/api/students';
+      const method = newStudent._id ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newStudent),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (newStudent._id) {
+          setStudents(students.map(s => s._id === data._id ? data : s));
+        } else {
+          setStudents([data, ...students]);
+        }
+        setIsModalOpen(false);
+        setNewStudent({
+          name: '',
+          email: '',
+          studentMobile: '',
+          parentMobile: '',
+          grade: 'Grade 11',
+          status: 'Active',
+          _id: null
+        });
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || 'Error saving student');
+      }
+    } catch (error) {
+      console.error('Error saving student:', error);
+      alert('Error connecting to server');
+    }
+  };
+
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           student.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLevel = levelFilter === 'All Levels' || student.level === levelFilter;
+    const matchesGrade = gradeFilter === 'All Grades' || student.grade === gradeFilter;
     const matchesStatus = statusFilter === 'All Statuses' || student.status === statusFilter;
-    return matchesSearch && matchesLevel && matchesStatus;
+    return matchesSearch && matchesGrade && matchesStatus;
   });
 
   // Calculate stats
   const totalCount = students.length;
   const activeCount = students.filter(s => s.status === 'Active').length;
   const atRiskCount = students.filter(s => s.status === 'At Risk').length;
-  const suspendedCount = students.filter(s => s.status === 'Suspended').length;
+  const inactiveCount = students.filter(s => s.status === 'Inactive').length;
 
   return (
     <div className="flex min-h-screen font-sans bg-[#f8f9fb]" id="teacher-students-layout">
@@ -99,7 +128,10 @@ export default function StudentManagement() {
             </div>
             
             <button 
-              onClick={() => setIsModalOpen(true)}
+              onClick={() => {
+                setNewStudent({ name: '', email: '', studentMobile: '', parentMobile: '', grade: 'Grade 11', status: 'Active', _id: null });
+                setIsModalOpen(true);
+              }}
               className="bg-[#3b28cc] hover:bg-indigo-700 text-white font-semibold py-2.5 px-5 rounded-xl text-sm transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer self-start sm:self-auto"
             >
               <FiUserPlus className="w-4.5 h-4.5" />
@@ -142,8 +174,8 @@ export default function StudentManagement() {
 
             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between">
               <div>
-                <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Suspended</span>
-                <h3 className="text-3xl font-extrabold text-amber-600 mt-2">{suspendedCount}</h3>
+                <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Inactive Students</span>
+                <h3 className="text-3xl font-extrabold text-amber-600 mt-2">{inactiveCount}</h3>
               </div>
               <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
                 <FiBookOpen className="w-5.5 h-5.5" />
@@ -174,16 +206,15 @@ export default function StudentManagement() {
                   <FiSliders className="w-4 h-4" /> Filter By
                 </div>
                 
-                {/* Level Filter */}
+                {/* Grade Filter */}
                 <select 
-                  value={levelFilter}
-                  onChange={(e) => setLevelFilter(e.target.value)}
+                  value={gradeFilter}
+                  onChange={(e) => setGradeFilter(e.target.value)}
                   className="bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600 outline-none focus:bg-white focus:border-indigo-300 transition-all cursor-pointer"
                 >
-                  <option>All Levels</option>
-                  <option>Level 1</option>
-                  <option>Level 2</option>
-                  <option>Level 3</option>
+                  <option>All Grades</option>
+                  {/* Additional grades (Grade 6 to 10) can be added here easily */}
+                  <option>Grade 11</option>
                 </select>
 
                 {/* Status Filter */}
@@ -196,6 +227,7 @@ export default function StudentManagement() {
                   <option>Active</option>
                   <option>At Risk</option>
                   <option>Suspended</option>
+                  <option>Inactive</option>
                 </select>
               </div>
 
@@ -208,7 +240,7 @@ export default function StudentManagement() {
                   <tr className="bg-slate-50/50 border-b border-slate-100 text-left">
                     <th className="p-4 pl-6 text-xs font-bold text-slate-400 uppercase tracking-wider">Student Name</th>
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Email Address</th>
-                    <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Academic Level</th>
+                    <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Grade</th>
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Enrollment Date</th>
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
                     <th className="p-4 pr-6 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
@@ -217,7 +249,7 @@ export default function StudentManagement() {
                 <tbody className="divide-y divide-slate-100">
                   {filteredStudents.length > 0 ? (
                     filteredStudents.map((student) => (
-                      <tr key={student.id} className="hover:bg-slate-50/40 transition-colors">
+                      <tr key={student._id} className="hover:bg-slate-50/40 transition-colors">
                         
                         {/* Name & Avatar */}
                         <td className="p-4 pl-6 flex items-center gap-3">
@@ -230,18 +262,19 @@ export default function StudentManagement() {
                         {/* Email */}
                         <td className="p-4 text-slate-600 text-sm">{student.email}</td>
 
-                        {/* Level */}
-                        <td className="p-4 text-slate-700 text-sm font-medium">{student.level}</td>
+                        {/* Grade */}
+                        <td className="p-4 text-slate-700 text-sm font-medium">{student.grade}</td>
 
                         {/* Enrollment Date */}
-                        <td className="p-4 text-slate-500 text-sm">{student.enrolled}</td>
+                        <td className="p-4 text-slate-500 text-sm">{student.enrolled ? new Date(student.enrolled).toISOString().split('T')[0] : 'N/A'}</td>
 
                         {/* Status Badge */}
                         <td className="p-4">
                           <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider
                             ${student.status === 'Active' ? 'bg-teal-50 text-teal-600' : ''}
                             ${student.status === 'At Risk' ? 'bg-red-50 text-red-500' : ''}
-                            ${student.status === 'Suspended' ? 'bg-amber-50 text-amber-600' : ''}
+                            ${student.status === 'Suspended' ? 'bg-orange-50 text-orange-600' : ''}
+                            ${student.status === 'Inactive' ? 'bg-slate-100 text-slate-500' : ''}
                           `}>
                             {student.status}
                           </span>
@@ -250,11 +283,11 @@ export default function StudentManagement() {
                         {/* Actions */}
                         <td className="p-4 pr-6 text-right">
                           <button 
-                            onClick={() => handleDeleteStudent(student.id, student.name)}
-                            className="p-2 bg-transparent border-none text-slate-400 hover:text-red-500 transition-colors cursor-pointer inline-flex items-center"
-                            title="Delete Student"
+                            onClick={() => handleEditStudent(student)}
+                            className="p-2 bg-transparent border-none text-slate-400 hover:text-indigo-500 transition-colors cursor-pointer inline-flex items-center"
+                            title="Edit Student"
                           >
-                            <FiTrash2 className="w-4.5 h-4.5" />
+                            <FiEdit className="w-4.5 h-4.5" />
                           </button>
                         </td>
 
@@ -280,7 +313,7 @@ export default function StudentManagement() {
                 
                 {/* Modal Header */}
                 <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-slate-900">Add New Student</h3>
+                  <h3 className="text-lg font-bold text-slate-900">{newStudent._id ? 'Edit Student' : 'Add New Student'}</h3>
                   <button 
                     onClick={() => setIsModalOpen(false)}
                     className="text-slate-400 hover:text-slate-600 font-bold text-lg bg-transparent border-none cursor-pointer p-1"
@@ -319,17 +352,42 @@ export default function StudentManagement() {
                       />
                     </div>
 
-                    {/* Academic Level */}
+                    {/* Student Mobile */}
                     <div>
-                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">Academic Level</label>
+                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">Student Mobile Number</label>
+                      <input 
+                        type="tel" 
+                        placeholder="e.g. +1234567890"
+                        value={newStudent.studentMobile}
+                        onChange={(e) => setNewStudent({...newStudent, studentMobile: e.target.value})}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/10 font-sans"
+                        required
+                      />
+                    </div>
+
+                    {/* Parent Mobile */}
+                    <div>
+                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">Parent Mobile Number</label>
+                      <input 
+                        type="tel" 
+                        placeholder="e.g. +1987654321"
+                        value={newStudent.parentMobile}
+                        onChange={(e) => setNewStudent({...newStudent, parentMobile: e.target.value})}
+                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/10 font-sans"
+                        required
+                      />
+                    </div>
+
+                    {/* Grade */}
+                    <div>
+                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">Grade</label>
                       <select 
-                        value={newStudent.level}
-                        onChange={(e) => setNewStudent({...newStudent, level: e.target.value})}
+                        value={newStudent.grade}
+                        onChange={(e) => setNewStudent({...newStudent, grade: e.target.value})}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/10 font-sans cursor-pointer bg-white"
                       >
-                        <option>Level 1</option>
-                        <option>Level 2</option>
-                        <option>Level 3</option>
+                        {/* Additional grades (Grade 6 to 10) can be added here easily */}
+                        <option>Grade 11</option>
                       </select>
                     </div>
 
@@ -344,6 +402,7 @@ export default function StudentManagement() {
                         <option>Active</option>
                         <option>At Risk</option>
                         <option>Suspended</option>
+                        <option>Inactive</option>
                       </select>
                     </div>
 
@@ -362,7 +421,7 @@ export default function StudentManagement() {
                       type="submit"
                       className="bg-[#3b28cc] hover:bg-indigo-700 text-white font-semibold py-2 px-5 rounded-xl text-sm transition-colors cursor-pointer"
                     >
-                      Add Student
+                      {newStudent._id ? 'Save Changes' : 'Add Student'}
                     </button>
                   </div>
                 </form>

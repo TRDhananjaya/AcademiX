@@ -8,6 +8,7 @@ const authRoutes = require('./routes/authRoutes');
 const quizRoutes = require('./routes/quizRoutes');
 const quizResultRoutes = require('./routes/quizResultRoutes');
 const userRoutes = require('./routes/userRoutes');
+const studentRoutes = require('./routes/studentRoutes');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/quiz-results', quizResultRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/students', studentRoutes);
 
 // Error handling middleware (must be after routes)
 app.use(errorMiddleware);
