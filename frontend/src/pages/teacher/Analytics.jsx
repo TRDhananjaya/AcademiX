@@ -1,25 +1,39 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
 import { navigate } from '../../App';
 
-const mockData = [
-  { range: '0-20', count: 2 },
-  { range: '21-40', count: 5 },
-  { range: '41-60', count: 12 },
-  { range: '61-80', count: 35 },
-  { range: '81-100', count: 22 }
-];
-
-const students = [
-  { id: 'AL', name: 'Amanda Lewis', score: 94, time: '38 mins', status: 'Completed', color: 'bg-indigo-600' },
-  { id: 'SJ', name: 'Sarah Jenkins', score: 58, time: '45 mins', status: 'Completed', color: 'bg-purple-500' },
-  { id: 'DP', name: 'David Park', score: null, time: '--', status: 'Pending', color: 'bg-slate-300' }
-];
-
 export default function Analytics() {
   const [activeNav, setActiveNav] = useState('analytics');
+  const [analyticsData, setAnalyticsData] = useState({
+    classAverage: 0,
+    completionRate: 0,
+    completedCount: 0,
+    totalStudents: 0,
+    scoreDistribution: [],
+    interventionRecommended: [],
+    studentsData: []
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, []);
+
+  const fetchAnalytics = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/analytics');
+      if (res.ok) {
+        const data = await res.json();
+        setAnalyticsData(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch analytics', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen font-sans bg-[#f8f9fb]" id="analytics-layout">
@@ -53,13 +67,14 @@ export default function Analytics() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
               <div className="text-slate-500 text-sm font-medium mb-4">Class Average</div>
               <div className="flex items-baseline gap-4">
-                <div className="text-4xl font-bold text-slate-900">82%</div>
-                <div className="flex items-center text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full text-xs font-semibold">
-                  <svg className="w-3 h-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                  +4%
+                <div className="text-4xl font-bold text-slate-900">
+                  {isLoading ? '...' : `${analyticsData.classAverage}%`}
                 </div>
+                {!isLoading && (
+                  <div className="flex items-center text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full text-xs font-semibold">
+                    Live Data
+                  </div>
+                )}
               </div>
             </div>
 
@@ -67,8 +82,12 @@ export default function Analytics() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
               <div className="text-slate-500 text-sm font-medium mb-4">Completion Rate</div>
               <div className="flex items-baseline gap-4">
-                <div className="text-4xl font-bold text-slate-900">96%</div>
-                <div className="text-slate-400 text-sm font-medium">24/25 Students</div>
+                <div className="text-4xl font-bold text-slate-900">
+                  {isLoading ? '...' : `${analyticsData.completionRate}%`}
+                </div>
+                <div className="text-slate-400 text-sm font-medium">
+                  {isLoading ? '...' : `${analyticsData.completedCount}/${analyticsData.totalStudents} Students`}
+                </div>
               </div>
             </div>
 
@@ -76,7 +95,7 @@ export default function Analytics() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
               <div className="text-slate-500 text-sm font-medium mb-4">Avg. Completion Time</div>
               <div className="flex items-baseline gap-4">
-                <div className="text-4xl font-bold text-slate-900">42m</div>
+                <div className="text-4xl font-bold text-slate-900">45m</div>
                 <div className="text-slate-400 text-sm font-medium">of 60m allotted</div>
               </div>
             </div>
@@ -92,14 +111,20 @@ export default function Analytics() {
                 </select>
               </div>
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={mockData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <XAxis dataKey="range" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                    <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                    <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {isLoading ? (
+                  <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm font-medium">
+                    Analyzing class data...
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={analyticsData.scoreDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <XAxis dataKey="range" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} dy={10} />
+                      <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                      <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                      <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </div>
 
@@ -123,16 +148,20 @@ export default function Analytics() {
               <div className="bg-red-50 rounded-xl p-4 border border-red-100">
                 <div className="text-red-600 text-xs font-bold mb-3 flex items-center gap-1.5">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-                  Intervention Recommended
+                  Intervention Recommended (ML Predicted)
                 </div>
-                <div className="flex justify-between items-center text-sm mb-2">
-                  <span className="text-slate-700">Sarah Jenkins</span>
-                  <span className="text-red-600 font-semibold">58%</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-slate-700">Marcus Thorne</span>
-                  <span className="text-red-600 font-semibold">62%</span>
-                </div>
+                {isLoading ? (
+                  <div className="text-sm text-slate-500">Evaluating risks...</div>
+                ) : analyticsData.interventionRecommended.length > 0 ? (
+                  analyticsData.interventionRecommended.map((student, idx) => (
+                    <div key={idx} className="flex justify-between items-center text-sm mb-2 last:mb-0">
+                      <span className="text-slate-700">{student.name}</span>
+                      <span className="text-red-600 font-semibold">{student.predictedScore}%</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-sm text-emerald-600 font-medium">No students currently at risk.</div>
+                )}
               </div>
             </div>
           </div>
@@ -157,37 +186,43 @@ export default function Analytics() {
                   </tr>
                 </thead>
                 <tbody className="text-sm">
-                  {students.map((student, idx) => (
-                    <tr key={idx} className="border-b border-slate-50 last:border-0">
-                      <td className="py-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full text-white flex items-center justify-center text-xs font-bold ${student.color}`}>
-                            {student.id}
-                          </div>
-                          <span className="font-semibold text-slate-800">{student.name}</span>
-                        </div>
-                      </td>
-                      <td className="py-4">
-                        {student.score !== null ? (
-                          <div className="flex items-center gap-3">
-                            <span className={`font-bold ${student.score < 70 ? 'text-red-500' : 'text-emerald-500'}`}>{student.score}%</span>
-                            <div className="w-24 h-1.5 rounded-full bg-slate-100 hidden sm:block">
-                              <div className={`h-full rounded-full ${student.score < 70 ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${student.score}%` }}></div>
-                            </div>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400">--</span>
-                        )}
-                      </td>
-                      <td className="py-4 text-slate-600">{student.time}</td>
-                      <td className="py-4 text-right">
-                        <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${student.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
-                          }`}>
-                          {student.status}
-                        </span>
-                      </td>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan="4" className="py-8 text-center text-slate-400 text-sm font-medium">Loading roster data...</td>
                     </tr>
-                  ))}
+                  ) : (
+                    analyticsData.studentsData.map((student, idx) => (
+                      <tr key={idx} className="border-b border-slate-50 last:border-0">
+                        <td className="py-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full text-white flex items-center justify-center text-xs font-bold ${student.color}`}>
+                              {student.id}
+                            </div>
+                            <span className="font-semibold text-slate-800">{student.name}</span>
+                          </div>
+                        </td>
+                        <td className="py-4">
+                          {student.score !== null ? (
+                            <div className="flex items-center gap-3">
+                              <span className={`font-bold ${student.score < 70 ? 'text-red-500' : 'text-emerald-500'}`}>{student.score}%</span>
+                              <div className="w-24 h-1.5 rounded-full bg-slate-100 hidden sm:block">
+                                <div className={`h-full rounded-full ${student.score < 70 ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${student.score}%` }}></div>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400">--</span>
+                          )}
+                        </td>
+                        <td className="py-4 text-slate-600">{student.time}</td>
+                        <td className="py-4 text-right">
+                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${student.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                            {student.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

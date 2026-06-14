@@ -9,6 +9,8 @@ const quizRoutes = require('./routes/quizRoutes');
 const quizResultRoutes = require('./routes/quizResultRoutes');
 const userRoutes = require('./routes/userRoutes');
 const studentRoutes = require('./routes/studentRoutes');
+const predictionRoutes = require('./routes/predictionRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 
 const app = express();
 
@@ -29,6 +31,8 @@ app.use('/api/quizzes', quizRoutes);
 app.use('/api/quiz-results', quizResultRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/students', studentRoutes);
+app.use('/api/predictions', predictionRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Error handling middleware (must be after routes)
 app.use(errorMiddleware);

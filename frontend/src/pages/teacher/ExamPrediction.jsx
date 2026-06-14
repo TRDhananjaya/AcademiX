@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
 import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
@@ -15,13 +15,65 @@ const lineData = [
   { name: 'W8', predicted: 99, baseline: 86 }
 ];
 
-const pieData = [
-  { name: 'Average', value: 94 },
-  { name: 'Remaining', value: 6 }
-];
-
 export default function ExamPrediction() {
   const [activeNav, setActiveNav] = useState('analytics');
+  const [students, setStudents] = useState([]);
+  const [selectedStudentId, setSelectedStudentId] = useState('');
+  const [predictedScore, setPredictedScore] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const fetchStudents = async () => {
+    try {
+      const res = await fetch('http://localhost:5000/api/students');
+      if (res.ok) {
+        const data = await res.json();
+        setStudents(data);
+        if (data.length > 0) {
+          setSelectedStudentId(data[0]._id);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch students', err);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedStudentId) {
+      fetchPrediction(selectedStudentId);
+    }
+  }, [selectedStudentId]);
+
+  const fetchPrediction = async (studentId) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`http://localhost:5000/api/predictions/predict/${studentId}`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPredictedScore(data.predictedScore);
+      } else {
+        setPredictedScore(null);
+      }
+    } catch (err) {
+      console.error('Prediction fetch error', err);
+      setPredictedScore(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const pieData = predictedScore !== null ? [
+    { name: 'Average', value: Math.round(predictedScore) },
+    { name: 'Remaining', value: 100 - Math.round(predictedScore) }
+  ] : [
+    { name: 'Average', value: 0 },
+    { name: 'Remaining', value: 100 }
+  ];
 
   return (
     <div className="flex min-h-screen font-sans bg-[#f8f9fb]" id="exam-prediction-layout">
@@ -47,10 +99,14 @@ export default function ExamPrediction() {
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
                 Export Report
               </button>
-              <select className="border border-slate-200 text-slate-600 text-sm font-medium rounded-lg px-4 py-2 bg-slate-50 focus:outline-none">
-                <option>Student: Amanda Lewis</option>
-                <option>Student: Sarah Jenkins</option>
-                <option>Student: David Park</option>
+              <select 
+                value={selectedStudentId} 
+                onChange={(e) => setSelectedStudentId(e.target.value)}
+                className="border border-slate-200 text-slate-600 text-sm font-medium rounded-lg px-4 py-2 bg-slate-50 focus:outline-none"
+              >
+                {students.map(student => (
+                  <option key={student._id} value={student._id}>Student: {student.name || student.studentId || 'Unknown'}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -83,11 +139,16 @@ export default function ExamPrediction() {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-bold text-slate-800">94<span className="text-xl">%</span></span>
-                  <span className="text-xs font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full mt-1 flex items-center">
-                    <svg className="w-3 h-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-                    +3.1%
+                  <span className="text-3xl font-bold text-slate-800">
+                    {isLoading ? '...' : (predictedScore ? Math.round(predictedScore) : 'N/A')}
+                    {predictedScore && <span className="text-xl">%</span>}
                   </span>
+                  {!isLoading && predictedScore && (
+                    <span className="text-xs font-bold text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full mt-1 flex items-center">
+                      <svg className="w-3 h-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                      ML Active
+                    </span>
+                  )}
                 </div>
               </div>
               <p className="text-xs text-slate-400 mt-4 text-center">Confidence Interval: 79% - 85%</p>

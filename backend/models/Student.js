@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const studentSchema = new mongoose.Schema({
+    studentId: {
+        type: String,
+        unique: true
+    },
     name: {
         type: String,
         required: true,
@@ -48,8 +52,24 @@ const studentSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Pre-save middleware to set initials and color if not provided
+// Pre-save middleware to set initials, color, and studentId if not provided
 studentSchema.pre('save', async function() {
+    if (!this.studentId) {
+        // Generate a random ID like STU-1005
+        this.studentId = `STU-${Math.floor(1000 + Math.random() * 9000)}`;
+        
+        // Ensure uniqueness by checking DB
+        let isUnique = false;
+        while (!isUnique) {
+            const existingStudent = await mongoose.models.Student.findOne({ studentId: this.studentId });
+            if (existingStudent) {
+                this.studentId = `STU-${Math.floor(1000 + Math.random() * 9000)}`;
+            } else {
+                isUnique = true;
+            }
+        }
+    }
+
     if (this.isModified('name') || !this.initials) {
         const names = this.name.split(' ');
         this.initials = names.map(n => n[0]).join('').toUpperCase().substring(0, 2) || 'ST';
