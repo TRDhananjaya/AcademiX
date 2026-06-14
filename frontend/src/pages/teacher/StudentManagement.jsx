@@ -96,8 +96,10 @@ export default function StudentManagement() {
   };
 
   const filteredStudents = students.filter(student => {
-    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          student.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const name = student.name || '';
+    const email = student.email || '';
+    const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesGrade = gradeFilter === 'All Grades' || student.grade === gradeFilter;
     const matchesStatus = statusFilter === 'All Statuses' || student.status === statusFilter;
     return matchesSearch && matchesGrade && matchesStatus;
@@ -253,17 +255,17 @@ export default function StudentManagement() {
                         
                         {/* Name & Avatar */}
                         <td className="p-4 pl-6 flex items-center gap-3">
-                          <div className={`w-9 h-9 rounded-full ${student.color} text-white font-bold text-xs flex items-center justify-center shrink-0`}>
-                            {student.initials}
+                          <div className={`w-9 h-9 rounded-full ${student.color || 'bg-indigo-500'} text-white font-bold text-xs flex items-center justify-center shrink-0`}>
+                            {student.initials || (student.name ? student.name.charAt(0).toUpperCase() : '?')}
                           </div>
-                          <span className="font-bold text-slate-800 text-sm">{student.name}</span>
+                          <span className="font-bold text-slate-800 text-sm">{student.name || 'Unknown Student'}</span>
                         </td>
 
                         {/* Email */}
-                        <td className="p-4 text-slate-600 text-sm">{student.email}</td>
+                        <td className="p-4 text-slate-600 text-sm">{student.email || 'N/A'}</td>
 
                         {/* Grade */}
-                        <td className="p-4 text-slate-700 text-sm font-medium">{student.grade}</td>
+                        <td className="p-4 text-slate-700 text-sm font-medium">{student.grade || 'N/A'}</td>
 
                         {/* Enrollment Date */}
                         <td className="p-4 text-slate-500 text-sm">{student.enrolled ? new Date(student.enrolled).toISOString().split('T')[0] : 'N/A'}</td>
