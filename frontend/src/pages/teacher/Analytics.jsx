@@ -1,224 +1,177 @@
-import { useState, useEffect } from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
-import { navigate } from '../../App';
 
 export default function Analytics() {
+  const [records, setRecords] = useState([]);
+  const [pagination, setPagination] = useState({ currentPage: 1, totalPages: 1, totalRecords: 0, perPage: 20 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  // Filters
+  const [quizFilter, setQuizFilter] = useState('All Quizzes');
+  const [studentSearch, setStudentSearch] = useState('');
+  
   const [activeNav, setActiveNav] = useState('analytics');
-  const [analyticsData, setAnalyticsData] = useState({
-    classAverage: 0,
-    completionRate: 0,
-    completedCount: 0,
-    totalStudents: 0,
-    scoreDistribution: [],
-    interventionRecommended: [],
-    studentsData: []
-  });
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, []);
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = async (page = 1) => {
+    setLoading(true);
+    setError(null);
     try {
-      const res = await fetch('http://localhost:5000/api/analytics');
+      let url = `http://localhost:5000/api/analytics?page=${page}&limit=20`;
+      if (quizFilter !== 'All Quizzes') url += `&quizId=${quizFilter}`;
+      if (studentSearch.trim() !== '') url += `&studentName=${encodeURIComponent(studentSearch)}`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+      
       if (res.ok) {
-        const data = await res.json();
-        setAnalyticsData(data);
+        setRecords(data.records || []);
+        setPagination(data.pagination || { currentPage: 1, totalPages: 1, totalRecords: 0, perPage: 20 });
+      } else {
+        console.error('Failed to fetch analytics data');
+        setError('Failed to fetch analytics data. Please try again later.');
       }
     } catch (err) {
-      console.error('Failed to fetch analytics', err);
+      console.error('Error fetching analytics:', err);
+      setError('A network error occurred while fetching analytics.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    // Reset to page 1 when filters change
+    const timeoutId = setTimeout(() => {
+      fetchAnalytics(1);
+    }, 500); // debounce search
+    
+    return () => clearTimeout(timeoutId);
+  }, [quizFilter, studentSearch]);
+
+  const handleNextPage = () => {
+    if (pagination.currentPage < pagination.totalPages) {
+      fetchAnalytics(pagination.currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (pagination.currentPage > 1) {
+      fetchAnalytics(pagination.currentPage - 1);
+    }
+  };
+
+  const quizOptions = ['All Quizzes', 'Q1.1', 'Q1.2', 'Q1.3', 'Q2.1', 'Q2.2', 'Q3.1', 'Q3.2'];
+
   return (
-    <div className="flex min-h-screen font-sans bg-[#f8f9fb]" id="analytics-layout">
+    <div className="flex min-h-screen bg-slate-50 font-sans">
       <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
       <div className="flex-1 flex flex-col min-w-0 ml-0 md:ml-[72px] lg:ml-[240px]">
         <TopBar />
-        <main className="flex-1 p-[20px_16px] md:p-[32px_40px_40px] overflow-y-auto">
-
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900 mb-1 text-indigo-700">Quiz Performance</h1>
-              <p className="text-slate-500 text-sm">Advanced placement biology mid-term results.</p>
-            </div>
-            <div className="flex gap-3">
-              <div className="relative">
-                <input type="text" placeholder="Search students..." className="pl-9 pr-4 py-2 rounded-full border border-slate-200 text-sm w-64 focus:outline-none focus:border-indigo-300" />
-                <svg className="absolute left-3 top-2.5 text-slate-400" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <button className="w-10 h-10 rounded-full border border-slate-200 flex items-center justify-center text-slate-500 bg-white hover:bg-slate-50">
-                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                </svg>
-              </button>
-            </div>
+        
+        <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">Analytics Dashboard</h1>
+            <p className="text-slate-500">Monitor student performance and quiz attempt records</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Class Average */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
-              <div className="text-slate-500 text-sm font-medium mb-4">Class Average</div>
-              <div className="flex items-baseline gap-4">
-                <div className="text-4xl font-bold text-slate-900">
-                  {isLoading ? '...' : `${analyticsData.classAverage}%`}
-                </div>
-                {!isLoading && (
-                  <div className="flex items-center text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full text-xs font-semibold">
-                    Live Data
-                  </div>
-                )}
-              </div>
+          {error && (
+            <div className="mb-8 p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg">
+              {error}
             </div>
+          )}
 
-            {/* Completion Rate */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
-              <div className="text-slate-500 text-sm font-medium mb-4">Completion Rate</div>
-              <div className="flex items-baseline gap-4">
-                <div className="text-4xl font-bold text-slate-900">
-                  {isLoading ? '...' : `${analyticsData.completionRate}%`}
-                </div>
-                <div className="text-slate-400 text-sm font-medium">
-                  {isLoading ? '...' : `${analyticsData.completedCount}/${analyticsData.totalStudents} Students`}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+            {/* Filters Section */}
+            <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white">
+              <div className="flex w-full md:w-auto items-center gap-4">
+                <div className="relative w-full md:w-80">
+                  <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Search by Student Name..."
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                    className="pl-10 w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors shadow-sm"
+                  />
                 </div>
               </div>
-            </div>
-
-            {/* Avg Completion Time */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
-              <div className="text-slate-500 text-sm font-medium mb-4">Avg. Completion Time</div>
-              <div className="flex items-baseline gap-4">
-                <div className="text-4xl font-bold text-slate-900">45m</div>
-                <div className="text-slate-400 text-sm font-medium">of 60m allotted</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-lg font-bold text-slate-800">Score Distribution</h3>
-                <select className="border border-slate-200 text-slate-600 text-sm rounded-lg px-3 py-1.5 focus:outline-none">
-                  <option>Current Quiz</option>
-                  <option>Previous Quiz</option>
-                </select>
-              </div>
-              <div className="h-64">
-                {isLoading ? (
-                  <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm font-medium">
-                    Analyzing class data...
-                  </div>
-                ) : (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analyticsData.scoreDistribution} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <XAxis dataKey="range" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} dy={10} />
-                      <YAxis allowDecimals={false} axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                      <Tooltip cursor={{ fill: '#f8fafc' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                      <Bar dataKey="count" fill="#4f46e5" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-indigo-100 flex flex-col">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                  </svg>
+              <div className="flex w-full md:w-auto items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <label className="text-sm font-medium text-slate-600 hidden md:block">Filter by Quiz:</label>
+                  <select
+                    value={quizFilter}
+                    onChange={(e) => setQuizFilter(e.target.value)}
+                    className="rounded-lg border border-slate-200 bg-slate-50 py-2.5 px-3 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-colors cursor-pointer shadow-sm"
+                  >
+                    {quizOptions.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
                 </div>
-                <h3 className="text-lg font-bold text-slate-800">AcademiX Insights</h3>
-              </div>
-
-              <div className="bg-slate-50 rounded-xl p-4 mb-4 flex-1">
-                <p className="text-sm text-slate-700 leading-relaxed mb-3">
-                  <strong>Question 4</strong> (Cellular Respiration) had the lowest success rate (32%). Consider reviewing this topic next session.
-                </p>
-                <a href="#" className="text-indigo-600 text-xs font-semibold hover:underline">View Question Details</a>
-              </div>
-
-              <div className="bg-red-50 rounded-xl p-4 border border-red-100">
-                <div className="text-red-600 text-xs font-bold mb-3 flex items-center gap-1.5">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-                  Intervention Recommended (ML Predicted)
-                </div>
-                {isLoading ? (
-                  <div className="text-sm text-slate-500">Evaluating risks...</div>
-                ) : analyticsData.interventionRecommended.length > 0 ? (
-                  analyticsData.interventionRecommended.map((student, idx) => (
-                    <div key={idx} className="flex justify-between items-center text-sm mb-2 last:mb-0">
-                      <span className="text-slate-700">{student.name}</span>
-                      <span className="text-red-600 font-semibold">{student.predictedScore}%</span>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-sm text-emerald-600 font-medium">No students currently at risk.</div>
-                )}
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 mb-8">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-slate-800">Student Roster</h3>
-              <button className="text-indigo-600 text-sm font-semibold hover:underline flex items-center gap-1">
-                Export CSV
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
-              </button>
-            </div>
-
+            {/* Table Section */}
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead>
-                  <tr className="text-slate-400 text-xs uppercase tracking-wider border-b border-slate-100">
-                    <th className="pb-3 font-medium">Student Name</th>
-                    <th className="pb-3 font-medium">Score</th>
-                    <th className="pb-3 font-medium">Time Taken</th>
-                    <th className="pb-3 font-medium text-right">Status</th>
+                  <tr className="bg-slate-50 border-b border-slate-100">
+                    <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Student Name</th>
+                    <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Student ID</th>
+                    <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Quiz ID</th>
+                    <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Score</th>
+                    <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Time Taken</th>
+                    <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Submission Date</th>
                   </tr>
                 </thead>
-                <tbody className="text-sm">
-                  {isLoading ? (
+                <tbody className="divide-y divide-slate-100">
+                  {loading ? (
                     <tr>
-                      <td colSpan="4" className="py-8 text-center text-slate-400 text-sm font-medium">Loading roster data...</td>
+                      <td colSpan="6" className="py-16 text-center">
+                        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+                        <p className="mt-4 text-sm text-slate-500 font-medium">Loading analytics...</p>
+                      </td>
+                    </tr>
+                  ) : records.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="py-16 text-center">
+                        <div className="mx-auto w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-400">
+                          <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        </div>
+                        <p className="text-slate-600 font-medium text-lg">No records found</p>
+                        <p className="text-sm text-slate-400 mt-1">Make sure students have completed quizzes.</p>
+                      </td>
                     </tr>
                   ) : (
-                    analyticsData.studentsData.map((student, idx) => (
-                      <tr key={idx} className="border-b border-slate-50 last:border-0">
-                        <td className="py-4">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-8 h-8 rounded-full text-white flex items-center justify-center text-xs font-bold ${student.color}`}>
-                              {student.id}
+                    records.map((record, index) => (
+                      <tr key={record._id || index} className="hover:bg-slate-50/70 transition-colors group">
+                        <td className="py-4 px-6">
+                          <div className="flex items-center">
+                            <div className="h-9 w-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs mr-3 shadow-sm border border-indigo-50">
+                              {record.studentName?.substring(0, 2).toUpperCase() || 'US'}
                             </div>
-                            <span className="font-semibold text-slate-800">{student.name}</span>
+                            <span className="font-medium text-slate-800">{record.studentName || 'Unknown Student'}</span>
                           </div>
                         </td>
-                        <td className="py-4">
-                          {student.score !== null ? (
-                            <div className="flex items-center gap-3">
-                              <span className={`font-bold ${student.score < 70 ? 'text-red-500' : 'text-emerald-500'}`}>{student.score}%</span>
-                              <div className="w-24 h-1.5 rounded-full bg-slate-100 hidden sm:block">
-                                <div className={`h-full rounded-full ${student.score < 70 ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: `${student.score}%` }}></div>
-                              </div>
-                            </div>
-                          ) : (
-                            <span className="text-slate-400">--</span>
-                          )}
+                        <td className="py-4 px-6 text-sm font-medium text-slate-500">
+                          {record.studentId}
                         </td>
-                        <td className="py-4 text-slate-600">{student.time}</td>
-                        <td className="py-4 text-right">
-                          <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${student.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'
-                            }`}>
-                            {student.status}
+                        <td className="py-4 px-6 text-sm font-medium text-slate-600">
+                          <span className="bg-slate-100 px-2.5 py-1 rounded-md text-slate-700 border border-slate-200">
+                            {record.quizId}
                           </span>
+                        </td>
+                        <td className="py-4 px-6 text-sm text-slate-600">
+                          <span className="font-bold text-indigo-600">
+                            {record.score}
+                          </span>
+                        </td>
+                        <td className="py-4 px-6 text-sm text-slate-600 font-medium">{record.timeTaken}</td>
+                        <td className="py-4 px-6 text-sm text-slate-500">
+                          {record.submittedAt ? new Date(record.submittedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'N/A'}
                         </td>
                       </tr>
                     ))
@@ -226,18 +179,40 @@ export default function Analytics() {
                 </tbody>
               </table>
             </div>
-          </div>
 
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={() => navigate('/exam-prediction')}
-              className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:-translate-y-0.5 transition-transform flex items-center gap-2"
-            >
-              View ML Exam Predictions
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
-            </button>
+            {/* Pagination */}
+            {!loading && records.length > 0 && (
+              <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                <span className="text-sm text-slate-500">
+                  Showing <span className="font-medium text-slate-800">{(pagination.currentPage - 1) * pagination.perPage + 1}</span> to <span className="font-medium text-slate-800">{Math.min(pagination.currentPage * pagination.perPage, pagination.totalRecords)}</span> of <span className="font-medium text-slate-800">{pagination.totalRecords}</span> results
+                </span>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handlePrevPage}
+                    disabled={pagination.currentPage === 1}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                      pagination.currentPage === 1 
+                        ? 'border-slate-200 text-slate-400 bg-slate-100 cursor-not-allowed' 
+                        : 'border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300'
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={handleNextPage}
+                    disabled={pagination.currentPage === pagination.totalPages}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg border transition-colors ${
+                      pagination.currentPage === pagination.totalPages 
+                        ? 'border-slate-200 text-slate-400 bg-slate-100 cursor-not-allowed' 
+                        : 'border-slate-200 text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-300'
+                    }`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-
         </main>
       </div>
     </div>
