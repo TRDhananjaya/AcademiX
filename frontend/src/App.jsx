@@ -24,8 +24,8 @@ import TeacherProfileSettings from './pages/teacher/ProfileSettings';
 import StudentManagement from './pages/teacher/StudentManagement';
 
 // Shared navigate helper — use this instead of <a href>
-export function navigate(path) {
-  window.history.pushState({}, '', path);
+export function navigate(path, state = {}) {
+  window.history.pushState(state, '', path);
   window.dispatchEvent(new PopStateEvent('popstate'));
 }
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
+import { navigate } from '../../App';
 
 export default function Analytics() {
   const [records, setRecords] = useState([]);
@@ -70,9 +71,18 @@ export default function Analytics() {
         <TopBar />
         
         <main className="flex-1 p-6 md:p-8 overflow-y-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-slate-900 mb-2">Analytics Dashboard</h1>
-            <p className="text-slate-500">Monitor student performance and quiz attempt records</p>
+          <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900 mb-2">Analytics Dashboard</h1>
+              <p className="text-slate-500">Monitor student performance and quiz attempt records</p>
+            </div>
+            <button
+              onClick={() => navigate('/exam-prediction')}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-sm whitespace-nowrap"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+              ML Prediction Access
+            </button>
           </div>
 
           {error && (
