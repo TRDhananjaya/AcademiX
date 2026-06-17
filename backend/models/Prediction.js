@@ -6,6 +6,10 @@ const predictionSchema = new mongoose.Schema({
     ref: 'Student',
     required: true
   },
+  lessonId: {
+    type: String,
+    required: true
+  },
   features: {
     Module_1_Score: { type: Number, required: true },
     Module_2_Score: { type: Number, required: true },
@@ -21,4 +25,4 @@ const predictionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-module.exports = mongoose.model('Prediction', predictionSchema);
+module.exports = mongoose.model('Prediction', predictionSchema, 'prediction_results');

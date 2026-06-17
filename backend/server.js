@@ -31,7 +31,7 @@ app.use('/api/quizzes', quizRoutes);
 app.use('/api/quiz-results', quizResultRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/students', studentRoutes);
-app.use('/api/predictions', predictionRoutes);
+app.use('/api/ml', predictionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
 // Error handling middleware (must be after routes)
