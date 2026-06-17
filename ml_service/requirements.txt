@@ -1,1 +1,4 @@
-Flask==3.0.3
+Flask
+Flask-CORS
+joblib
+scikit-learn==1.8.0

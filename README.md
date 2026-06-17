@@ -1,19 +1,48 @@
 # AcademiX
 
-## Frontend
-- Install: `cd frontend; npm install`
-- Dev: `npm run dev`
+A full-stack Machine Learning project.
 
-## Backend
-- Install: `cd backend; npm install`
-- Dev: `npm run dev`
+## Setup Instructions
 
-npm install express cors dotenv mongoose
+### 1. Clone the GitHub repository
+```bash
+git clone <your-repo-url>
+cd AcademiX
+```
 
-## ML Service
-- Install: `cd ml_service; pip install -r requirements.txt`
-- Run: `python api/flask_app.py`
+### 2. Install frontend dependencies
+```bash
+cd frontend
+npm install
+cd ..
+```
 
-## Study Plan Service
-- Install: `cd study_plan_service; pip install -r requirements.txt`
-- Run: `python api/plan_generator.py`
+### 3. Install backend dependencies
+```bash
+cd backend
+npm install
+cd ..
+```
+
+### 4. Setup ML environment
+```bash
+cd ml_service
+uv venv
+uv pip install -r requirements.txt
+cd ..
+```
+
+### 5. Run the complete system
+Make sure you install the root dependencies first (for `concurrently`):
+```bash
+npm install
+```
+Then run the entire system:
+```bash
+npm run dev
+```
+
+## Architecture
+- **Frontend**: React + Vite
+- **Backend**: Node.js + Express
+- **ML Service**: Flask API (Python)
