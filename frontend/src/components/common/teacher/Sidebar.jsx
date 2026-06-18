@@ -41,21 +41,7 @@ const navItems = [
       </svg>
     ),
   },
-  {
-    id: 'quiz-report',
-    label: 'Quiz Report',
-    icon: (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M3 7H17" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M7 3V7" stroke="currentColor" strokeWidth="1.5" />
-        <path d="M13 3V7" stroke="currentColor" strokeWidth="1.5" />
-        <rect x="6" y="9.5" width="3" height="2.5" rx="0.5" stroke="currentColor" strokeWidth="1" />
-        <rect x="11" y="9.5" width="3" height="2.5" rx="0.5" stroke="currentColor" strokeWidth="1" />
-        <rect x="6" y="13.5" width="3" height="2.5" rx="0.5" stroke="currentColor" strokeWidth="1" />
-      </svg>
-    ),
-  },
+
   {
     id: 'analytics',
     label: 'Analytics',
@@ -142,9 +128,7 @@ export default function Sidebar({ activeItem = 'quizzes', onNavigate }) {
                 if (item.id === 'dashboard') {
                   window.history.pushState({}, '', '/teacher/dashboard');
                   window.dispatchEvent(new PopStateEvent('popstate'));
-                } else if (item.id === 'quiz-report') {
-                  window.history.pushState({}, '', '/quiz-report');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
+
                 } else if (item.id === 'lessons') {
                   window.history.pushState({}, '', '/teacher/resources');
                   window.dispatchEvent(new PopStateEvent('popstate'));

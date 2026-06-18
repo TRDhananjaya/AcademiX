@@ -9,7 +9,7 @@ import TakeQuiz from './pages/student/TakeQuiz';
 import StudyPlans from './pages/student/StudyPlans';
 import TeacherDashboard from './pages/teacher/dashboard';
 import CreateQuiz from './pages/teacher/create-quiz';
-import QuizReport from './pages/teacher/quiz-report';
+
 import { useAuth } from './context/AuthContext';
 
 
@@ -58,8 +58,7 @@ function App() {
       return <TeacherDashboard activeTab="quizzes" />;
     case 'create-quiz':
       return <CreateQuiz />;
-    case 'quiz-report':
-      return <QuizReport />;
+
     case 'analytics':
       return <Analytics />;
     case 'student/lessons':
