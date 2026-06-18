@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { navigate } from '../../../App';
 import favicon from '../../../assets/favicon.png';
 import logoBlack from '../../../assets/logo_black.png';
+import { useAuth } from '../../../context/AuthContext';
 
 const navItems = [
   {
@@ -63,7 +64,6 @@ const navItems = [
   {
     id: 'notifications',
     label: 'Notifications',
-    badge: '3',
     icon: (
       <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M10 2C7.23858 2 5 4.23858 5 7V10.5858L3.29289 12.2929C3.10536 12.4804 3 12.7348 3 13V14C3 14.5523 3.44772 15 4 15H16C16.5523 15 17 14.5523 17 14V13C17 12.7348 16.8946 12.4804 16.7071 12.2929L15 10.5858V7C15 4.23858 12.7614 2 10 2Z" stroke="currentColor" strokeWidth="1.5" />
@@ -74,6 +74,9 @@ const navItems = [
 ];
 
 export default function Sidebar({ activeItem = 'dashboard', onNavigate }) {
+  const { user } = useAuth();
+  const fullName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Alex Smith';
+  const roleName = user ? (user.role === 'teacher' ? 'Department Head' : 'Student') : 'Student';
   return (
     <aside className="fixed top-0 left-0 h-screen bg-white border-r border-slate-100 flex-col z-40 overflow-y-auto hidden md:flex md:w-[72px] lg:w-[240px]">
       {/* Logo */}
@@ -126,6 +129,21 @@ export default function Sidebar({ activeItem = 'dashboard', onNavigate }) {
           );
         })}
       </nav>
+
+      {/* User Profile */}
+      <button 
+        onClick={() => {
+          navigate('/student/profile');
+          onNavigate?.('profile');
+        }}
+        className="p-4 border-t border-slate-100 flex items-center gap-3 justify-center lg:p-[20px_24px] lg:justify-start w-full text-left bg-transparent hover:bg-slate-50 transition-colors cursor-pointer border-none shrink-0"
+      >
+        <img src={user?.profilePicture || "https://i.pravatar.cc/150?img=11"} alt={fullName} className="w-10 h-10 rounded-full object-cover" />
+        <div className="flex-col hidden lg:flex">
+          <span className="text-[14px] font-semibold text-slate-800">{fullName}</span>
+          <span className="text-[12px] text-slate-500">{roleName}</span>
+        </div>
+      </button>
     </aside>
   );
 }

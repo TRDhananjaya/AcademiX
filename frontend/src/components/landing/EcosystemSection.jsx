@@ -44,19 +44,19 @@ export default function EcosystemSection() {
   return (
     <section className="py-24 lg:py-36 bg-[#f8f9fb]" id="features">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
+
         <div className="text-center mb-20">
-          <h2 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 to-indigo-950 mb-4 tracking-tight">
+          <h2 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 py-2 mb-4 leading-normal">
             Intelligent Ecosystem
           </h2>
           <p className="text-base md:text-lg text-slate-500 max-w-3xl mx-auto leading-relaxed">
             Everything you need to manage classrooms, analyze performance, and foster engagement in one unified platform.
           </p>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
-            <FeatureCard 
+            <FeatureCard
               key={index}
               icon={feature.icon}
               title={feature.title}

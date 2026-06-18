@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import Sidebar from '../../components/common/student/Sidebar';
 import StudentTopBar from '../../components/dashboard/StudentTopBar';
+import { useAuth } from '../../context/AuthContext';
 
 const performanceData = [
   { day: 'Mon', score: 35 },
@@ -12,6 +13,7 @@ const performanceData = [
 ];
 
 export default function StudyPlans() {
+  const { user } = useAuth();
   const [activeNav, setActiveNav] = useState('study-plans');
 
   return (
@@ -25,7 +27,7 @@ export default function StudyPlans() {
           
           <div className="mb-8">
             <h1 className="text-[34px] font-bold text-indigo-700 mb-1.5 tracking-tight">
-              Ready to crush your goals, Alex?
+              Ready to crush your goals, {user ? (user.firstName || user.username) : 'Student'}?
             </h1>
             <p className="text-slate-500 text-base">
               Here is your AI-curated study roadmap for today.

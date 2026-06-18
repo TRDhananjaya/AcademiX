@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import favicon from '../../../assets/favicon.png';
 import logoBlack from '../../../assets/logo_black.png';
+import { useAuth } from '../../../context/AuthContext';
 
 const navItems = [
   {
@@ -103,6 +104,9 @@ const navItems = [
 ];
 
 export default function Sidebar({ activeItem = 'quizzes', onNavigate }) {
+  const { user } = useAuth();
+  const fullName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Dr. Sarah Jenkins';
+  const roleName = user ? (user.role === 'teacher' ? 'Teacher' : 'Student') : 'Teacher';
   return (
     <aside className="fixed top-0 left-0 h-screen bg-white border-r border-slate-100 flex-col z-40 overflow-y-auto hidden md:flex md:w-[72px] lg:w-[240px]">
       {/* Logo */}
@@ -163,7 +167,7 @@ export default function Sidebar({ activeItem = 'quizzes', onNavigate }) {
       </nav>
 
       {/* User Profile */}
-      <button 
+      <button
         onClick={() => {
           window.history.pushState({}, '', '/teacher/profile');
           window.dispatchEvent(new PopStateEvent('popstate'));
@@ -171,10 +175,10 @@ export default function Sidebar({ activeItem = 'quizzes', onNavigate }) {
         }}
         className="p-4 border-t border-slate-100 flex items-center gap-3 justify-center lg:p-[20px_24px] lg:justify-start w-full text-left bg-transparent hover:bg-slate-50 transition-colors cursor-pointer border-none shrink-0"
       >
-        <img src="https://i.pravatar.cc/150?img=44" alt="Dr. Sarah Jenkins" className="w-10 h-10 rounded-full" />
+        <img src={user?.profilePicture || "https://i.pravatar.cc/150?img=47"} alt={fullName} className="w-10 h-10 rounded-full object-cover" />
         <div className="flex-col hidden lg:flex">
-          <span className="text-[14px] font-semibold text-slate-800">Dr. Sarah Jenkins</span>
-          <span className="text-[12px] text-slate-500">Department Head</span>
+          <span className="text-[14px] font-semibold text-slate-800">{fullName}</span>
+          <span className="text-[12px] text-slate-500">{roleName}</span>
         </div>
       </button>
     </aside>

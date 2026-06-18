@@ -35,6 +35,7 @@ const getQuizzes = async (req, res) => {
           title: 1,
           moduleId: 1,
           bundleTopic: 1,
+          questions: 1,
           questionCount: { $size: { $ifNull: ["$questions", []] } }
         }
       },
@@ -64,6 +65,7 @@ const getQuizById = async (req, res) => {
       title: quiz.title,
       bundleTopic: quiz.bundleTopic,
       moduleId: quiz.moduleId,
+      questions: quiz.questions || [],
       questionCount: quiz.questions ? quiz.questions.length : 0
     };
     

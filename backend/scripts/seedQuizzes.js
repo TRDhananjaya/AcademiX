@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const Quiz = require('../models/Quiz');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const modulesData = [
@@ -35,6 +37,52 @@ const modulesData = [
   { code: 'Q9.3', title: 'Database 9.3', topic: 'Lesson 9: Database' }
 ];
 
+function parseCsvLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+const loadQuestions = () => {
+  const csvPath = path.join(__dirname, '../../Module_1_1_Questions.csv');
+  const questions = [];
+  if (fs.existsSync(csvPath)) {
+    const content = fs.readFileSync(csvPath, 'utf8');
+    const lines = content.split(/\r?\n/).filter(line => line.trim() !== '');
+    for (let i = 1; i < lines.length; i++) {
+      const fields = parseCsvLine(lines[i]);
+      if (fields.length >= 6) {
+        const questionText = fields[0];
+        const options = [fields[1], fields[2], fields[3], fields[4]];
+        const correctLetter = fields[5].toUpperCase();
+        const correctOption = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 }[correctLetter] ?? 0;
+        questions.push({
+          text: questionText,
+          options,
+          correctOption
+        });
+      }
+    }
+    console.log(`Loaded ${questions.length} questions from CSV`);
+  } else {
+    console.log(`CSV file not found at ${csvPath}`);
+  }
+  return questions;
+};
+
 const seedDB = async () => {
   try {
     const uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/academix';
@@ -45,12 +93,14 @@ const seedDB = async () => {
     await Quiz.deleteMany({});
     console.log('Cleared existing quizzes...');
 
+    const m1_1_questions = loadQuestions();
+
     const quizzesToInsert = modulesData.map(m => ({
       quizCode: m.code,
       title: `Module ${m.code.substring(1)} – ${m.title}`,
       moduleId: `MODULE_${m.code.substring(1).replace('.', '_')}`,
       bundleTopic: m.topic,
-      questions: [] // empty for now, or could add dummy questions
+      questions: m.code === 'Q1.1' ? m1_1_questions : []
     }));
 
     await Quiz.insertMany(quizzesToInsert);

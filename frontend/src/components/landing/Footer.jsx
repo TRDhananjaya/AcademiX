@@ -33,7 +33,7 @@ export default function Footer() {
 
           {/* Product */}
           <div>
-            <h4 className="text-lg font-bold mb-4 text-white">
+            <h4 className="text-lg font-semibold mb-4 text-white">
               Product
             </h4>
 
@@ -72,7 +72,7 @@ export default function Footer() {
 
           {/* Company */}
           <div>
-            <h4 className="text-lg font-bold mb-4 text-white">
+            <h4 className="text-lg font-semibold mb-4 text-white">
               Company
             </h4>
 
@@ -111,7 +111,7 @@ export default function Footer() {
 
           {/* Legal */}
           <div>
-            <h4 className="text-lg font-bold mb-4 text-white">
+            <h4 className="text-lg font-semibold mb-4 text-white">
               Legal
             </h4>
 

@@ -15,13 +15,15 @@ const submitQuiz = async (req, res) => {
     }
 
     const result = new QuizResult({
-      quizId,
+      quizId: quiz.quizCode,
       studentId,
       studentName,
       correctAnswers,
+      score: correctAnswers,
       totalQuestions,
       percentage,
-      timeTaken
+      timeTaken,
+      status: percentage >= 50 ? 'Pass' : 'Fail'
     });
 
     const savedResult = await result.save();

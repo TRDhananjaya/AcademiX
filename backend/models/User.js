@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema(
 			trim: true,
 			default: '',
 		},
+		profilePicture: {
+			type: String,
+			default: '',
+		},
 	},
 	{
 		timestamps: true,
@@ -45,15 +49,14 @@ const userSchema = new mongoose.Schema(
 );
 
 // Hash password before saving
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
 	// Only hash if password was modified (or is new)
 	if (!this.isModified('password')) {
-		return next();
+		return;
 	}
 
 	const salt = await bcrypt.genSalt(10);
 	this.password = await bcrypt.hash(this.password, salt);
-	next();
 });
 
 // Instance method to compare entered password with hashed password

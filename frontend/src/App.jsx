@@ -40,6 +40,10 @@ function App() {
     return () => window.removeEventListener('popstate', onRouteChange);
   }, []);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentPage]);
+
   // Route rendering
   switch (currentPage) {
     case 'login':

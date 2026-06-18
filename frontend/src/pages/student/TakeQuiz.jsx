@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/student/Sidebar';
 import StudentTopBar from '../../components/dashboard/StudentTopBar';
+import { useAuth } from '../../context/AuthContext';
 
 export default function TakeQuiz() {
+  const { user } = useAuth();
   const [activeNav, setActiveNav] = useState('quizzes');
   const [hasStarted, setHasStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0); 
@@ -14,26 +16,27 @@ export default function TakeQuiz() {
   const [finalScore, setFinalScore] = useState(null);
 
   useEffect(() => {
+    if (!user) return;
     const loadQuizData = async () => {
       try {
-        const quizRes = await fetch('http://localhost:5000/api/quizzes');
+        // Fetch quizzes and student results in parallel for better performance
+        const [quizRes, studentRes] = await Promise.all([
+          fetch('http://localhost:5000/api/quizzes'),
+          fetch(`http://localhost:5000/api/quiz-results/student/${user.username}`)
+        ]);
+
         const quizzesData = await quizRes.json();
         setQuizzes(quizzesData);
         
-        if (quizzesData.length > 0) {
+        if (quizzesData.length > 0 && studentRes.ok) {
           const currentQuizId = quizzesData[0]._id;
+          const studentResults = await studentRes.json();
+          const pastResult = studentResults.find(r => r.quizId === currentQuizId);
           
-          // Check if student has already submitted
-          const studentRes = await fetch('http://localhost:5000/api/quiz-results/student/S-1001');
-          if (studentRes.ok) {
-            const studentResults = await studentRes.json();
-            const pastResult = studentResults.find(r => r.quizId === currentQuizId);
-            
-            if (pastResult) {
-              setFinalScore(pastResult);
-              setIsSubmitted(true);
-              setHasStarted(true);
-            }
+          if (pastResult) {
+            setFinalScore(pastResult);
+            setIsSubmitted(true);
+            setHasStarted(true);
           }
         }
         setIsLoading(false);
@@ -44,18 +47,27 @@ export default function TakeQuiz() {
     };
     
     loadQuizData();
-  }, []);
+  }, [user]);
   
   const currentQuiz = quizzes.length > 0 ? quizzes[0] : null;
-  const activeQuestions = currentQuiz ? currentQuiz.questions : [];
+  const activeQuestions = currentQuiz && currentQuiz.questions ? currentQuiz.questions : [];
   const totalQuestions = activeQuestions.length;
-  const currentQuestion = activeQuestions[currentIndex];
+  const currentQuestion = totalQuestions > 0 ? activeQuestions[currentIndex] : null;
+  const questionId = currentQuestion ? (currentQuestion._id || currentQuestion.id) : null;
+  const isCurrentQuestionAnswered = questionId ? selectedAnswers[questionId] !== undefined : false;
   
   const handleSubmit = async () => {
     setIsSubmitted(true);
     
     // API Call to submit quiz
     if (!currentQuiz) return;
+
+    const score = calculateScore();
+    const pct = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
+    const secsTaken = (30 * 60) - timeLeft;
+    const mins = Math.floor(secsTaken / 60);
+    const secs = secsTaken % 60;
+    const timeTakenStr = `${mins}m ${secs.toString().padStart(2, '0')}s`;
 
     try {
       const response = await fetch('http://localhost:5000/api/quiz-results', {
@@ -65,10 +77,12 @@ export default function TakeQuiz() {
         },
         body: JSON.stringify({
           quizId: currentQuiz._id,
-          studentId: 'S-1001',
-          studentName: 'Alex Smith', // Mock user
-          selectedAnswers: selectedAnswers,
-          timeTakenSeconds: (30 * 60) - timeLeft
+          studentId: user?.username || 'student1',
+          studentName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'John Doe',
+          correctAnswers: score,
+          totalQuestions: totalQuestions,
+          percentage: pct,
+          timeTaken: timeTakenStr
         })
       });
 
@@ -134,22 +148,35 @@ export default function TakeQuiz() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center font-sans bg-[#fcfdff]">
-        <div className="text-xl font-bold text-slate-500">Loading Quizzes...</div>
+      <div className="flex min-h-screen font-sans bg-[#fcfdff]" id="take-quiz-layout">
+        <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
+        <div className="flex-1 flex flex-col min-w-0 ml-0 md:ml-[72px] lg:ml-[240px]">
+          <StudentTopBar />
+          <main className="flex-1 p-[20px_16px] md:p-[40px_60px] overflow-y-auto bg-[#f8f9fb]">
+            <div className="max-w-[900px] mx-auto w-full">
+              <div className="bg-white rounded-3xl p-20 shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center mt-10">
+                <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <div className="text-lg font-semibold text-slate-500">Loading Quizzes...</div>
+              </div>
+            </div>
+          </main>
+        </div>
       </div>
     );
   }
 
-  if (!currentQuiz) {
+  if (!currentQuiz || totalQuestions === 0) {
     return (
       <div className="flex min-h-screen font-sans bg-[#fcfdff]" id="take-quiz-layout">
         <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
         <div className="flex-1 flex flex-col min-w-0 ml-0 md:ml-[72px] lg:ml-[240px]">
           <StudentTopBar />
           <main className="flex-1 p-[20px_16px] md:p-[40px_60px] overflow-y-auto bg-[#f8f9fb]">
-            <div className="max-w-[900px] mx-auto w-full text-center py-20">
-              <h1 className="text-2xl font-bold text-slate-800">No quizzes available right now.</h1>
-              <p className="text-slate-500 mt-2">Check back later for new assignments.</p>
+            <div className="max-w-[900px] mx-auto w-full">
+              <div className="bg-white rounded-3xl p-20 shadow-sm border border-slate-100 text-center mt-10">
+                <h1 className="text-2xl font-bold text-slate-800">No quizzes available right now.</h1>
+                <p className="text-slate-500 mt-2">Check back later for new assignments.</p>
+              </div>
             </div>
           </main>
         </div>
@@ -319,7 +346,12 @@ export default function TakeQuiz() {
                     {currentIndex < totalQuestions - 1 ? (
                       <button 
                         onClick={handleNext}
-                        className="flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl font-semibold bg-[#6338f0] text-white hover:bg-[#522ce0] transition-colors shadow-md shadow-indigo-200 min-w-[120px]"
+                        disabled={!isCurrentQuestionAnswered}
+                        className={`flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl font-semibold transition-colors min-w-[120px]
+                          ${!isCurrentQuestionAnswered 
+                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' 
+                            : 'bg-[#6338f0] text-white hover:bg-[#522ce0] shadow-md shadow-indigo-200'
+                          }`}
                       >
                         Next
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
@@ -327,7 +359,12 @@ export default function TakeQuiz() {
                     ) : (
                       <button 
                         onClick={handleSubmit}
-                        className="flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors shadow-md shadow-emerald-200 min-w-[120px]"
+                        disabled={!isCurrentQuestionAnswered}
+                        className={`flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl font-semibold transition-colors min-w-[120px]
+                          ${!isCurrentQuestionAnswered 
+                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' 
+                            : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-md shadow-emerald-200'
+                          }`}
                       >
                         Submit Quiz
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>

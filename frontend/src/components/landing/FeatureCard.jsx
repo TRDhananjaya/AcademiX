@@ -9,14 +9,14 @@ export default function FeatureCard({ icon, title, description, tags = [] }) {
           {icon}
         </div>
         
-        <h3 className="text-lg font-bold text-slate-800 mb-3 group-hover:text-indigo-600 transition-colors duration-300">{title}</h3>
+        <h3 className="text-lg font-semibold text-slate-800 mb-3 group-hover:text-indigo-600 transition-colors duration-300">{title}</h3>
         <p className="text-slate-500 text-sm leading-relaxed mb-6">{description}</p>
       </div>
 
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-auto pt-2">
           {tags.map((tag, index) => (
-            <span key={index} className="text-[10px] font-bold text-indigo-600 bg-indigo-50/60 px-2.5 py-1 rounded-md uppercase tracking-wider">{tag}</span>
+            <span key={index} className="text-[10px] font-semibold text-indigo-600 bg-indigo-50/60 px-2.5 py-1 rounded-md uppercase tracking-wider">{tag}</span>
           ))}
         </div>
       )}

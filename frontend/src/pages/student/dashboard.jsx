@@ -24,7 +24,7 @@ export default function StudentDashboard() {
           
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-slate-900 mb-2 flex items-center">
-              Welcome back, Alex!
+              Welcome back, {user ? (user.firstName || user.username) : 'Student'}!
             </h1>
             <p className="text-slate-500 text-base">
               Ready to crush your goals today? Your AI plan is waiting.

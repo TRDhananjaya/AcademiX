@@ -27,6 +27,7 @@ cd ..
 ### 4. Setup ML environment
 ```bash
 cd ml_service
+pip install uv
 uv venv
 uv pip install -r requirements.txt
 cd ..

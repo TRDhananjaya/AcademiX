@@ -41,6 +41,7 @@ const loginUser = async (req, res) => {
 			role: user.role,
 			firstName: user.firstName,
 			lastName: user.lastName,
+			profilePicture: user.profilePicture,
 			token,
 		});
 	} catch (error) {
@@ -70,6 +71,7 @@ const getMe = async (req, res) => {
 			role: user.role,
 			firstName: user.firstName,
 			lastName: user.lastName,
+			profilePicture: user.profilePicture,
 		});
 	} catch (error) {
 		console.error('GetMe error:', error);
@@ -127,4 +129,60 @@ const registerUser = async (req, res) => {
 	}
 };
 
-module.exports = { loginUser, getMe, registerUser };
+/**
+ * @desc    Update user profile
+ * @route   PUT /api/auth/profile
+ * @access  Private
+ */
+const updateProfile = async (req, res) => {
+	try {
+		const user = await User.findById(req.user._id);
+
+		if (!user) {
+			return res.status(404).json({ message: 'User not found' });
+		}
+
+		// Update fields if provided
+		if (req.body.firstName !== undefined) user.firstName = req.body.firstName;
+		if (req.body.lastName !== undefined) user.lastName = req.body.lastName;
+		
+		if (req.body.email !== undefined) {
+			const email = req.body.email.toLowerCase();
+			if (email !== user.email) {
+				const emailExists = await User.findOne({ email });
+				if (emailExists) {
+					return res.status(400).json({ message: 'Email is already in use' });
+				}
+			}
+			user.email = email;
+		}
+
+		if (req.body.password) {
+			if (req.body.password.length < 6) {
+				return res.status(400).json({ message: 'Password must be at least 6 characters' });
+			}
+			user.password = req.body.password;
+		}
+
+		if (req.body.profilePicture !== undefined) {
+			user.profilePicture = req.body.profilePicture;
+		}
+
+		await user.save();
+
+		res.json({
+			_id: user._id,
+			username: user.username,
+			email: user.email,
+			role: user.role,
+			firstName: user.firstName,
+			lastName: user.lastName,
+			profilePicture: user.profilePicture,
+		});
+	} catch (error) {
+		console.error('UpdateProfile error:', error);
+		res.status(500).json({ message: 'Server error' });
+	}
+};
+
+module.exports = { loginUser, getMe, registerUser, updateProfile };
