@@ -11,6 +11,7 @@ const userRoutes = require('./routes/userRoutes');
 const studentRoutes = require('./routes/studentRoutes');
 const predictionRoutes = require('./routes/predictionRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 
 const app = express();
 
@@ -33,6 +34,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/api/ml', predictionRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Error handling middleware (must be after routes)
 app.use(errorMiddleware);

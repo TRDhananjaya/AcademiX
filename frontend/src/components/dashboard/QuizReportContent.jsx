@@ -28,7 +28,8 @@ export default function QuizReportContent() {
       fetch(`http://localhost:5000/api/quiz-results/quiz/${selectedQuizId}`)
         .then(res => res.json())
         .then(data => {
-          setSubmissions(data);
+          // The API now returns a paginated object: { total, page, limit, data: [...] }
+          setSubmissions(data.data || []);
         })
         .catch(err => console.error(err));
     }
@@ -104,7 +105,7 @@ export default function QuizReportContent() {
               style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right center', backgroundSize: '20px' }}
             >
               {quizzes.map(q => (
-                <option key={q._id} value={q._id}>{q.title}</option>
+                <option key={q._id} value={q._id}>{q.quizCode} - {q.title}</option>
               ))}
             </select>
           </div>
@@ -121,7 +122,7 @@ export default function QuizReportContent() {
       </div>
 
       {/* Top metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
         <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all">
           <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Average Score</h3>
           <div className="flex items-baseline gap-2">
@@ -144,18 +145,11 @@ export default function QuizReportContent() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Hardest Question</h3>
-          <div className="flex items-baseline gap-2">
-            <span className="text-[32px] font-bold text-slate-800">N/A</span>
-            <span className="text-[13px] font-semibold text-red-500">More data needed</span>
-          </div>
-        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 gap-6 mb-8">
         {/* Performance Distribution Chart */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-100 p-6 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
+        <div className="bg-white rounded-xl border border-slate-100 p-6 shadow-[0_2px_4px_rgba(0,0,0,0.02)]">
           <h2 className="text-lg font-bold text-slate-800 mb-6">Grade Distribution</h2>
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -173,30 +167,6 @@ export default function QuizReportContent() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Insights */}
-        <div className="bg-indigo-900 rounded-xl p-6 text-white shadow-[0_2px_4px_rgba(0,0,0,0.02)] relative overflow-hidden">
-          <div className="absolute -right-5 -bottom-5 text-white/10">
-            <svg width="120" height="120" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 20V10M18 20V4M6 20V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
-          <h2 className="text-lg font-bold mb-5 relative z-10">Key Insights</h2>
-          
-          <div className="flex flex-col gap-5 relative z-10">
-            <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm border border-white/10">
-              <p className="text-[13px] text-indigo-100 m-0 mb-1 font-medium">Topic to Review</p>
-              <h4 className="text-[15px] font-semibold m-0 text-white">N/A</h4>
-              <p className="text-[12px] text-indigo-200 mt-2 m-0">No item-level analytics available yet.</p>
-            </div>
-            
-            <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm border border-white/10">
-              <p className="text-[13px] text-indigo-100 m-0 mb-1 font-medium">Positive Trend</p>
-              <h4 className="text-[15px] font-semibold m-0 text-white">Overall Performance</h4>
-              <p className="text-[12px] text-indigo-200 mt-2 m-0">The class is averaging {avgScore}% on this quiz.</p>
-            </div>
           </div>
         </div>
       </div>
@@ -226,14 +196,13 @@ export default function QuizReportContent() {
                 <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">ID</th>
                 <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">Score</th>
                 <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">Time Taken</th>
-                <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">Status</th>
                 <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {submissions.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="p-10 text-center text-slate-500 font-medium">No submissions yet.</td>
+                  <td colSpan="5" className="p-10 text-center text-slate-500 font-medium">No submissions yet.</td>
                 </tr>
               )}
               {submissions.map((student) => (
@@ -251,13 +220,6 @@ export default function QuizReportContent() {
                     <span className="font-bold text-slate-800 text-[14.5px]">{student.percentage}%</span>
                   </td>
                   <td className="p-[16px_24px] text-[14px] text-slate-500">{student.timeTaken}</td>
-                  <td className="p-[16px_24px]">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-bold ${
-                      student.status === 'Pass' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'
-                    }`}>
-                      {student.status}
-                    </span>
-                  </td>
                   <td className="p-[16px_24px] text-right">
                     <button className="text-indigo-600 hover:text-indigo-800 font-semibold text-[13.5px] bg-transparent border-none cursor-pointer hover:underline">
                       View Answers
