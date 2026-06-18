@@ -38,7 +38,7 @@ const getQuizzes = async (req, res) => {
           questionCount: { $size: { $ifNull: ["$questions", []] } }
         }
       },
-      { $sort: { _id: -1 } }
+      { $sort: { quizCode: 1 } }
     ]);
     res.status(200).json(quizzes);
   } catch (error) {

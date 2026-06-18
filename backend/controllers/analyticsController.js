@@ -26,7 +26,7 @@ const getAnalytics = async (req, res, next) => {
         // Fetch paginated records using aggregation to lookup student grade
         const records = await QuizResult.aggregate([
             { $match: query },
-            { $sort: { submittedAt: -1 } },
+            { $sort: { score: -1, submittedAt: -1 } },
             { $skip: skip },
             { $limit: limit },
             { $lookup: {
@@ -194,9 +194,77 @@ const getStudentPerformance = async (req, res, next) => {
     }
 };
 
+// @desc    Get all distinct students
+// @route   GET /api/analytics/students
+// @access  Public
+const getAllStudents = async (req, res, next) => {
+    try {
+        const students = await QuizResult.aggregate([
+            { $group: {
+                _id: "$studentId",
+                studentName: { $first: "$studentName" }
+            }},
+            { $sort: { studentName: 1 } }
+        ]);
+        
+        res.status(200).json({ students: students.map(s => ({ id: s._id, name: s.studentName })) });
+    } catch (error) {
+        console.error('Get Students Error:', error);
+        next(error);
+    }
+};
+
+// @desc    Get analytics for a specific individual student
+// @route   GET /api/analytics/student/:studentId
+// @access  Public
+const getIndividualStudentAnalytics = async (req, res, next) => {
+    try {
+        const { studentId } = req.params;
+
+        if (!studentId) {
+            return res.status(400).json({ error: 'studentId is required' });
+        }
+
+        // Fetch raw chronological quiz history for the table
+        const history = await QuizResult.find({ studentId }).sort({ submittedAt: -1 });
+
+        // Calculate lesson-wise averages for the line chart trend
+        const lessonTrend = await QuizResult.aggregate([
+            { $match: { studentId } },
+            // Extract the lesson ID part (e.g. "Q1" from "Q1.1")
+            { $addFields: { lessonPrefix: { $arrayElemAt: [ { $split: ["$quizId", "."] }, 0 ] } } },
+            { $group: {
+                _id: "$lessonPrefix",
+                averageScore: { $avg: "$score" },
+                quizzesTaken: { $sum: 1 }
+            }},
+            { $sort: { _id: 1 } } // Sort chronologically by lesson (Q1, Q2, Q3)
+        ]);
+
+        const trendData = lessonTrend.map(lesson => ({
+            lesson: lesson._id.replace('Q', 'Lesson '), // "Lesson 1"
+            averageScore: lesson.averageScore,
+            percentage: ((lesson.averageScore / 20) * 100).toFixed(1),
+            quizzesTaken: lesson.quizzesTaken
+        }));
+
+        res.status(200).json({
+            studentId,
+            studentName: history.length > 0 ? history[0].studentName : 'Unknown',
+            history,
+            trendData
+        });
+    } catch (error) {
+        console.error('Individual Student Analytics Error:', error);
+        next(error);
+    }
+};
+
 module.exports = {
     getAnalytics,
     getAvailableQuizzes,
     getAvailableLessons,
-    getStudentPerformance
+    getStudentPerformance,
+    getAllStudents,
+    getIndividualStudentAnalytics
 };

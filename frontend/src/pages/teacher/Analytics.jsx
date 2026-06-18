@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
 import { navigate } from '../../App';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 export default function Analytics() {
   const [viewMode, setViewMode] = useState('quiz'); // 'quiz' or 'student'
@@ -27,16 +27,24 @@ export default function Analytics() {
   const [studentSearch, setStudentSearch] = useState('');
   const [studentLoading, setStudentLoading] = useState(false);
 
+  // --- Individual Student View States ---
+  const [studentsList, setStudentsList] = useState([]);
+  const [individualStudentFilter, setIndividualStudentFilter] = useState('');
+  const [individualData, setIndividualData] = useState(null);
+  const [individualLoading, setIndividualLoading] = useState(false);
+
   // Initial Fetch (Quizzes & Lessons)
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const [quizzesRes, lessonsRes] = await Promise.all([
+        const [quizzesRes, lessonsRes, studentsRes] = await Promise.all([
           fetch('http://localhost:5000/api/analytics/quizzes'),
-          fetch('http://localhost:5000/api/analytics/lessons')
+          fetch('http://localhost:5000/api/analytics/lessons'),
+          fetch('http://localhost:5000/api/analytics/students')
         ]);
         const quizzesData = await quizzesRes.json();
         const lessonsData = await lessonsRes.json();
+        const studentsData = await studentsRes.json();
 
         if (quizzesData.quizzes?.length > 0) {
           setQuizzes(quizzesData.quizzes);
@@ -45,6 +53,10 @@ export default function Analytics() {
         if (lessonsData.lessons?.length > 0) {
           setLessons(lessonsData.lessons);
           setLessonFilter(lessonsData.lessons[0]);
+        }
+        if (studentsData.students?.length > 0) {
+          setStudentsList(studentsData.students);
+          setIndividualStudentFilter(studentsData.students[0].id);
         }
       } catch (err) {
         console.error('Failed to fetch initial data:', err);
@@ -123,6 +135,32 @@ export default function Analytics() {
     }
   }, [lessonFilter, studentSearch, viewMode]);
 
+  // Fetch Individual Student Data
+  const fetchIndividualAnalytics = async () => {
+    if (!individualStudentFilter) return;
+    setIndividualLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`http://localhost:5000/api/analytics/student/${individualStudentFilter}`);
+      const data = await res.json();
+      if (res.ok) {
+        setIndividualData(data);
+      } else {
+        setError('Failed to fetch individual student data.');
+      }
+    } catch (err) {
+      setError('Network error while fetching individual student data.');
+    } finally {
+      setIndividualLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (viewMode === 'individual' && individualStudentFilter) {
+      fetchIndividualAnalytics();
+    }
+  }, [viewMode, individualStudentFilter]);
+
   const handleNextPage = () => {
     if (quizPagination.currentPage < quizPagination.totalPages) {
       fetchQuizAnalytics(quizPagination.currentPage + 1);
@@ -182,7 +220,15 @@ export default function Analytics() {
                     viewMode === 'student' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                   }`}
                 >
-                  Student Performance
+                  Lesson Performance
+                </button>
+                <button
+                  onClick={() => setViewMode('individual')}
+                  className={`px-5 py-2 text-sm font-bold rounded-lg transition-all duration-300 ${
+                    viewMode === 'individual' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  Individual Student
                 </button>
               </div>
 
@@ -302,6 +348,7 @@ export default function Analytics() {
                   <table className="w-full text-left border-collapse min-w-[800px]">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-100">
+                        <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Rank</th>
                         <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Student ID</th>
                         <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Student Name</th>
                         <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Quiz Name</th>
@@ -319,7 +366,7 @@ export default function Analytics() {
                         </tr>
                       ) : quizRecords.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="py-16 text-center">
+                          <td colSpan="6" className="py-16 text-center">
                             <div className="mx-auto w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 text-slate-400">
                               <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                             </div>
@@ -327,8 +374,20 @@ export default function Analytics() {
                           </td>
                         </tr>
                       ) : (
-                        quizRecords.map((record, index) => (
+                        quizRecords.map((record, index) => {
+                          const rank = (quizPagination.currentPage - 1) * quizPagination.perPage + index + 1;
+                          return (
                           <tr key={record._id || index} className="hover:bg-slate-50/70 transition-colors group">
+                            <td className="py-4 px-6">
+                              <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm shadow-sm
+                                ${rank === 1 ? 'bg-amber-100 text-amber-600 border border-amber-200' :
+                                  rank === 2 ? 'bg-slate-200 text-slate-600 border border-slate-300' :
+                                  rank === 3 ? 'bg-orange-100 text-orange-600 border border-orange-200' :
+                                  'bg-slate-100 text-slate-500 border border-slate-200'}`
+                              }>
+                                #{rank}
+                              </span>
+                            </td>
                             <td className="py-4 px-6 text-sm font-medium text-slate-500">{record.studentId}</td>
                             <td className="py-4 px-6">
                               <div className="flex items-center">
@@ -344,7 +403,7 @@ export default function Analytics() {
                             <td className="py-4 px-6 text-sm font-bold text-indigo-600">{record.score}/20</td>
                             <td className="py-4 px-6 text-sm text-slate-600 font-medium">{((record.score / 20) * 100).toFixed(0)}%</td>
                           </tr>
-                        ))
+                        );})
                       )}
                     </tbody>
                   </table>
@@ -543,6 +602,144 @@ export default function Analytics() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* =========================================
+              INDIVIDUAL STUDENT VIEW
+              ========================================= */}
+          {viewMode === 'individual' && (
+            <div className="animate-in fade-in duration-500">
+              {/* Filter */}
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8 flex flex-col md:flex-row items-center gap-4">
+                <label className="text-sm font-bold text-slate-700">Select Student:</label>
+                <select
+                  value={individualStudentFilter}
+                  onChange={(e) => setIndividualStudentFilter(e.target.value)}
+                  className="w-full md:w-80 rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-sm cursor-pointer"
+                >
+                  <option value="" disabled>Select a student</option>
+                  {studentsList.map((st) => (
+                    <option key={st.id} value={st.id}>{st.name} ({st.id})</option>
+                  ))}
+                </select>
+              </div>
+
+              {individualLoading ? (
+                <div className="py-16 text-center bg-white rounded-2xl shadow-sm border border-slate-100">
+                  <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
+                  <p className="mt-4 text-sm text-slate-500 font-medium">Loading student data...</p>
+                </div>
+              ) : individualData ? (
+                <>
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center">
+                      <div className="w-14 h-14 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mr-4 font-bold text-xl">
+                        {individualData.studentName.substring(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-500 mb-1">Student</p>
+                        <p className="text-xl font-bold text-slate-900">{individualData.studentName}</p>
+                        <p className="text-xs text-slate-400">{individualData.studentId}</p>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center">
+                      <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mr-4">
+                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-500 mb-1">Quizzes Completed</p>
+                        <p className="text-3xl font-bold text-slate-900">{individualData.history.length}</p>
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center">
+                      <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mr-4">
+                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-500 mb-1">Overall Average</p>
+                        <p className="text-3xl font-bold text-slate-900">
+                          {individualData.history.length > 0 
+                            ? (((individualData.history.reduce((sum, h) => sum + h.score, 0) / individualData.history.length) / 20) * 100).toFixed(1) 
+                            : 0}%
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Line Chart */}
+                  {individualData.trendData && individualData.trendData.length > 0 && (
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
+                      <h3 className="text-lg font-bold text-slate-800 mb-4">Lesson-wise Progress Trend</h3>
+                      <div className="h-72">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={individualData.trendData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <XAxis dataKey="lesson" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                            <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} domain={[0, 100]} />
+                            <Tooltip 
+                              cursor={{stroke: '#e2e8f0', strokeWidth: 2}} 
+                              contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} 
+                            />
+                            <Legend />
+                            <Line type="monotone" name="Average %" dataKey="percentage" stroke="#6366f1" strokeWidth={3} activeDot={{ r: 8 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Quiz History Table */}
+                  <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
+                    <div className="p-6 border-b border-slate-100 bg-white">
+                      <h3 className="text-lg font-bold text-slate-800">Quiz History</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse min-w-[600px]">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-100">
+                            <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+                            <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Quiz ID</th>
+                            <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Marks</th>
+                            <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Percentage</th>
+                            <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {individualData.history.length === 0 ? (
+                            <tr>
+                              <td colSpan="5" className="py-10 text-center text-slate-500">No quizzes taken yet.</td>
+                            </tr>
+                          ) : (
+                            individualData.history.map((record) => (
+                              <tr key={record._id} className="hover:bg-slate-50/70 transition-colors">
+                                <td className="py-4 px-6 text-sm text-slate-500">
+                                  {new Date(record.submittedAt).toLocaleDateString()}
+                                </td>
+                                <td className="py-4 px-6 text-sm font-medium text-slate-800">
+                                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-slate-700 border border-slate-200">{record.quizId}</span>
+                                </td>
+                                <td className="py-4 px-6 text-sm font-bold text-indigo-600">{record.score}/20</td>
+                                <td className="py-4 px-6 text-sm text-slate-600 font-medium">{((record.score / 20) * 100).toFixed(0)}%</td>
+                                <td className="py-4 px-6 text-sm">
+                                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                                    (record.score / 20) * 100 >= 60 
+                                      ? 'bg-emerald-100 text-emerald-700' 
+                                      : 'bg-rose-100 text-rose-700'
+                                  }`}>
+                                    {(record.score / 20) * 100 >= 60 ? 'Pass' : 'Fail'}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              ) : null}
             </div>
           )}
         </main>
