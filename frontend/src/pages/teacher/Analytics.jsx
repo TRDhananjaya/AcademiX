@@ -32,6 +32,9 @@ export default function Analytics() {
   const [individualStudentFilter, setIndividualStudentFilter] = useState('');
   const [individualData, setIndividualData] = useState(null);
   const [individualLoading, setIndividualLoading] = useState(false);
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyPage, setHistoryPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Initial Fetch (Quizzes & Lessons)
   useEffect(() => {
@@ -157,9 +160,42 @@ export default function Analytics() {
 
   useEffect(() => {
     if (viewMode === 'individual' && individualStudentFilter) {
+      setHistorySearch('');
+      setHistoryPage(1);
       fetchIndividualAnalytics();
     }
   }, [viewMode, individualStudentFilter]);
+
+  const exportToCSV = () => {
+    if (!individualData || !individualData.history.length) return;
+    
+    const headers = ['Date', 'Quiz ID', 'Quiz Name', 'Module Name', 'Lesson Name', 'Quiz Type', 'Score', 'Total Questions', 'Percentage', 'Status'];
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+    
+    individualData.history.forEach(record => {
+      const row = [
+        new Date(record.submittedAt).toLocaleDateString(),
+        record.quizId || 'N/A',
+        `"${record.quizName || 'N/A'}"`,
+        `"${record.moduleName || 'N/A'}"`,
+        `"${record.lessonName || 'N/A'}"`,
+        record.quizType || 'N/A',
+        record.score || 0,
+        record.totalQuestions || 20,
+        `${record.percentage || 0}%`,
+        record.status || 'N/A'
+      ];
+      csvRows.push(row.join(','));
+    });
+    
+    const blob = new Blob([csvRows.join('\\n')], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('href', url);
+    a.setAttribute('download', `${individualData.studentName.replace(/\\s+/g, '_')}_history.csv`);
+    a.click();
+  };
 
   const handleNextPage = () => {
     if (quizPagination.currentPage < quizPagination.totalPages) {
@@ -613,16 +649,23 @@ export default function Analytics() {
               {/* Filter */}
               <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8 flex flex-col md:flex-row items-center gap-4">
                 <label className="text-sm font-bold text-slate-700">Select Student:</label>
-                <select
-                  value={individualStudentFilter}
-                  onChange={(e) => setIndividualStudentFilter(e.target.value)}
-                  className="w-full md:w-80 rounded-xl border border-slate-200 bg-slate-50 py-3 px-4 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-sm cursor-pointer"
-                >
-                  <option value="" disabled>Select a student</option>
-                  {studentsList.map((st) => (
-                    <option key={st.id} value={st.id}>{st.name} ({st.id})</option>
-                  ))}
-                </select>
+                <div className="relative w-full md:w-96">
+                  <input
+                    list="students-list"
+                    value={individualStudentFilter}
+                    onChange={(e) => setIndividualStudentFilter(e.target.value)}
+                    placeholder="Search by ID or Name..."
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 px-10 text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-sm"
+                  />
+                  <svg className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <datalist id="students-list">
+                    {studentsList.map((st) => (
+                      <option key={st.id} value={st.id}>{st.name} ({st.id})</option>
+                    ))}
+                  </datalist>
+                </div>
               </div>
 
               {individualLoading ? (
@@ -632,108 +675,220 @@ export default function Analytics() {
                 </div>
               ) : individualData ? (
                 <>
-                  {/* Summary Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center">
-                      <div className="w-14 h-14 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mr-4 font-bold text-xl">
-                        {individualData.studentName.substring(0, 2).toUpperCase()}
+                  {/* Dashboard Summary Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col justify-center items-center text-center">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Total Quizzes</p>
+                      <p className="text-3xl font-black text-indigo-600">{individualData.summary.totalQuizzes}</p>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col justify-center items-center text-center">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Avg Score</p>
+                      <p className="text-3xl font-black text-blue-600">{individualData.summary.overallAverage}%</p>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col justify-center items-center text-center">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Highest Score</p>
+                      <p className="text-3xl font-black text-emerald-600">{individualData.summary.highestScore}%</p>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col justify-center items-center text-center">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Lowest Score</p>
+                      <p className="text-3xl font-black text-rose-600">{individualData.summary.lowestScore}%</p>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col justify-center items-center text-center">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Lessons Done</p>
+                      <p className="text-3xl font-black text-purple-600">{individualData.summary.lessonsCompleted}</p>
+                    </div>
+                  </div>
+
+                  {/* Top Analytics Row: Chart + Strengths */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    {/* Line Chart */}
+                    <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                      <div className="mb-6">
+                        <h3 className="text-lg font-bold text-slate-800">Lesson-wise Progress Trend</h3>
+                        <p className="text-sm text-slate-500">Tracking average scores across all lessons (main and follow-up)</p>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-500 mb-1">Student</p>
-                        <p className="text-xl font-bold text-slate-900">{individualData.studentName}</p>
-                        <p className="text-xs text-slate-400">{individualData.studentId}</p>
+                      <div className="flex-1 min-h-[300px]">
+                        {individualData.trendData && individualData.trendData.length > 0 ? (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={individualData.trendData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                              <XAxis dataKey="lesson" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12, fontWeight: 500}} dy={10} />
+                              <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} domain={[0, 100]} />
+                              <Tooltip 
+                                cursor={{stroke: '#e2e8f0', strokeWidth: 2}} 
+                                contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)', padding: '12px'}} 
+                                formatter={(value) => [`${value}%`, 'Average Score']}
+                                labelStyle={{fontWeight: 'bold', color: '#1e293b', marginBottom: '4px'}}
+                              />
+                              <Legend wrapperStyle={{paddingTop: '20px'}} />
+                              <Line type="monotone" name="Average %" dataKey="percentage" stroke="#6366f1" strokeWidth={4} dot={{ r: 5, strokeWidth: 2 }} activeDot={{ r: 8, stroke: '#818cf8', strokeWidth: 2 }} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        ) : (
+                          <div className="h-full flex items-center justify-center text-slate-400">Not enough data to display progress trend.</div>
+                        )}
                       </div>
                     </div>
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center">
-                      <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mr-4">
-                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-500 mb-1">Quizzes Completed</p>
-                        <p className="text-3xl font-bold text-slate-900">{individualData.history.length}</p>
-                      </div>
-                    </div>
-                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 flex items-center">
-                      <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mr-4">
-                        <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-slate-500 mb-1">Overall Average</p>
-                        <p className="text-3xl font-bold text-slate-900">
-                          {individualData.history.length > 0 
-                            ? (((individualData.history.reduce((sum, h) => sum + h.score, 0) / individualData.history.length) / 20) * 100).toFixed(1) 
-                            : 0}%
-                        </p>
+
+                    {/* Strengths & Weaknesses Analysis */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                      <h3 className="text-lg font-bold text-slate-800 mb-6">Performance Analysis</h3>
+                      
+                      <div className="space-y-6 flex-1">
+                        <div>
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Strongest Lesson</p>
+                          <div className="flex items-center">
+                            <span className="w-2 h-8 bg-emerald-500 rounded-full mr-3"></span>
+                            <div>
+                              <p className="font-bold text-slate-800">{individualData.summary.strongestLesson}</p>
+                              {individualData.summary.strengths.includes(individualData.summary.strongestLesson) && (
+                                <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded">High Proficiency</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Weakest Lesson</p>
+                          <div className="flex items-center">
+                            <span className="w-2 h-8 bg-rose-500 rounded-full mr-3"></span>
+                            <div>
+                              <p className="font-bold text-slate-800">{individualData.summary.weakestLesson}</p>
+                              {individualData.summary.weaknesses.includes(individualData.summary.weakestLesson) && (
+                                <span className="text-xs text-rose-600 font-medium bg-rose-50 px-2 py-0.5 rounded">Needs Attention</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="pt-4 border-t border-slate-100">
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Strengths ( &gt;= 75% )</p>
+                          <div className="flex flex-wrap gap-2">
+                            {individualData.summary.strengths.length > 0 ? individualData.summary.strengths.map(s => (
+                              <span key={s} className="text-xs bg-emerald-50 text-emerald-700 border border-emerald-100 px-2.5 py-1 rounded-lg font-medium">{s}</span>
+                            )) : <span className="text-xs text-slate-400">No established strengths yet.</span>}
+                          </div>
+                        </div>
+
+                        <div>
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Weaknesses ( &lt; 50% )</p>
+                          <div className="flex flex-wrap gap-2">
+                            {individualData.summary.weaknesses.length > 0 ? individualData.summary.weaknesses.map(w => (
+                              <span key={w} className="text-xs bg-rose-50 text-rose-700 border border-rose-100 px-2.5 py-1 rounded-lg font-medium">{w}</span>
+                            )) : <span className="text-xs text-slate-400">No critical weaknesses identified.</span>}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Line Chart */}
-                  {individualData.trendData && individualData.trendData.length > 0 && (
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-8">
-                      <h3 className="text-lg font-bold text-slate-800 mb-4">Lesson-wise Progress Trend</h3>
-                      <div className="h-72">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={individualData.trendData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                            <XAxis dataKey="lesson" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
-                            <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} domain={[0, 100]} />
-                            <Tooltip 
-                              cursor={{stroke: '#e2e8f0', strokeWidth: 2}} 
-                              contentStyle={{borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} 
-                            />
-                            <Legend />
-                            <Line type="monotone" name="Average %" dataKey="percentage" stroke="#6366f1" strokeWidth={3} activeDot={{ r: 8 }} />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Quiz History Table */}
                   <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
-                    <div className="p-6 border-b border-slate-100 bg-white">
-                      <h3 className="text-lg font-bold text-slate-800">Quiz History</h3>
+                    <div className="p-6 border-b border-slate-100 bg-white flex flex-col md:flex-row items-center justify-between gap-4">
+                      <h3 className="text-lg font-bold text-slate-800">Complete Quiz History</h3>
+                      
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Search history..."
+                            value={historySearch}
+                            onChange={(e) => {setHistorySearch(e.target.value); setHistoryPage(1);}}
+                            className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 w-64 transition-all"
+                          />
+                          <svg className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                        </div>
+                        <button
+                          onClick={exportToCSV}
+                          className="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                          Export CSV
+                        </button>
+                      </div>
                     </div>
+
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse min-w-[600px]">
+                      <table className="w-full text-left border-collapse min-w-[1000px]">
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-100">
                             <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
                             <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Quiz ID</th>
+                            <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Lesson / Module</th>
+                            <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Quiz Type</th>
                             <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Marks</th>
                             <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Percentage</th>
-                            <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {individualData.history.length === 0 ? (
-                            <tr>
-                              <td colSpan="5" className="py-10 text-center text-slate-500">No quizzes taken yet.</td>
-                            </tr>
-                          ) : (
-                            individualData.history.map((record) => (
-                              <tr key={record._id} className="hover:bg-slate-50/70 transition-colors">
-                                <td className="py-4 px-6 text-sm text-slate-500">
-                                  {new Date(record.submittedAt).toLocaleDateString()}
-                                </td>
-                                <td className="py-4 px-6 text-sm font-medium text-slate-800">
-                                  <span className="bg-slate-100 px-2.5 py-1 rounded-md text-slate-700 border border-slate-200">{record.quizId}</span>
-                                </td>
-                                <td className="py-4 px-6 text-sm font-bold text-indigo-600">{record.score}/20</td>
-                                <td className="py-4 px-6 text-sm text-slate-600 font-medium">{((record.score / 20) * 100).toFixed(0)}%</td>
-                                <td className="py-4 px-6 text-sm">
-                                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                                    (record.score / 20) * 100 >= 60 
-                                      ? 'bg-emerald-100 text-emerald-700' 
-                                      : 'bg-rose-100 text-rose-700'
-                                  }`}>
-                                    {(record.score / 20) * 100 >= 60 ? 'Pass' : 'Fail'}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))
-                          )}
+                          {(() => {
+                            const filteredHistory = individualData.history.filter(h => 
+                              h.quizId?.toLowerCase().includes(historySearch.toLowerCase()) ||
+                              h.quizName?.toLowerCase().includes(historySearch.toLowerCase()) ||
+                              h.moduleName?.toLowerCase().includes(historySearch.toLowerCase()) ||
+                              h.lessonName?.toLowerCase().includes(historySearch.toLowerCase()) ||
+                              h.quizType?.toLowerCase().includes(historySearch.toLowerCase())
+                            );
+                            const paginatedHistory = filteredHistory.slice((historyPage - 1) * itemsPerPage, historyPage * itemsPerPage);
+                            const totalHistoryPages = Math.ceil(filteredHistory.length / itemsPerPage);
+
+                            if (paginatedHistory.length === 0) {
+                              return (
+                                <tr>
+                                  <td colSpan="6" className="py-10 text-center text-slate-500">No quizzes match your search.</td>
+                                </tr>
+                              );
+                            }
+
+                            return (
+                              <>
+                                {paginatedHistory.map((record) => (
+                                  <tr key={record._id} className="hover:bg-slate-50/70 transition-colors">
+                                    <td className="py-4 px-6 text-sm text-slate-500 whitespace-nowrap">
+                                      {new Date(record.submittedAt).toLocaleDateString()}
+                                    </td>
+                                    <td className="py-4 px-6">
+                                      <p className="text-sm font-bold text-slate-800">{record.quizName}</p>
+                                      <p className="text-xs text-slate-400 mt-0.5">{record.quizId}</p>
+                                    </td>
+                                    <td className="py-4 px-6">
+                                      <p className="text-sm font-medium text-slate-700">{record.lessonName}</p>
+                                      <p className="text-xs text-slate-500 mt-0.5">{record.moduleName}</p>
+                                    </td>
+                                    <td className="py-4 px-6">
+                                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                                        record.quizType === 'Main Quiz' ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-purple-50 text-purple-700 border border-purple-100'
+                                      }`}>
+                                        {record.quizType}
+                                      </span>
+                                    </td>
+                                    <td className="py-4 px-6 text-sm font-bold text-indigo-600">{record.score}/{record.totalQuestions || 20}</td>
+                                    <td className="py-4 px-6">
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-sm font-bold text-slate-700">{record.percentage}%</span>
+                                        <span className={`w-2 h-2 rounded-full ${record.percentage >= 60 ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                                {/* Pagination Controls row inside tbody to avoid layout breaks */}
+                                {totalHistoryPages > 1 && (
+                                  <tr className="bg-slate-50">
+                                    <td colSpan="6" className="py-3 px-6">
+                                      <div className="flex justify-between items-center text-sm text-slate-600">
+                                        <span>Showing {(historyPage - 1) * itemsPerPage + 1} to {Math.min(historyPage * itemsPerPage, filteredHistory.length)} of {filteredHistory.length}</span>
+                                        <div className="flex items-center gap-4">
+                                          <button onClick={() => setHistoryPage(p => Math.max(1, p - 1))} disabled={historyPage === 1} className="disabled:text-slate-300 hover:text-indigo-600 transition-colors">Previous</button>
+                                          <span className="font-medium bg-white px-3 py-1 rounded-md border border-slate-200">Page {historyPage} of {totalHistoryPages}</span>
+                                          <button onClick={() => setHistoryPage(p => Math.min(totalHistoryPages, p + 1))} disabled={historyPage === totalHistoryPages} className="disabled:text-slate-300 hover:text-indigo-600 transition-colors">Next</button>
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )}
+                              </>
+                            );
+                          })()}
                         </tbody>
                       </table>
                     </div>

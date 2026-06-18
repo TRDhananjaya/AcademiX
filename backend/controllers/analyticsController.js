@@ -1,4 +1,5 @@
 const QuizResult = require('../models/QuizResult');
+const FollowupResult = require('../models/FollowupResult');
 
 // @desc    Get Analytics Records
 // @route   GET /api/analytics
@@ -225,34 +226,115 @@ const getIndividualStudentAnalytics = async (req, res, next) => {
             return res.status(400).json({ error: 'studentId is required' });
         }
 
-        // Fetch raw chronological quiz history for the table
-        const history = await QuizResult.find({ studentId }).sort({ submittedAt: -1 });
-
-        // Calculate lesson-wise averages for the line chart trend
-        const lessonTrend = await QuizResult.aggregate([
+        // 1. Fetch Main Quizzes
+        const mainQuizzes = await QuizResult.aggregate([
             { $match: { studentId } },
-            // Extract the lesson ID part (e.g. "Q1" from "Q1.1")
-            { $addFields: { lessonPrefix: { $arrayElemAt: [ { $split: ["$quizId", "."] }, 0 ] } } },
-            { $group: {
-                _id: "$lessonPrefix",
-                averageScore: { $avg: "$score" },
-                quizzesTaken: { $sum: 1 }
+            { $lookup: {
+                from: 'quizzes',
+                localField: 'quizId',
+                foreignField: 'quizCode',
+                as: 'quizData'
             }},
-            { $sort: { _id: 1 } } // Sort chronologically by lesson (Q1, Q2, Q3)
+            { $unwind: { path: '$quizData', preserveNullAndEmptyArrays: true } },
+            { $project: {
+                _id: 1,
+                quizId: 1,
+                studentId: 1,
+                studentName: 1,
+                score: 1,
+                totalQuestions: { $ifNull: ["$totalQuestions", 20] },
+                percentage: 1,
+                status: 1,
+                submittedAt: 1,
+                quizType: "Main Quiz",
+                lessonName: { $ifNull: ["$quizData.bundleTopic", "Unknown Lesson"] },
+                moduleName: { $ifNull: ["$quizData.title", "Unknown Module"] },
+                quizName: { $ifNull: ["$quizData.quizCode", "$quizId"] }
+            }}
         ]);
 
-        const trendData = lessonTrend.map(lesson => ({
-            lesson: lesson._id.replace('Q', 'Lesson '), // "Lesson 1"
-            averageScore: lesson.averageScore,
-            percentage: ((lesson.averageScore / 20) * 100).toFixed(1),
-            quizzesTaken: lesson.quizzesTaken
-        }));
+        // 2. Fetch Follow-up Quizzes
+        const followupQuizzes = await FollowupResult.aggregate([
+            { $match: { studentId } },
+            { $lookup: {
+                from: 'followup_quizzes',
+                localField: 'quizId',
+                foreignField: '_id',
+                as: 'quizData'
+            }},
+            { $unwind: { path: '$quizData', preserveNullAndEmptyArrays: true } },
+            { $project: {
+                _id: 1,
+                quizId: 1,
+                studentId: 1,
+                studentName: 1,
+                score: 1,
+                totalQuestions: { $ifNull: ["$totalQuestions", 20] },
+                percentage: 1,
+                status: 1,
+                submittedAt: 1,
+                quizType: "Follow-up Quiz",
+                lessonName: { $ifNull: ["$quizData.bundleTopic", "Unknown Lesson"] },
+                moduleName: { $ifNull: ["$quizData.title", "Unknown Module"] },
+                quizName: { $ifNull: ["$quizData.quizCode", "Unknown Quiz"] }
+            }}
+        ]);
+
+        // 3. Unify Data
+        const combinedHistory = [...mainQuizzes, ...followupQuizzes].sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+
+        // 4. Calculate Lesson-wise averages
+        const lessonMap = {};
+        combinedHistory.forEach(record => {
+            const lesson = record.lessonName || "Unknown Lesson";
+            if (lesson !== "Unknown Lesson") {
+                if (!lessonMap[lesson]) {
+                    lessonMap[lesson] = { totalPercentage: 0, count: 0 };
+                }
+                lessonMap[lesson].totalPercentage += record.percentage;
+                lessonMap[lesson].count += 1;
+            }
+        });
+
+        const trendData = Object.keys(lessonMap).map(lesson => {
+            const avg = lessonMap[lesson].totalPercentage / lessonMap[lesson].count;
+            return {
+                lesson,
+                percentage: parseFloat(avg.toFixed(1)),
+                quizzesTaken: lessonMap[lesson].count
+            };
+        });
+
+        // 5. Calculate Strengths & Weaknesses
+        const strengths = trendData.filter(t => t.percentage >= 75).map(t => t.lesson);
+        const weaknesses = trendData.filter(t => t.percentage < 50).map(t => t.lesson);
+
+        const strongestLesson = trendData.length > 0 ? trendData.reduce((prev, current) => (prev.percentage > current.percentage) ? prev : current) : null;
+        const weakestLesson = trendData.length > 0 ? trendData.reduce((prev, current) => (prev.percentage < current.percentage) ? prev : current) : null;
+        
+        const highestScoreObj = combinedHistory.length > 0 ? combinedHistory.reduce((prev, current) => (prev.percentage > current.percentage) ? prev : current) : null;
+        const lowestScoreObj = combinedHistory.length > 0 ? combinedHistory.reduce((prev, current) => (prev.percentage < current.percentage) ? prev : current) : null;
+
+        const overallPercentage = combinedHistory.length > 0 ? combinedHistory.reduce((sum, h) => sum + h.percentage, 0) / combinedHistory.length : 0;
 
         res.status(200).json({
             studentId,
-            studentName: history.length > 0 ? history[0].studentName : 'Unknown',
-            history,
-            trendData
+            studentName: combinedHistory.length > 0 ? combinedHistory[0].studentName : 'Unknown',
+            history: combinedHistory,
+            trendData,
+            summary: {
+                totalQuizzes: combinedHistory.length,
+                totalMainQuizzes: mainQuizzes.length,
+                totalFollowupQuizzes: followupQuizzes.length,
+                overallAverage: parseFloat(overallPercentage.toFixed(1)),
+                highestScore: highestScoreObj ? highestScoreObj.percentage : 0,
+                lowestScore: lowestScoreObj ? lowestScoreObj.percentage : 0,
+                lessonsCompleted: trendData.length,
+                strongestLesson: strongestLesson ? strongestLesson.lesson : 'N/A',
+                weakestLesson: weakestLesson ? weakestLesson.lesson : 'N/A',
+                strengths,
+                weaknesses
+            }
         });
     } catch (error) {
         console.error('Individual Student Analytics Error:', error);
