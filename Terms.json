@@ -1,0 +1,51 @@
+[{
+  "_id": {
+    "$oid": "66683990f12a3b4c5d6e7f13"
+  },
+  "termName": "Third Term",
+  "modules": [
+    {
+      "$oid": "66683880f12a3b4c5d6e7f07"
+    },
+    {
+      "$oid": "66683880f12a3b4c5d6e7f08"
+    },
+    {
+      "$oid": "66683880f12a3b4c5d6e7f09"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "66683990f12a3b4c5d6e7f12"
+  },
+  "termName": "Second Term",
+  "modules": [
+    {
+      "$oid": "66683880f12a3b4c5d6e7f04"
+    },
+    {
+      "$oid": "66683880f12a3b4c5d6e7f05"
+    },
+    {
+      "$oid": "66683880f12a3b4c5d6e7f06"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "66683990f12a3b4c5d6e7f11"
+  },
+  "termName": "First Term",
+  "modules": [
+    {
+      "$oid": "66683880f12a3b4c5d6e7f01"
+    },
+    {
+      "$oid": "66683880f12a3b4c5d6e7f02"
+    },
+    {
+      "$oid": "66683880f12a3b4c5d6e7f03"
+    }
+  ]
+}]

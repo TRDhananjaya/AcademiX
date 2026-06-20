@@ -9,11 +9,13 @@ export default function TakeQuiz() {
   const [hasStarted, setHasStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0); 
   const [selectedAnswers, setSelectedAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(30 * 60); // Force to 30 minutes
+  const [timeLeft, setTimeLeft] = useState(45 * 60);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [quizzes, setQuizzes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [finalScore, setFinalScore] = useState(null);
+  const [studentResultsList, setStudentResultsList] = useState([]);
+  const [selectedQuizId, setSelectedQuizId] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -26,18 +28,13 @@ export default function TakeQuiz() {
         ]);
 
         const quizzesData = await quizRes.json();
-        setQuizzes(quizzesData);
+        // Filter quizzes to only show active ones (with questions)
+        const activeQuizzes = quizzesData.filter(q => q.questions && q.questions.length > 0);
+        setQuizzes(activeQuizzes);
         
-        if (quizzesData.length > 0 && studentRes.ok) {
-          const currentQuizId = quizzesData[0]._id;
+        if (studentRes.ok) {
           const studentResults = await studentRes.json();
-          const pastResult = studentResults.find(r => r.quizId === currentQuizId);
-          
-          if (pastResult) {
-            setFinalScore(pastResult);
-            setIsSubmitted(true);
-            setHasStarted(true);
-          }
+          setStudentResultsList(studentResults);
         }
         setIsLoading(false);
       } catch (err) {
@@ -49,7 +46,7 @@ export default function TakeQuiz() {
     loadQuizData();
   }, [user]);
   
-  const currentQuiz = quizzes.length > 0 ? quizzes[0] : null;
+  const currentQuiz = quizzes.find(q => q._id === selectedQuizId) || null;
   const activeQuestions = currentQuiz && currentQuiz.questions ? currentQuiz.questions : [];
   const totalQuestions = activeQuestions.length;
   const currentQuestion = totalQuestions > 0 ? activeQuestions[currentIndex] : null;
@@ -58,13 +55,11 @@ export default function TakeQuiz() {
   
   const handleSubmit = async () => {
     setIsSubmitted(true);
-    
-    // API Call to submit quiz
     if (!currentQuiz) return;
 
     const score = calculateScore();
     const pct = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
-    const secsTaken = (30 * 60) - timeLeft;
+    const secsTaken = (45 * 60) - timeLeft;
     const mins = Math.floor(secsTaken / 60);
     const secs = secsTaken % 60;
     const timeTakenStr = `${mins}m ${secs.toString().padStart(2, '0')}s`;
@@ -89,6 +84,7 @@ export default function TakeQuiz() {
       if (response.ok) {
         const result = await response.json();
         setFinalScore(result);
+        setStudentResultsList(prev => [result, ...prev]);
       } else {
         console.error('Failed to submit quiz');
       }
@@ -104,7 +100,6 @@ export default function TakeQuiz() {
       }, 1000);
       return () => clearInterval(timer);
     } else if (hasStarted && !isSubmitted && timeLeft === 0) {
-      // Auto submit when time runs out
       handleSubmit();
     }
   }, [hasStarted, isSubmitted, timeLeft]);
@@ -165,7 +160,7 @@ export default function TakeQuiz() {
     );
   }
 
-  if (!currentQuiz || totalQuestions === 0) {
+  if (selectedQuizId && (!currentQuiz || totalQuestions === 0)) {
     return (
       <div className="flex min-h-screen font-sans bg-[#fcfdff]" id="take-quiz-layout">
         <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
@@ -174,8 +169,13 @@ export default function TakeQuiz() {
           <main className="flex-1 p-[20px_16px] md:p-[40px_60px] overflow-y-auto bg-[#f8f9fb]">
             <div className="max-w-[900px] mx-auto w-full">
               <div className="bg-white rounded-3xl p-20 shadow-sm border border-slate-100 text-center mt-10">
-                <h1 className="text-2xl font-bold text-slate-800">No quizzes available right now.</h1>
-                <p className="text-slate-500 mt-2">Check back later for new assignments.</p>
+                <h1 className="text-2xl font-bold text-slate-800">Quiz not found or has no questions.</h1>
+                <button 
+                  onClick={() => setSelectedQuizId(null)}
+                  className="mt-4 bg-[#6338f0] text-white px-6 py-2.5 rounded-xl font-bold hover:bg-[#522ce0] transition-colors border-none cursor-pointer"
+                >
+                  Back to List
+                </button>
               </div>
             </div>
           </main>
@@ -194,7 +194,101 @@ export default function TakeQuiz() {
         <main className="flex-1 p-[20px_16px] md:p-[40px_60px] overflow-y-auto bg-[#f8f9fb]">
           <div className="max-w-[900px] mx-auto w-full">
             
-            {!hasStarted ? (
+            {!selectedQuizId ? (
+              // --- Quiz Selection Screen ---
+              <div>
+                <div className="mb-8">
+                  <h1 className="text-3xl font-extrabold text-slate-800 m-0 mb-2">Available Quizzes</h1>
+                  <p className="text-[15px] text-slate-500 m-0">Select a module quiz to start your assessment.</p>
+                </div>
+
+                {quizzes.length === 0 ? (
+                  <div className="bg-white rounded-3xl p-20 shadow-sm border border-slate-100 text-center mt-10">
+                    <h1 className="text-2xl font-bold text-slate-800">No quizzes available right now.</h1>
+                    <p className="text-slate-500 mt-2">Check back later for new assignments from your teacher.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {quizzes.map((quiz) => {
+                      const pastResult = studentResultsList.find(r => r.quizId === quiz.quizCode || r.quizId === quiz._id);
+                      const isCompleted = !!pastResult;
+
+                      return (
+                        <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-md transition-all duration-200" key={quiz._id}>
+                          <div className="mb-6">
+                            <div className="flex justify-between items-start mb-4">
+                              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md uppercase">
+                                {quiz.quizCode}
+                              </span>
+                              {isCompleted ? (
+                                <span className="bg-emerald-50 text-emerald-600 text-xs font-bold px-2.5 py-1 rounded-md font-sans">
+                                  Completed ({pastResult.percentage}%)
+                                </span>
+                              ) : (
+                                <span className="bg-amber-50 text-amber-600 text-xs font-bold px-2.5 py-1 rounded-md font-sans">
+                                  Pending
+                                </span>
+                              )}
+                            </div>
+
+                            <h3 className="text-lg font-bold text-slate-800 mb-2">
+                              {quiz.title.includes('–') ? quiz.title.split('–')[1].trim() : quiz.title}
+                            </h3>
+                            <p className="text-sm text-slate-500 font-medium mb-4">
+                              {quiz.bundleTopic}
+                            </p>
+                            
+                            <div className="flex gap-4 text-xs font-semibold text-slate-500">
+                              <div className="flex items-center gap-1">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                45 mins
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                                {quiz.questionCount || (quiz.questions ? quiz.questions.length : 0)} Questions
+                              </div>
+                            </div>
+                          </div>
+
+                          {isCompleted ? (
+                            <div className="flex items-center justify-between border-t border-slate-50 pt-4 mt-auto">
+                              <div className="text-xs font-semibold text-slate-500">
+                                Score: <span className="font-bold text-slate-800">{pastResult.score}/{pastResult.totalQuestions}</span>
+                              </div>
+                              <button 
+                                className="bg-slate-50 text-slate-400 px-5 py-2.5 rounded-xl border border-slate-100 font-bold text-xs cursor-not-allowed"
+                                disabled
+                              >
+                                Attempted
+                              </button>
+                            </div>
+                          ) : (
+                            <button 
+                              className="w-full bg-[#6338f0] text-white py-2.5 rounded-xl font-bold text-sm hover:bg-[#522ce0] transition-colors mt-auto text-center border-none cursor-pointer"
+                              onClick={() => {
+                                setSelectedQuizId(quiz._id);
+                                const resForQuiz = studentResultsList.find(r => r.quizId === quiz.quizCode || r.quizId === quiz._id);
+                                if (resForQuiz) {
+                                  setFinalScore(resForQuiz);
+                                  setIsSubmitted(true);
+                                  setHasStarted(true);
+                                } else {
+                                  setFinalScore(null);
+                                  setIsSubmitted(false);
+                                  setHasStarted(false);
+                                }
+                              }}
+                            >
+                              Start Quiz
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ) : !hasStarted ? (
               // --- Preview Screen ---
               <div className="bg-white rounded-3xl p-10 shadow-sm border border-slate-100 flex flex-col items-center text-center mt-10">
                 <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-6">
@@ -214,12 +308,23 @@ export default function TakeQuiz() {
                   </div>
                 </div>
 
-                <button 
-                  onClick={() => setHasStarted(true)}
-                  className="bg-indigo-600 text-white px-10 py-3.5 rounded-xl font-bold text-lg shadow-md hover:bg-indigo-700 transition-colors w-full max-w-md"
-                >
-                  Start Quiz
-                </button>
+                <div className="flex gap-4 w-full max-w-md">
+                  <button 
+                    onClick={() => setSelectedQuizId(null)}
+                    className="flex-1 bg-white border-2 border-slate-200 text-slate-700 px-6 py-3 rounded-xl font-bold hover:bg-slate-50 transition-colors border-none cursor-pointer"
+                  >
+                    Back to List
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setTimeLeft(45 * 60);
+                      setHasStarted(true);
+                    }}
+                    className="flex-1 bg-indigo-600 text-white px-6 py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-md border-none cursor-pointer"
+                  >
+                    Start Quiz
+                  </button>
+                </div>
               </div>
             ) : isSubmitted ? (
               // --- Results Screen ---

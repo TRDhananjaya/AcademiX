@@ -103,8 +103,37 @@ const getResultsByStudent = async (req, res) => {
   }
 };
 
+// @desc    Get all quiz results (recent first)
+// @route   GET /api/quiz-results
+// @access  Public (for now)
+const getAllResults = async (req, res) => {
+  try {
+    const results = await QuizResult.aggregate([
+      { $sort: { submittedAt: -1 } },
+      { $limit: 100 },
+      { $lookup: {
+          from: 'quizzes',
+          localField: 'quizId',
+          foreignField: 'quizCode',
+          as: 'quizData'
+      }},
+      { $unwind: { path: '$quizData', preserveNullAndEmptyArrays: true } },
+      { $addFields: {
+          quizTitle: '$quizData.title',
+          bundleTopic: '$quizData.bundleTopic'
+      }},
+      { $project: { quizData: 0 } }
+    ]);
+    res.status(200).json(results);
+  } catch (error) {
+    console.error('Error fetching all quiz results:', error);
+    res.status(500).json({ message: 'Server error while fetching results' });
+  }
+};
+
 module.exports = {
   submitQuiz,
   getResultsByQuiz,
-  getResultsByStudent
+  getResultsByStudent,
+  getAllResults
 };

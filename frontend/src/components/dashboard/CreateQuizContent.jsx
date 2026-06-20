@@ -1,48 +1,15 @@
-import React, { useState } from 'react';
-
-const initialQuestions = [
-  { id: 1, type: 'multiple-choice', text: 'What is data?', options: ['Processed information', 'Raw facts and figures', 'Knowledge', 'Report'], correctOption: 1 },
-  { id: 2, type: 'multiple-choice', text: 'Which of the following is data?', options: ['Student report', '85, 90, 75', 'Annual summary', 'Result sheet'], correctOption: 1 },
-  { id: 3, type: 'multiple-choice', text: 'Information is obtained by:', options: ['Storing data', 'Processing data', 'Deleting data', 'Sharing data'], correctOption: 1 },
-  { id: 4, type: 'multiple-choice', text: 'Which characteristic means information is correct?', options: ['Timeliness', 'Accuracy', 'Cost', 'Relevance'], correctOption: 1 },
-  { id: 5, type: 'multiple-choice', text: 'Which of the following is information?', options: ['Marks entered into a system', 'Student attendance numbers', 'Average class mark report', 'Raw survey answers'], correctOption: 2 },
-  { id: 6, type: 'multiple-choice', text: 'Data can be represented using:', options: ['Numbers', 'Text', 'Images', 'All of the above'], correctOption: 3 },
-  { id: 7, type: 'multiple-choice', text: 'The main purpose of information is:', options: ['Entertainment', 'Decision making', 'Programming', 'Storage'], correctOption: 1 },
-  { id: 8, type: 'multiple-choice', text: 'Raw facts are known as:', options: ['Information', 'Knowledge', 'Data', 'Reports'], correctOption: 2 },
-  { id: 9, type: 'multiple-choice', text: 'A weather report is:', options: ['Data', 'Information', 'Program', 'Input'], correctOption: 1 },
-  { id: 10, type: 'multiple-choice', text: 'Which one is NOT information?', options: ['Monthly sales report', 'Student performance summary', 'Profit analysis', 'List of marks before calculation'], correctOption: 3 },
-  { id: 11, type: 'multiple-choice', text: 'What converts data into information?', options: ['Input', 'Processing', 'Storage', 'Output'], correctOption: 1 },
-  { id: 12, type: 'multiple-choice', text: 'Which characteristic ensures information contains all required details?', options: ['Accuracy', 'Timeliness', 'Completeness', 'Relevance'], correctOption: 2 },
-  { id: 13, type: 'multiple-choice', text: 'Why is timely information important?', options: ['Reduces storage', 'Helps current decision making', 'Increases speed', 'Saves electricity'], correctOption: 1 },
-  { id: 14, type: 'multiple-choice', text: 'A student’s final report card is:', options: ['Data', 'Information', 'Instruction', 'Program'], correctOption: 1 },
-  { id: 15, type: 'multiple-choice', text: 'Which of the following best represents processing?', options: ['Entering exam marks', 'Calculating class average', 'Printing marks', 'Saving a file'], correctOption: 1 },
-  { id: 16, type: 'multiple-choice', text: 'Information that is unrelated to a task lacks:', options: ['Accuracy', 'Completeness', 'Relevance', 'Timeliness'], correctOption: 2 },
-  { id: 17, type: 'multiple-choice', text: 'A company manager uses information mainly to:', options: ['Increase storage', 'Make decisions', 'Upgrade hardware', 'Create software'], correctOption: 1 },
-  { id: 18, type: 'multiple-choice', text: 'Which characteristic of information reduces the chance of incorrect decisions?', options: ['Accuracy', 'Size', 'Color', 'Format'], correctOption: 0 },
-  { id: 19, type: 'multiple-choice', text: 'A list of temperatures recorded every hour is:', options: ['Information', 'Data', 'Knowledge', 'Report'], correctOption: 1 },
-  { id: 20, type: 'multiple-choice', text: 'Which statement is true?', options: ['Data is always meaningful', 'Information is always raw', 'Information results from processing data', 'Information cannot be stored'], correctOption: 2 },
-  { id: 21, type: 'multiple-choice', text: 'A school collects student marks and calculates the pass percentage. The pass percentage is:', options: ['Data', 'Input', 'Information', 'Storage'], correctOption: 2 },
-  { id: 22, type: 'multiple-choice', text: 'Which characteristic is most important when using information for emergency medical decisions?', options: ['Color', 'Timeliness', 'Format', 'Size'], correctOption: 1 },
-  { id: 23, type: 'multiple-choice', text: 'A company receives 10,000 sales records. After analysis, management receives a sales trend report. The report is:', options: ['Data', 'Information', 'Input device', 'Program'], correctOption: 1 },
-  { id: 24, type: 'multiple-choice', text: 'Which combination represents good quality information?', options: ['Accurate, Complete, Relevant', 'Large, Colorful, Detailed', 'Fast, Cheap, Large', 'Complex, Technical, Long'], correctOption: 0 },
-  { id: 25, type: 'multiple-choice', text: 'Which scenario demonstrates the transformation of data into information?', options: ['Entering marks into a database', 'Printing blank forms', 'Generating student rankings from marks', 'Saving records'], correctOption: 2 },
-  { id: 26, type: 'multiple-choice', text: 'Why might incomplete information be dangerous?', options: ['Uses more storage', 'Leads to poor decisions', 'Slows the computer', 'Increases memory usage'], correctOption: 1 },
-  { id: 27, type: 'multiple-choice', text: 'A business analyst uses customer purchase records to identify buying patterns. The identified patterns are:', options: ['Data', 'Information', 'Hardware', 'Input'], correctOption: 1 },
-  { id: 28, type: 'multiple-choice', text: 'Which of the following is the best example of relevant information?', options: ['Weather data for another country', 'Student marks from last decade', 'Current semester performance report', 'Old attendance records'], correctOption: 2 },
-  { id: 29, type: 'multiple-choice', text: 'The quality of information depends on:', options: ['Processing and accuracy of data', 'Screen size', 'Printer type', 'Internet speed only'], correctOption: 0 },
-  { id: 30, type: 'multiple-choice', text: 'A hospital system records patient temperatures every hour. The temperature readings are data, while the diagnosis generated from them is:', options: ['Storage', 'Data', 'Information', 'Input'], correctOption: 2 }
-];
-
-const getRandomQuestions = (pool, count) => {
-  const shuffled = [...pool].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count);
-};
+import React, { useState, useEffect } from 'react';
 
 export default function CreateQuizContent() {
-  const [title, setTitle] = useState('Module 1.1 – Data and Information');
-  const [bundleTopic, setBundleTopic] = useState('Information and Communication Technology');
+  const [modules, setModules] = useState([]);
+  const [existingQuizzes, setExistingQuizzes] = useState([]);
+  const [selectedModuleCode, setSelectedModuleCode] = useState('');
+  const [title, setTitle] = useState('');
+  const [bundleTopic, setBundleTopic] = useState('');
   const [instructions, setInstructions] = useState('');
-  const [questions, setQuestions] = useState(() => getRandomQuestions(initialQuestions, 20));
+  const [questions, setQuestions] = useState([]);
+  const [isLoadingModules, setIsLoadingModules] = useState(true);
+  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [settings, setSettings] = useState({
     timeLimit: 45,
     passingScore: 50,
@@ -52,6 +19,96 @@ export default function CreateQuizContent() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    const fetchModulesAndQuizzes = async () => {
+      try {
+        const [modulesRes, quizzesRes] = await Promise.all([
+          fetch('http://localhost:5000/api/quizzes/modules'),
+          fetch('http://localhost:5000/api/quizzes')
+        ]);
+        
+        if (modulesRes.ok && quizzesRes.ok) {
+          const modulesData = await modulesRes.json();
+          const quizzesData = await quizzesRes.json();
+          
+          setModules(modulesData);
+          setExistingQuizzes(quizzesData);
+          
+          if (modulesData.length > 0) {
+            const defaultModule = window.history.state?.defaultModuleCode;
+            const initialCode = defaultModule && modulesData.some(m => m.quizCode === defaultModule)
+              ? defaultModule
+              : modulesData[0].quizCode;
+            setSelectedModuleCode(initialCode);
+            handleModuleChange(initialCode, modulesData, quizzesData);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching modules or quizzes:', error);
+      } finally {
+        setIsLoadingModules(false);
+      }
+    };
+    fetchModulesAndQuizzes();
+  }, []);
+
+  const handleModuleChange = async (quizCode, modulesList = modules, currentExisting = existingQuizzes) => {
+    setSelectedModuleCode(quizCode);
+    const mod = modulesList.find(m => m.quizCode === quizCode);
+    if (!mod) return;
+
+    setTitle(mod.title);
+    setBundleTopic(mod.bundleTopic);
+
+    // Check if there is an existing active quiz in database for this module
+    const existingQuiz = currentExisting.find(q => q.quizCode === quizCode && q.questions && q.questions.length > 0);
+    
+    if (existingQuiz) {
+      // Load the existing saved questions directly!
+      setQuestions(existingQuiz.questions || []);
+    } else {
+      // Fetch 20 random questions from the module bank
+      setIsLoadingQuestions(true);
+      try {
+        const response = await fetch(`http://localhost:5000/api/quizzes/modules/${quizCode}/questions`);
+        if (response.ok) {
+          const data = await response.json();
+          setQuestions(data.questions || []);
+        } else {
+          console.error('Failed to fetch questions for module');
+        }
+      } catch (error) {
+        console.error('Error fetching questions:', error);
+      } finally {
+        setIsLoadingQuestions(false);
+      }
+    }
+  };
+
+  const handleReshuffleQuestions = async () => {
+    if (!selectedModuleCode) return;
+    
+    if (!window.confirm('This will replace the current questions with a new set of 20 random questions from the module bank. Are you sure?')) {
+      return;
+    }
+
+    setIsLoadingQuestions(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/quizzes/modules/${selectedModuleCode}/questions`);
+      if (response.ok) {
+        const data = await response.json();
+        setQuestions(data.questions || []);
+      } else {
+        alert('Failed to fetch random questions');
+      }
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      alert('Error fetching random questions');
+    } finally {
+      setIsLoadingQuestions(false);
+    }
+  };
+
   const handleAddQuestion = () => {
     setQuestions([
       ...questions,
@@ -60,16 +117,24 @@ export default function CreateQuizContent() {
   };
 
   const handleRemoveQuestion = (id) => {
-    setQuestions(questions.filter(q => q.id !== id));
+    setQuestions(questions.filter(q => q.id !== id && q._id !== id));
   };
 
   const handlePublish = async () => {
+    const activeMod = modules.find(m => m.quizCode === selectedModuleCode);
+    if (!activeMod) {
+      alert('Please select a valid module');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const response = await fetch('http://localhost:5000/api/quizzes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          quizCode: activeMod.quizCode,
+          moduleId: activeMod.moduleId,
           title,
           bundleTopic,
           instructions,
@@ -79,7 +144,7 @@ export default function CreateQuizContent() {
       });
       if (response.ok) {
         alert('Quiz successfully published!');
-        window.history.pushState({}, '', '/dashboard');
+        window.history.pushState({}, '', '/teacher/quizzes');
         window.dispatchEvent(new PopStateEvent('popstate'));
       } else {
         alert('Failed to publish quiz');
@@ -108,7 +173,7 @@ export default function CreateQuizContent() {
           <button 
             className="bg-indigo-900 text-white px-6 py-2.5 rounded-lg border-none font-semibold text-[14.5px] cursor-pointer transition-all hover:bg-indigo-700 hover:-translate-y-[1px] shadow-sm disabled:opacity-70"
             onClick={handlePublish}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoadingQuestions || isLoadingModules}
           >
             {isSubmitting ? 'Publishing...' : 'Publish Quiz'}
           </button>
@@ -123,18 +188,28 @@ export default function CreateQuizContent() {
             <h2 className="text-lg font-bold text-slate-800 m-0 mb-5">1. Quiz Details</h2>
             
             <div className="mb-5">
+              <label className="block text-[13.5px] font-semibold text-slate-700 mb-2">Select Module</label>
+              {isLoadingModules ? (
+                <div className="w-full py-3 text-slate-500 text-sm">Loading modules...</div>
+              ) : (
+                <select value={selectedModuleCode} onChange={(e) => handleModuleChange(e.target.value)} className="w-full px-4 py-3 border-[1.5px] border-slate-200 rounded-lg text-[14.5px] text-slate-800 transition-all font-sans bg-white focus:outline-none focus:border-indigo-500 focus:ring-[3px] focus:ring-indigo-500/10">
+                  {modules.map(m => (
+                    <option key={m.quizCode} value={m.quizCode}>
+                      {m.quizCode} - {m.title}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div className="mb-5">
               <label className="block text-[13.5px] font-semibold text-slate-700 mb-2">Quiz Title</label>
               <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., Midterm Examination - ICT" className="w-full px-4 py-3 border-[1.5px] border-slate-200 rounded-lg text-[14.5px] text-slate-800 transition-all font-sans bg-white focus:outline-none focus:border-indigo-500 focus:ring-[3px] focus:ring-indigo-500/10 placeholder-slate-400" />
             </div>
 
             <div className="mb-5">
               <label className="block text-[13.5px] font-semibold text-slate-700 mb-2">Question Bundle / Topic</label>
-              <select value={bundleTopic} onChange={(e) => setBundleTopic(e.target.value)} className="w-full px-4 py-3 border-[1.5px] border-slate-200 rounded-lg text-[14.5px] text-slate-800 transition-all font-sans bg-white focus:outline-none focus:border-indigo-500 focus:ring-[3px] focus:ring-indigo-500/10">
-                <option value="Information and Communication Technology">Information and Communication Technology</option>
-                <option value="Fundamentals of a Computer System">Fundamentals of a Computer System</option>
-                <option value="Data Representation Methods in the Computer System">Data Representation Methods in the Computer System</option>
-                <option value="Logic Gates with Boolean Functions">Logic Gates with Boolean Functions</option>
-              </select>
+              <input type="text" value={bundleTopic} readOnly className="w-full px-4 py-3 border-[1.5px] border-slate-200 bg-slate-50 rounded-lg text-[14.5px] text-slate-500 transition-all font-sans focus:outline-none cursor-not-allowed" />
             </div>
 
             <div className="mb-0">
@@ -147,51 +222,67 @@ export default function CreateQuizContent() {
           <div className="bg-white rounded-xl border border-slate-100 p-7 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-bold text-slate-800 m-0">2. Questions</h2>
-              <button className="bg-transparent text-indigo-600 px-4 py-2 rounded-md border-[1.5px] border-indigo-600 font-semibold text-sm cursor-pointer transition-all hover:bg-indigo-50" onClick={handleAddQuestion}>+ Add Question</button>
+              <div className="flex gap-2">
+                <button 
+                  className="bg-transparent text-slate-600 px-4 py-2 rounded-md border-[1.5px] border-slate-300 font-semibold text-sm cursor-pointer transition-all hover:bg-slate-50 disabled:opacity-50"
+                  onClick={handleReshuffleQuestions}
+                  disabled={isLoadingQuestions}
+                >
+                  Regenerate Random Questions
+                </button>
+                <button className="bg-transparent text-indigo-600 px-4 py-2 rounded-md border-[1.5px] border-indigo-600 font-semibold text-sm cursor-pointer transition-all hover:bg-indigo-50" onClick={handleAddQuestion}>+ Add Question</button>
+              </div>
             </div>
 
-            <div className="flex flex-col gap-5 mb-5">
-              {questions.map((q, index) => (
-                <div key={q.id} className="border-[1.5px] border-slate-200 rounded-lg p-5 bg-slate-50 transition-colors focus-within:border-slate-300 focus-within:bg-white">
-                  <div className="flex justify-between items-center mb-4">
-                    <span className="text-sm font-bold text-indigo-600 bg-indigo-100 px-2.5 py-1 rounded-md">Question {index + 1}</span>
-                    <button className="bg-transparent border-none cursor-pointer p-1 rounded-md text-slate-400 flex items-center justify-center transition-all hover:bg-slate-200 hover:text-red-500" onClick={() => handleRemoveQuestion(q.id)} title="Remove Question">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M19 7L18.1327 19.1425C18.0579 20.1891 17.187 21 16.1378 21H7.86224C6.81296 21 5.94208 20.1891 5.86732 19.1425L5 7M10 11V17M14 11V17M15 7V4C15 3.44772 14.5523 3 14 3H10C9.44772 3 9 3.44772 9 4V7M4 7H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
-                  </div>
-                  
-                  <div className="mb-5">
-                    <input type="text" value={q.text} onChange={(e) => { const newQs = [...questions]; newQs[index].text = e.target.value; setQuestions(newQs); }} placeholder="Enter your question here..." className="font-medium w-full px-4 py-3 border-[1.5px] border-slate-200 rounded-lg text-[14.5px] text-slate-800 transition-all font-sans bg-white focus:outline-none focus:border-indigo-500 focus:ring-[3px] focus:ring-indigo-500/10 placeholder-slate-400" />
-                  </div>
+            {isLoadingQuestions ? (
+              <div className="py-12 flex flex-col items-center justify-center text-center">
+                <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+                <div className="text-sm font-semibold text-slate-500">Selecting 20 random questions from module question bank...</div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-5 mb-5">
+                {questions.map((q, index) => (
+                  <div key={q.id || q._id || index} className="border-[1.5px] border-slate-200 rounded-lg p-5 bg-slate-50 transition-colors focus-within:border-slate-300 focus-within:bg-white">
+                    <div className="flex justify-between items-center mb-4">
+                      <span className="text-sm font-bold text-indigo-600 bg-indigo-100 px-2.5 py-1 rounded-md">Question {index + 1}</span>
+                      <button className="bg-transparent border-none cursor-pointer p-1 rounded-md text-slate-400 flex items-center justify-center transition-all hover:bg-slate-200 hover:text-red-500" onClick={() => handleRemoveQuestion(q.id || q._id)} title="Remove Question">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M19 7L18.1327 19.1425C18.0579 20.1891 17.187 21 16.1378 21H7.86224C6.81296 21 5.94208 20.1891 5.86732 19.1425L5 7M10 11V17M14 11V17M15 7V4C15 3.44772 14.5523 3 14 3H10C9.44772 3 9 3.44772 9 4V7M4 7H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    <div className="mb-5">
+                      <input type="text" value={q.text} onChange={(e) => { const newQs = [...questions]; newQs[index].text = e.target.value; setQuestions(newQs); }} placeholder="Enter your question here..." className="font-medium w-full px-4 py-3 border-[1.5px] border-slate-200 rounded-lg text-[14.5px] text-slate-800 transition-all font-sans bg-white focus:outline-none focus:border-indigo-500 focus:ring-[3px] focus:ring-indigo-500/10 placeholder-slate-400" />
+                    </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[0, 1, 2, 3].map((optIndex) => {
-                      const isCorrect = q.correctOption === optIndex;
-                      return (
-                        <div className="relative flex items-center" key={optIndex}>
-                          <div 
-                            className={`absolute left-3 w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center cursor-pointer transition-all z-10 ${isCorrect ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 text-transparent hover:border-indigo-500'}`} 
-                            title="Mark as correct answer"
-                            onClick={() => {
-                              const newQs = [...questions];
-                              newQs[index].correctOption = optIndex;
-                              setQuestions(newQs);
-                            }}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {[0, 1, 2, 3].map((optIndex) => {
+                        const isCorrect = q.correctOption === optIndex;
+                        return (
+                          <div className="relative flex items-center" key={optIndex}>
+                            <div 
+                              className={`absolute left-3 w-[22px] h-[22px] rounded-full border-2 flex items-center justify-center cursor-pointer transition-all z-10 ${isCorrect ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-slate-300 text-transparent hover:border-indigo-500'}`} 
+                              title="Mark as correct answer"
+                              onClick={() => {
+                                const newQs = [...questions];
+                                newQs[index].correctOption = optIndex;
+                                setQuestions(newQs);
+                              }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20 6L9 17L4 12" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            </div>
+                            <input type="text" value={q.options[optIndex]} onChange={(e) => { const newQs = [...questions]; newQs[index].options[optIndex] = e.target.value; setQuestions(newQs); }} placeholder={`Option ${optIndex + 1}`} className={`w-full pl-[44px] pr-4 py-3 border-[1.5px] rounded-lg text-[14.5px] text-slate-800 transition-all font-sans focus:outline-none focus:border-indigo-500 focus:ring-[3px] focus:ring-indigo-500/10 placeholder-slate-400 ${isCorrect ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white'}`} />
                           </div>
-                          <input type="text" value={q.options[optIndex]} onChange={(e) => { const newQs = [...questions]; newQs[index].options[optIndex] = e.target.value; setQuestions(newQs); }} placeholder={`Option ${optIndex + 1}`} className={`w-full pl-[44px] pr-4 py-3 border-[1.5px] rounded-lg text-[14.5px] text-slate-800 transition-all font-sans focus:outline-none focus:border-indigo-500 focus:ring-[3px] focus:ring-indigo-500/10 placeholder-slate-400 ${isCorrect ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white'}`} />
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
             
             <button className="w-full p-4 border-2 border-dashed border-slate-300 rounded-lg bg-transparent text-slate-500 font-semibold text-[15px] flex items-center justify-center gap-2 cursor-pointer transition-all hover:border-indigo-500 hover:text-indigo-600 hover:bg-slate-50" onClick={handleAddQuestion}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

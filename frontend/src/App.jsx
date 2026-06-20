@@ -60,6 +60,8 @@ function App() {
       return <TeacherDashboard activeTab="lessons" />;
     case 'teacher/quizzes':
       return <TeacherDashboard activeTab="quizzes" />;
+    case 'teacher/quiz-report':
+      return <TeacherDashboard activeTab="quiz-report" />;
     case 'create-quiz':
       return <CreateQuiz />;
 

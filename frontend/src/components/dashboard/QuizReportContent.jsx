@@ -16,7 +16,10 @@ export default function QuizReportContent() {
       .then(res => res.json())
       .then(data => {
         setQuizzes(data);
-        if (data.length > 0) {
+        const stateQuizId = window.history.state?.defaultQuizId;
+        if (stateQuizId && data.some(q => q._id === stateQuizId)) {
+          setSelectedQuizId(stateQuizId);
+        } else if (data.length > 0) {
           setSelectedQuizId(data[0]._id);
         }
         setIsLoading(false);
@@ -112,9 +115,9 @@ export default function QuizReportContent() {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <button
-              onClick={() => window.history.pushState({}, '', '/dashboard') || window.dispatchEvent(new PopStateEvent('popstate'))}
+              onClick={() => window.history.pushState({}, '', '/teacher/quizzes') || window.dispatchEvent(new PopStateEvent('popstate'))}
               className="text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer bg-transparent border-none p-1 flex items-center justify-center rounded-md hover:bg-slate-100"
-              title="Back to Dashboard"
+              title="Back to Quizzes"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -146,7 +149,7 @@ export default function QuizReportContent() {
       {/* Top metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
         <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Average Score</h3>
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Average Marks</h3>
           <div className="flex items-baseline gap-2">
             <span className="text-[32px] font-bold text-slate-800">{avgScore}%</span>
           </div>
@@ -160,7 +163,7 @@ export default function QuizReportContent() {
         </div>
 
         <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-[0_2px_4px_rgba(0,0,0,0.02)] transition-all">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Highest Score</h3>
+          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Highest Marks</h3>
           <div className="flex items-baseline gap-2">
             <span className="text-[32px] font-bold text-slate-800">{highest}%</span>
             <span className="text-[14px] font-medium text-slate-500">{highestName}</span>
@@ -208,8 +211,8 @@ export default function QuizReportContent() {
               className="px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 focus:ring-[3px] focus:ring-indigo-500/10 transition-all bg-white text-slate-600 font-medium cursor-pointer"
             >
               <option value="studentId-asc">Sort by Student ID</option>
-              <option value="percentage-desc">Score: High to Low</option>
-              <option value="percentage-asc">Score: Low to High</option>
+              <option value="percentage-desc">Marks: High to Low</option>
+              <option value="percentage-asc">Marks: Low to High</option>
             </select>
             <div className="relative w-full sm:w-auto">
               <input
@@ -236,7 +239,7 @@ export default function QuizReportContent() {
               <tr>
                 <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">Student Name</th>
                 <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">ID</th>
-                <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">Score</th>
+                <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">Marks</th>
                 <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">Time Taken</th>
               </tr>
             </thead>
@@ -258,7 +261,9 @@ export default function QuizReportContent() {
                   </td>
                   <td className="p-[16px_24px] text-[14px] text-slate-500 font-medium">{student.studentId}</td>
                   <td className="p-[16px_24px]">
-                    <span className="font-bold text-slate-800 text-[14.5px]">{student.percentage}%</span>
+                    <span className="font-bold text-slate-800 text-[14.5px]">
+                      {student.percentage}% {student.score !== undefined && student.totalQuestions ? `(${student.score}/${student.totalQuestions})` : ''}
+                    </span>
                   </td>
                   <td className="p-[16px_24px] text-[14px] text-slate-500">{student.timeTaken}</td>
                 </tr>

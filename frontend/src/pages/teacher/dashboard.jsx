@@ -6,6 +6,7 @@ import ResourceUpload from './ResourceUpload';
 import TeacherNotifications from './Notification';
 import CommunityMonitor from './CommunityMonitor';
 import AttendanceMonitor from './AttendanceMonitor';
+import QuizReportContent from '../../components/dashboard/QuizReportContent';
 
 export default function Dashboard({ activeTab = 'dashboard' }) {
   const [activeNav, setActiveNav] = useState(activeTab);
@@ -19,6 +20,8 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
     switch (activeNav) {
       case 'quizzes':
         return <QuizManagement />;
+      case 'quiz-report':
+        return <QuizReportContent />;
       case 'lessons':
         return <ResourceUpload />;
       case 'notifications':
