@@ -12,13 +12,16 @@ const studentRoutes = require('./routes/studentRoutes');
 const predictionRoutes = require('./routes/predictionRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const reportRoutes = require('./routes/reportRoutes');
+const lessonRoutes = require('./routes/lessonRoutes');
+const moduleRoutes = require('./routes/moduleRoutes');
+const resourceRoutes = require('./routes/resourceRoutes');
 
 const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(express.json({ limit: '50mb' })); // Increased limit for Base64 PDF uploads!
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Connect to MongoDB
 connectDb();
@@ -36,6 +39,9 @@ app.use('/api/students', studentRoutes);
 app.use('/api/ml', predictionRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/lessons', lessonRoutes);
+app.use('/api/modules', moduleRoutes);
+app.use('/api/resources', resourceRoutes);
 
 // Error handling middleware (must be after routes)
 app.use(errorMiddleware);

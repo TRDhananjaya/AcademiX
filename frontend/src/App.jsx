@@ -41,6 +41,37 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const teacherRoutes = [
+      'teacher/dashboard', 'teacher/resources', 'teacher/quizzes', 'teacher/quiz-report',
+      'teacher/notifications', 'teacher/community', 'teacher/attendance', 'teacher/profile',
+      'teacher/students', 'create-quiz', 'analytics', 'exam-prediction'
+    ];
+    const studentRoutes = [
+      'student/dashboard', 'student/lessons', 'student/quizzes', 'student/study-plans',
+      'student/community', 'student/notifications', 'student/profile'
+    ];
+
+    const isTeacherRoute = teacherRoutes.includes(currentPage);
+    const isStudentRoute = studentRoutes.includes(currentPage);
+
+    if (!user) {
+      if (isTeacherRoute || isStudentRoute) {
+        navigate('/login');
+      }
+    } else {
+      if (user.role === 'teacher') {
+        if (isStudentRoute) {
+          navigate('/teacher/dashboard');
+        }
+      } else if (user.role === 'student') {
+        if (isTeacherRoute) {
+          navigate('/student/dashboard');
+        }
+      }
+    }
+  }, [currentPage, user]);
+
+  useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentPage]);
 
