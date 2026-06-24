@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { navigate } from '../../App';
 import ConfirmModal from '../common/ConfirmModal';
+import propic from '../../assets/propic.png';
 
 export default function StudentTopBar() {
   const { user, setUser } = useAuth();
@@ -14,7 +15,7 @@ export default function StudentTopBar() {
     navigate('/login');
   };
 
-  const avatarSrc = user?.profilePicture || 'https://i.pravatar.cc/150?img=11';
+  const avatarSrc = user?.profilePicture || propic;
   const avatarAlt = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Student';
 
   return (

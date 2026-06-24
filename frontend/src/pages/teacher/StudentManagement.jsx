@@ -327,6 +327,12 @@ export default function StudentManagement() {
                 {/* Modal Form */}
                 <form onSubmit={handleAddStudent}>
                   <div className="p-6 space-y-4">
+                    {!newStudent._id && (
+                      <div className="p-3.5 bg-indigo-50 border border-indigo-100 rounded-xl text-[12px] text-indigo-700 leading-relaxed font-sans">
+                        <strong className="block mb-0.5">LMS Auto-Account Creation</strong>
+                        This student will automatically be assigned an LMS user account. They can log in using their Student ID in lowercase (e.g., <code>st001</code>) with the default password equal to their student ID followed by <code>123</code> (e.g., <code>st001123</code>).
+                      </div>
+                    )}
                     
                     {/* Full Name */}
                     <div>

@@ -30,18 +30,20 @@ app.get('/', (req, res) => {
     res.send('AcademiX API is running...');
 });
 
+const { authMiddleware } = require('./middleware/authMiddleware');
+
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/quizzes', quizRoutes);
-app.use('/api/quiz-results', quizResultRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/students', studentRoutes);
-app.use('/api/ml', predictionRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/reports', reportRoutes);
-app.use('/api/lessons', lessonRoutes);
-app.use('/api/modules', moduleRoutes);
-app.use('/api/resources', resourceRoutes);
+app.use('/api/quizzes', authMiddleware, quizRoutes);
+app.use('/api/quiz-results', authMiddleware, quizResultRoutes);
+app.use('/api/users', authMiddleware, userRoutes);
+app.use('/api/students', authMiddleware, studentRoutes);
+app.use('/api/ml', authMiddleware, predictionRoutes);
+app.use('/api/analytics', authMiddleware, analyticsRoutes);
+app.use('/api/reports', authMiddleware, reportRoutes);
+app.use('/api/lessons', authMiddleware, lessonRoutes);
+app.use('/api/modules', authMiddleware, moduleRoutes);
+app.use('/api/resources', authMiddleware, resourceRoutes);
 
 // Error handling middleware (must be after routes)
 app.use(errorMiddleware);

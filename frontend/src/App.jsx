@@ -34,6 +34,19 @@ function App() {
   const [currentPage, setCurrentPage] = useState(getPage);
   const { user } = useAuth();
 
+  const teacherRoutes = [
+    'teacher/dashboard', 'teacher/resources', 'teacher/quizzes', 'teacher/quiz-report',
+    'teacher/notifications', 'teacher/community', 'teacher/attendance', 'teacher/profile',
+    'teacher/students', 'create-quiz', 'analytics', 'exam-prediction'
+  ];
+  const studentRoutes = [
+    'student/dashboard', 'student/lessons', 'student/quizzes', 'student/study-plans',
+    'student/community', 'student/notifications', 'student/profile'
+  ];
+
+  const isTeacherRoute = teacherRoutes.includes(currentPage);
+  const isStudentRoute = studentRoutes.includes(currentPage);
+
   useEffect(() => {
     const onRouteChange = () => setCurrentPage(getPage());
     window.addEventListener('popstate', onRouteChange);
@@ -41,19 +54,6 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const teacherRoutes = [
-      'teacher/dashboard', 'teacher/resources', 'teacher/quizzes', 'teacher/quiz-report',
-      'teacher/notifications', 'teacher/community', 'teacher/attendance', 'teacher/profile',
-      'teacher/students', 'create-quiz', 'analytics', 'exam-prediction'
-    ];
-    const studentRoutes = [
-      'student/dashboard', 'student/lessons', 'student/quizzes', 'student/study-plans',
-      'student/community', 'student/notifications', 'student/profile'
-    ];
-
-    const isTeacherRoute = teacherRoutes.includes(currentPage);
-    const isStudentRoute = studentRoutes.includes(currentPage);
-
     if (!user) {
       if (isTeacherRoute || isStudentRoute) {
         navigate('/login');
@@ -69,11 +69,22 @@ function App() {
         }
       }
     }
-  }, [currentPage, user]);
+  }, [currentPage, user, isTeacherRoute, isStudentRoute]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentPage]);
+
+  // Route rendering guards to prevent flashing protected content before redirect
+  if (!user && (isTeacherRoute || isStudentRoute)) {
+    return <Login />;
+  }
+  if (user && user.role === 'student' && isTeacherRoute) {
+    return <StudentDashboard />;
+  }
+  if (user && user.role === 'teacher' && isStudentRoute) {
+    return <TeacherDashboard activeTab="dashboard" />;
+  }
 
   // Route rendering
   switch (currentPage) {

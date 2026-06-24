@@ -1,4 +1,5 @@
 const Student = require('../models/Student');
+const User = require('../models/User');
 
 // @desc    Get all students
 // @route   GET /api/students
@@ -41,6 +42,12 @@ const addStudent = async (req, res, next) => {
             throw new Error('Student with this email already exists');
         }
 
+        const userExists = await User.findOne({ email: email.toLowerCase() });
+        if (userExists) {
+            res.status(400);
+            throw new Error('User account with this email already exists');
+        }
+
         const student = await Student.create({
             name,
             email,
@@ -48,6 +55,22 @@ const addStudent = async (req, res, next) => {
             parentMobile,
             grade,
             status
+        });
+
+        // Split name for User creation
+        const nameParts = student.name ? student.name.trim().split(/\s+/) : ['Student'];
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        // Create the corresponding User account
+        const usernameLower = student.studentId.toLowerCase();
+        await User.create({
+            username: usernameLower,
+            email: student.email.toLowerCase(),
+            password: `${usernameLower}123`, // Default password is username + '123' (e.g. stu-1234123)
+            role: 'student',
+            firstName,
+            lastName
         });
 
         res.status(201).json(student);
@@ -68,11 +91,52 @@ const updateStudent = async (req, res, next) => {
             throw new Error('Student not found');
         }
 
+        const oldEmail = student.email;
+        const oldStudentId = student.studentId;
+
         const updatedStudent = await Student.findByIdAndUpdate(
             req.params.id,
             req.body,
             { new: true, runValidators: true }
         );
+
+        if (updatedStudent) {
+            const searchUsername = (oldStudentId || updatedStudent.studentId).toLowerCase();
+            const user = await User.findOne({
+                $or: [
+                    { username: searchUsername },
+                    { email: oldEmail.toLowerCase() }
+                ]
+            });
+
+            if (user) {
+                if (updatedStudent.studentId) {
+                    user.username = updatedStudent.studentId.toLowerCase();
+                }
+                if (updatedStudent.email) {
+                    user.email = updatedStudent.email.toLowerCase();
+                }
+                if (updatedStudent.name) {
+                    const nameParts = updatedStudent.name.trim().split(/\s+/);
+                    user.firstName = nameParts[0] || '';
+                    user.lastName = nameParts.slice(1).join(' ') || '';
+                }
+                await user.save();
+            } else {
+                // If user didn't exist for some reason (e.g. wasn't migrated), create it
+                const nameParts = updatedStudent.name ? updatedStudent.name.trim().split(/\s+/) : ['Student'];
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+                await User.create({
+                    username: updatedStudent.studentId.toLowerCase(),
+                    email: updatedStudent.email.toLowerCase(),
+                    password: `${updatedStudent.studentId.toLowerCase()}123`,
+                    role: 'student',
+                    firstName,
+                    lastName
+                });
+            }
+        }
 
         res.status(200).json(updatedStudent);
     } catch (error) {

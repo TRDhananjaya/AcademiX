@@ -3,6 +3,7 @@ import { navigate } from '../../../App';
 import favicon from '../../../assets/favicon.png';
 import logoBlack from '../../../assets/logo_black.png';
 import { useAuth } from '../../../context/AuthContext';
+import propic from '../../../assets/propic.png';
 
 const navItems = [
   {
@@ -138,7 +139,7 @@ export default function Sidebar({ activeItem = 'dashboard', onNavigate }) {
         }}
         className="p-4 border-t border-slate-100 flex items-center gap-3 justify-center lg:p-[20px_24px] lg:justify-start w-full text-left bg-transparent hover:bg-slate-50 transition-colors cursor-pointer border-none shrink-0"
       >
-        <img src={user?.profilePicture || "https://i.pravatar.cc/150?img=11"} alt={fullName} className="w-10 h-10 rounded-full object-cover" />
+        <img src={user?.profilePicture || propic} alt={fullName} className="w-10 h-10 rounded-full object-cover" />
         <div className="flex-col hidden lg:flex">
           <span className="text-[14px] font-semibold text-slate-800">{fullName}</span>
           <span className="text-[12px] text-slate-500">{roleName}</span>
