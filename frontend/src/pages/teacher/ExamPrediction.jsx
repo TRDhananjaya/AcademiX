@@ -24,7 +24,7 @@ export default function ExamPrediction() {
 
   const fetchLessons = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/analytics/lessons');
+      const res = await fetch('/api/analytics/lessons');
       if (res.ok) {
         const data = await res.json();
         setLessons(data.lessons || []);
@@ -39,7 +39,7 @@ export default function ExamPrediction() {
 
   const fetchStudents = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/students');
+      const res = await fetch('/api/students');
       if (res.ok) {
         const data = await res.json();
         setStudents(data);
@@ -58,7 +58,7 @@ export default function ExamPrediction() {
     setError(null);
     setIndividualPrediction(null);
     try {
-      const res = await fetch('http://localhost:5000/api/ml/predict', {
+      const res = await fetch('/api/ml/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId: selectedStudentId, lessonId: selectedLesson })

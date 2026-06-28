@@ -12,7 +12,7 @@ export default function QuizReportContent() {
   const itemsPerPage = 10;
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/quizzes')
+    fetch('/api/quizzes')
       .then(res => res.json())
       .then(data => {
         setQuizzes(data);
@@ -32,7 +32,7 @@ export default function QuizReportContent() {
 
   useEffect(() => {
     if (selectedQuizId) {
-      fetch(`http://localhost:5000/api/quiz-results/quiz/${selectedQuizId}?limit=10000`)
+      fetch(`/api/quiz-results/quiz/${selectedQuizId}?limit=10000`)
         .then(res => res.json())
         .then(data => {
           // The API now returns a paginated object: { total, page, limit, data: [...] }

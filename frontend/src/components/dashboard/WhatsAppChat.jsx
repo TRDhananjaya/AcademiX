@@ -24,7 +24,7 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
 
   const fetchConversations = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/messages/conversations?currentUserId=${currentUserId}`);
+      const res = await fetch(`/api/messages/conversations?currentUserId=${currentUserId}`);
       const data = await res.json();
       if (Array.isArray(data)) {
         setConversations(data);
@@ -48,7 +48,7 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
     if (!contactId) return;
     setIsLoadingMessages(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/messages/thread/${contactId}?currentUserId=${currentUserId}`);
+      const res = await fetch(`/api/messages/thread/${contactId}?currentUserId=${currentUserId}`);
       const data = await res.json();
       if (Array.isArray(data)) {
         setMessages(data);
@@ -96,7 +96,7 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
     setMessages(prev => [...prev, tempMsg]);
 
     try {
-      const res = await fetch('http://localhost:5000/api/messages/send', {
+      const res = await fetch('/api/messages/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

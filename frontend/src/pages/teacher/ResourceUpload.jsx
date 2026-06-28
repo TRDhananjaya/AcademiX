@@ -76,7 +76,7 @@ export default function LessonManagement() {
   const fetchData = async () => {
     try {
       // 1. Fetch Lessons
-      const lessonsRes = await fetch('http://localhost:5000/api/lessons');
+      const lessonsRes = await fetch('/api/lessons');
       const lessonsData = await lessonsRes.json();
 
       // Seed if database has 0 lessons
@@ -88,12 +88,12 @@ export default function LessonManagement() {
       setLessons(lessonsData);
 
       // 2. Fetch Modules
-      const modulesRes = await fetch('http://localhost:5000/api/modules');
+      const modulesRes = await fetch('/api/modules');
       const modulesData = await modulesRes.json();
       setModules(modulesData);
 
       // 3. Fetch Resources
-      const resourcesRes = await fetch('http://localhost:5000/api/resources');
+      const resourcesRes = await fetch('/api/resources');
       const resourcesData = await resourcesRes.json();
       setResources(resourcesData);
     } catch (err) {
@@ -103,7 +103,7 @@ export default function LessonManagement() {
 
   const handleDownloadResource = async (res) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/resources/${res._id || res.id}`);
+      const response = await fetch(`/api/resources/${res._id || res.id}`);
       const data = await response.json();
       if (data && data.url) {
         const link = document.createElement('a');
@@ -147,7 +147,7 @@ export default function LessonManagement() {
       // POST Lessons
       const savedLessons = [];
       for (const l of seedLessons) {
-        const res = await fetch('http://localhost:5000/api/lessons', {
+        const res = await fetch('/api/lessons', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(l)
@@ -167,7 +167,7 @@ export default function LessonManagement() {
 
       const savedModules = [];
       for (const m of seedModules) {
-        const res = await fetch('http://localhost:5000/api/modules', {
+        const res = await fetch('/api/modules', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(m)
@@ -188,7 +188,7 @@ export default function LessonManagement() {
       ];
 
       for (const r of seedResources) {
-        await fetch('http://localhost:5000/api/resources', {
+        await fetch('/api/resources', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(r)
@@ -196,15 +196,15 @@ export default function LessonManagement() {
       }
 
       // Refresh final datasets
-      const freshLessonsRes = await fetch('http://localhost:5000/api/lessons');
+      const freshLessonsRes = await fetch('/api/lessons');
       const freshLessons = await freshLessonsRes.json();
       setLessons(freshLessons);
 
-      const freshModulesRes = await fetch('http://localhost:5000/api/modules');
+      const freshModulesRes = await fetch('/api/modules');
       const freshModules = await freshModulesRes.json();
       setModules(freshModules);
 
-      const freshResourcesRes = await fetch('http://localhost:5000/api/resources');
+      const freshResourcesRes = await fetch('/api/resources');
       const freshResources = await freshResourcesRes.json();
       setResources(freshResources);
     } catch (err) {
@@ -252,13 +252,13 @@ export default function LessonManagement() {
       };
 
       if (editingLesson) {
-        await fetch(`http://localhost:5000/api/lessons/${editingLesson._id || editingLesson.id}`, {
+        await fetch(`/api/lessons/${editingLesson._id || editingLesson.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
       } else {
-        await fetch('http://localhost:5000/api/lessons', {
+        await fetch('/api/lessons', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -332,13 +332,13 @@ export default function LessonManagement() {
       };
 
       if (editingModule) {
-        await fetch(`http://localhost:5000/api/modules/${editingModule._id || editingModule.id}`, {
+        await fetch(`/api/modules/${editingModule._id || editingModule.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
       } else {
-        await fetch('http://localhost:5000/api/modules', {
+        await fetch('/api/modules', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -391,7 +391,7 @@ export default function LessonManagement() {
         lessonId: isLinkShared ? activeLId : null
       };
 
-      await fetch('http://localhost:5000/api/resources', {
+      await fetch('/api/resources', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -474,7 +474,7 @@ export default function LessonManagement() {
           lessonId: isFileShared ? activeLId : null
         };
 
-        await fetch('http://localhost:5000/api/resources', {
+        await fetch('/api/resources', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -549,7 +549,7 @@ export default function LessonManagement() {
           moduleId: null,
           lessonId: activeLessonIdStr
         };
-        await fetch('http://localhost:5000/api/resources', {
+        await fetch('/api/resources', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
@@ -596,7 +596,7 @@ export default function LessonManagement() {
 
     try {
       if (type === 'lesson') {
-        await fetch(`http://localhost:5000/api/lessons/${id}`, {
+        await fetch(`/api/lessons/${id}`, {
           method: 'DELETE'
         });
         await fetchData();
@@ -605,7 +605,7 @@ export default function LessonManagement() {
           setActiveLesson(null);
         }
       } else if (type === 'module') {
-        await fetch(`http://localhost:5000/api/modules/${id}`, {
+        await fetch(`/api/modules/${id}`, {
           method: 'DELETE'
         });
         await fetchData();
@@ -614,7 +614,7 @@ export default function LessonManagement() {
           setActiveModule(null);
         }
       } else if (type === 'resource') {
-        await fetch(`http://localhost:5000/api/resources/${id}`, {
+        await fetch(`/api/resources/${id}`, {
           method: 'DELETE'
         });
         await fetchData();
@@ -1039,7 +1039,7 @@ export default function LessonManagement() {
                         moduleId: null,
                         lessonId: activeLessonIdStr
                       };
-                      await fetch('http://localhost:5000/api/resources', {
+                      await fetch('/api/resources', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)

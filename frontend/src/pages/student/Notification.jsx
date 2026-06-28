@@ -71,7 +71,7 @@ export default function Notifications() {
 
   useEffect(() => {
     const studentId = user?.username || 'student1';
-    fetch(`http://localhost:5000/api/quiz-results/student/${studentId}`)
+    fetch(`/api/quiz-results/student/${studentId}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data) && data.length > 0) {

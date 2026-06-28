@@ -59,7 +59,7 @@ export default function CommunityHub() {
   const fetchPosts = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/community');
+      const res = await fetch('/api/community');
       const data = await res.json();
       if (Array.isArray(data)) {
         setPosts(data);
@@ -82,7 +82,7 @@ export default function CommunityHub() {
 
   const handleVote = async (postId, voteType) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/community/${postId}/vote`, {
+      const res = await fetch(`/api/community/${postId}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -105,7 +105,7 @@ export default function CommunityHub() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('http://localhost:5000/api/community', {
+      const res = await fetch('/api/community', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -138,7 +138,7 @@ export default function CommunityHub() {
     if (!text || !text.trim()) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/community/${postId}/reply`, {
+      const res = await fetch(`/api/community/${postId}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -164,7 +164,7 @@ export default function CommunityHub() {
     if (!reason) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/community/${postId}/flag`, {
+      const res = await fetch(`/api/community/${postId}/flag`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason })

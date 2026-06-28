@@ -28,7 +28,7 @@ export default function CommonCommunityChat() {
 
   const fetchMessages = async (isInitial = false) => {
     try {
-      const res = await fetch('http://localhost:5000/api/common-messages');
+      const res = await fetch('/api/common-messages');
       const data = await res.json();
       if (Array.isArray(data)) {
         setMessages(prev => {
@@ -79,7 +79,7 @@ export default function CommonCommunityChat() {
     setTimeout(scrollToBottom, 50);
 
     try {
-      const res = await fetch('http://localhost:5000/api/common-messages', {
+      const res = await fetch('/api/common-messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

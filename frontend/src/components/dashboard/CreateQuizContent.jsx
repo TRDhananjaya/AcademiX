@@ -23,8 +23,8 @@ export default function CreateQuizContent() {
     const fetchModulesAndQuizzes = async () => {
       try {
         const [modulesRes, quizzesRes] = await Promise.all([
-          fetch('http://localhost:5000/api/quizzes/modules'),
-          fetch('http://localhost:5000/api/quizzes')
+          fetch('/api/quizzes/modules'),
+          fetch('/api/quizzes')
         ]);
         
         if (modulesRes.ok && quizzesRes.ok) {
@@ -70,7 +70,7 @@ export default function CreateQuizContent() {
       // Fetch 20 random questions from the module bank
       setIsLoadingQuestions(true);
       try {
-        const response = await fetch(`http://localhost:5000/api/quizzes/modules/${quizCode}/questions`);
+        const response = await fetch(`/api/quizzes/modules/${quizCode}/questions`);
         if (response.ok) {
           const data = await response.json();
           setQuestions(data.questions || []);
@@ -94,7 +94,7 @@ export default function CreateQuizContent() {
 
     setIsLoadingQuestions(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/quizzes/modules/${selectedModuleCode}/questions`);
+      const response = await fetch(`/api/quizzes/modules/${selectedModuleCode}/questions`);
       if (response.ok) {
         const data = await response.json();
         setQuestions(data.questions || []);
@@ -129,7 +129,7 @@ export default function CreateQuizContent() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch('http://localhost:5000/api/quizzes', {
+      const response = await fetch('/api/quizzes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

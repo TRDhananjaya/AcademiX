@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5000/api/auth';
+const API_BASE = '/api/auth';
 
 /**
  * Login with username and password.

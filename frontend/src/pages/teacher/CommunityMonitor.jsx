@@ -20,7 +20,7 @@ export default function CommunityMonitor() {
     setIsLoading(true);
     try {
       // Fetch flagged posts for moderation card
-      const flaggedRes = await fetch('http://localhost:5000/api/community?filter=flagged');
+      const flaggedRes = await fetch('/api/community?filter=flagged');
       const flaggedData = await flaggedRes.json();
       if (Array.isArray(flaggedData)) {
         setFlaggedPosts(flaggedData);
@@ -28,7 +28,7 @@ export default function CommunityMonitor() {
 
       // Fetch questions based on active tab
       const filterParam = activeTab === 'Unanswered' ? 'unanswered' : 'new';
-      const qRes = await fetch(`http://localhost:5000/api/community?filter=${filterParam}`);
+      const qRes = await fetch(`/api/community?filter=${filterParam}`);
       const qData = await qRes.json();
       if (Array.isArray(qData)) {
         setQuestions(qData);
@@ -47,7 +47,7 @@ export default function CommunityMonitor() {
   const handleVote = async (id, amount) => {
     const voteType = amount > 0 ? 'up' : 'down';
     try {
-      const res = await fetch(`http://localhost:5000/api/community/${id}/vote`, {
+      const res = await fetch(`/api/community/${id}/vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ voteType, userId: 'teacher_user' })
@@ -63,7 +63,7 @@ export default function CommunityMonitor() {
 
   const handleDismissFlag = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/community/${id}/dismiss-flag`, {
+      const res = await fetch(`/api/community/${id}/dismiss-flag`, {
         method: 'POST'
       });
       if (res.ok) {
@@ -86,7 +86,7 @@ export default function CommunityMonitor() {
 
     setIsSubmittingGuidance(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/community/${guidancePost._id}/reply`, {
+      const res = await fetch(`/api/community/${guidancePost._id}/reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

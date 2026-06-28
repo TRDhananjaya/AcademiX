@@ -81,7 +81,7 @@ export default function TeacherNotifications() {
   ]);
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/quiz-results')
+    fetch('/api/quiz-results')
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

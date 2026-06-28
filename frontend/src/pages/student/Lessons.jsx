@@ -32,15 +32,15 @@ export default function Lessons() {
 
   const fetchData = async () => {
     try {
-      const lessonsRes = await fetch('http://localhost:5000/api/lessons');
+      const lessonsRes = await fetch('/api/lessons');
       const lessonsData = await lessonsRes.json();
       setLessons(lessonsData || []);
 
-      const modulesRes = await fetch('http://localhost:5000/api/modules');
+      const modulesRes = await fetch('/api/modules');
       const modulesData = await modulesRes.json();
       setModules(modulesData || []);
 
-      const resourcesRes = await fetch('http://localhost:5000/api/resources');
+      const resourcesRes = await fetch('/api/resources');
       const resourcesData = await resourcesRes.json();
       setResources(resourcesData || []);
     } catch (err) {
@@ -50,7 +50,7 @@ export default function Lessons() {
 
   const handleDownloadResource = async (res) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/resources/${res._id || res.id}`);
+      const response = await fetch(`/api/resources/${res._id || res.id}`);
       const data = await response.json();
       if (data && data.url) {
         const link = document.createElement('a');
