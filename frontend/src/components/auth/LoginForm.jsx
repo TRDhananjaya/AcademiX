@@ -139,7 +139,7 @@ export default function LoginForm() {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label htmlFor="password" className="block text-[14px] font-medium text-slate-700 tracking-wide">Password</label>
-                <a href="/forgot" className="text-[13px] text-indigo-600 hover:text-indigo-700 hover:underline">Forgot password?</a>
+                <button type="button" onClick={() => navigate('/forgot')} className="text-[13px] text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer bg-transparent border-none p-0">Forgot password?</button>
               </div>
               <div className="relative group">
                 <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors">

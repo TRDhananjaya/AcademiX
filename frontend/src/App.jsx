@@ -22,6 +22,7 @@ import TeacherNotifications from './pages/teacher/Notification';
 import ProfileSettings from './pages/student/ProfileSettings';
 import TeacherProfileSettings from './pages/teacher/ProfileSettings';
 import StudentManagement from './pages/teacher/StudentManagement';
+import ForgotPassword from './pages/forgot-password';
 
 // Shared navigate helper — use this instead of <a href>
 export function navigate(path, state = {}) {
@@ -90,6 +91,8 @@ function App() {
   switch (currentPage) {
     case 'login':
       return <Login />;
+    case 'forgot':
+      return <ForgotPassword />;
     case 'about':
       return <About />;
     case 'contact':
