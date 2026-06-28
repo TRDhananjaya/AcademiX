@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://academix-backend-qevl.onrender.com"
+      "destination": "https://academix-backend-qevl.onrender.com/api/:path*"
     },
     {
       "source": "/((?!api/).*)",
