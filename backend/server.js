@@ -15,6 +15,9 @@ const reportRoutes = require('./routes/reportRoutes');
 const lessonRoutes = require('./routes/lessonRoutes');
 const moduleRoutes = require('./routes/moduleRoutes');
 const resourceRoutes = require('./routes/resourceRoutes');
+const communityRoutes = require('./routes/communityRoutes');
+const messageRoutes = require('./routes/messageRoutes');
+const commonMessageRoutes = require('./routes/commonMessageRoutes');
 
 const app = express();
 
@@ -44,6 +47,9 @@ app.use('/api/reports', authMiddleware, reportRoutes);
 app.use('/api/lessons', authMiddleware, lessonRoutes);
 app.use('/api/modules', authMiddleware, moduleRoutes);
 app.use('/api/resources', authMiddleware, resourceRoutes);
+app.use('/api/community', communityRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/common-messages', commonMessageRoutes);
 
 // Error handling middleware (must be after routes)
 app.use(errorMiddleware);

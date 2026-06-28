@@ -1,330 +1,381 @@
-import { useState } from 'react';
-import { FiMessageSquare, FiTrendingUp, FiPlus, FiFileText, FiLink, FiPlay } from 'react-icons/fi';
+import { useState, useEffect } from 'react';
+import { FiMessageSquare, FiTrendingUp, FiPlus, FiFileText, FiLink, FiPlay, FiSend, FiX, FiCheckCircle } from 'react-icons/fi';
 import { TbMessageReport, TbFlag, TbChevronUp, TbChevronDown } from 'react-icons/tb';
+import CommonCommunityChat from '../../components/dashboard/CommonCommunityChat';
+import communityBannerImg from '../../assets/community_banner.png';
 
 export default function CommunityMonitor() {
-  const [activeTab, setActiveTab] = useState('Unanswered'); // Default matches unanswered highlighted in mockup
+  const [hubMode, setHubMode] = useState('discussions'); // 'discussions' | 'messages'
+  const [activeTab, setActiveTab] = useState('Unanswered'); // 'Recent' or 'Unanswered'
+  const [flaggedPosts, setFlaggedPosts] = useState([]);
+  const [questions, setQuestions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [flaggedPosts, setFlaggedPosts] = useState([
-    {
-      id: 1,
-      text: '"Is it okay to use ChatGPT for the calculus final."',
-      course: 'Calculus 101',
+  // Guidance modal state
+  const [guidancePost, setGuidancePost] = useState(null);
+  const [guidanceText, setGuidanceText] = useState('');
+  const [isSubmittingGuidance, setIsSubmittingGuidance] = useState(false);
+
+  const fetchCommunityData = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch flagged posts for moderation card
+      const flaggedRes = await fetch('http://localhost:5000/api/community?filter=flagged');
+      const flaggedData = await flaggedRes.json();
+      if (Array.isArray(flaggedData)) {
+        setFlaggedPosts(flaggedData);
+      }
+
+      // Fetch questions based on active tab
+      const filterParam = activeTab === 'Unanswered' ? 'unanswered' : 'new';
+      const qRes = await fetch(`http://localhost:5000/api/community?filter=${filterParam}`);
+      const qData = await qRes.json();
+      if (Array.isArray(qData)) {
+        setQuestions(qData);
+      }
+    } catch (err) {
+      console.error('Error fetching teacher community data:', err);
+    } finally {
+      setIsLoading(false);
     }
-  ]);
-
-  const [questions, setQuestions] = useState([
-    {
-      id: 1,
-      votes: 14,
-      subject: 'PHYSICS 202',
-      subjectClass: 'bg-teal-50 text-teal-700 border-teal-150',
-      student: 'Student ID #892',
-      time: '2 hours ago',
-      title: 'Clarification needed on Maxwell\'s Equations in non-vacuum media',
-      body: 'I\'m struggling to understand how the permittivity and permeability constants change when we move from a vacuum to a dielectric material like glass. Does it',
-      replies: 2,
-    },
-    {
-      id: 2,
-      votes: 8,
-      subject: 'LITERATURE 101',
-      subjectClass: 'bg-purple-50 text-purple-700 border-purple-150',
-      student: 'Student ID #142',
-      time: '5 hours ago',
-      title: 'Theme of isolation in Frankenstein vs modern digital age',
-      body: 'For the upcoming essay, would it be acceptable to draw parallels between the creature\'s isolation in the novel and the isolation experienced by youth heavily...',
-      replies: 0,
-    }
-  ]);
-
-  const handleVote = (id, amount) => {
-    setQuestions(questions.map((q) => q.id === id ? { ...q, votes: q.votes + amount } : q));
   };
 
-  const handleDismissFlag = (id) => {
-    setFlaggedPosts(flaggedPosts.filter((p) => p.id !== id));
-    alert('Post sent for review.');
+  useEffect(() => {
+    fetchCommunityData();
+  }, [activeTab]);
+
+  const handleVote = async (id, amount) => {
+    const voteType = amount > 0 ? 'up' : 'down';
+    try {
+      const res = await fetch(`http://localhost:5000/api/community/${id}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voteType, userId: 'teacher_user' })
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setQuestions(questions.map(q => q._id === id ? updated : q));
+      }
+    } catch (err) {
+      console.error('Error voting:', err);
+    }
   };
 
-  const handleProvideGuidance = (title) => {
-    alert(`Opening interface to provide guidance on: "${title}"`);
+  const handleDismissFlag = async (id) => {
+    try {
+      const res = await fetch(`http://localhost:5000/api/community/${id}/dismiss-flag`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        setFlaggedPosts(flaggedPosts.filter(p => p._id !== id));
+        alert('Flag cleared and post reviewed.');
+      }
+    } catch (err) {
+      console.error('Error dismissing flag:', err);
+    }
+  };
+
+  const handleOpenGuidanceModal = (post) => {
+    setGuidancePost(post);
+    setGuidanceText('');
+  };
+
+  const handleSubmitGuidance = async (e) => {
+    e.preventDefault();
+    if (!guidancePost || !guidanceText.trim()) return;
+
+    setIsSubmittingGuidance(true);
+    try {
+      const res = await fetch(`http://localhost:5000/api/community/${guidancePost._id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: guidanceText.trim(),
+          authorName: 'Dr. Sarah Jenkins',
+          authorRole: 'teacher',
+          authorAvatar: 'https://i.pravatar.cc/150?u=drjenkins'
+        })
+      });
+
+      if (res.ok) {
+        alert('Official academic guidance published successfully!');
+        setGuidancePost(null);
+        setGuidanceText('');
+        fetchCommunityData();
+      }
+    } catch (err) {
+      console.error('Error submitting guidance:', err);
+    } finally {
+      setIsSubmittingGuidance(false);
+    }
   };
 
   return (
     <div className="space-y-6">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 sm:gap-0">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
         <div>
           <h1 className="text-4xl font-bold text-slate-900 mb-2">Teacher Lounge</h1>
           <p className="text-slate-500 text-base max-w-3xl leading-relaxed">
-            Connect with peers, moderate student discussions, and share academic resources in your dedicated community hub.
+            Connect with peers, moderate student discussions, and participate in the common community platform stream.
           </p>
         </div>
-        
-        <button 
-          onClick={() => alert('New faculty discussion thread...')}
-          className="bg-white hover:bg-slate-50 border border-slate-200 text-indigo-600 font-semibold py-2.5 px-5 rounded-xl text-sm transition-colors shadow-sm cursor-pointer flex items-center gap-2 shrink-0"
+      </div>
+
+      {/* Top Mode Selector Tabs */}
+      <div className="flex bg-slate-200/60 p-1.5 rounded-2xl mb-8 max-w-md border border-slate-200/80">
+        <button
+          onClick={() => setHubMode('discussions')}
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2
+            ${hubMode === 'discussions' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
         >
-          <FiMessageSquare className="w-4 h-4 text-indigo-600" />
-          New Discussion
+          📢 Public Q&A & Moderation
+        </button>
+        <button
+          onClick={() => setHubMode('messages')}
+          className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2
+            ${hubMode === 'messages' ? 'bg-[#3b28cc] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+        >
+          💬 Common Platform Stream
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        
-        {/* Left Column (Main Moderation & Q&A) */}
-        <div className="flex-1 space-y-6">
+      {hubMode === 'messages' ? (
+        <CommonCommunityChat />
+      ) : (
+        <div className="flex flex-col lg:flex-row gap-6">
           
-          {/* Needs Moderation Card */}
-          {flaggedPosts.length > 0 && (
-            <div className="bg-white rounded-2xl p-6 border-l-4 border-l-red-500 border border-slate-100 shadow-sm flex items-start gap-4">
-              <div className="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0">
-                <TbFlag className="w-5 h-5 fill-red-500" />
-              </div>
-              <div className="flex-1 space-y-4">
-                <div>
-                  <h3 className="font-bold text-slate-950 text-base">Needs Moderation</h3>
-                  <p className="text-slate-500 text-xs mt-0.5">
-                    {flaggedPosts.length} student posts have been flagged by the system for faculty review regarding academic integrity.
-                  </p>
+          {/* Left Column (Main Moderation & Q&A) */}
+          <div className="flex-1 space-y-6">
+            
+            {/* Needs Moderation Card */}
+            {flaggedPosts.length > 0 && (
+              <div className="bg-white rounded-2xl p-6 border-l-4 border-l-red-500 border border-slate-100 shadow-sm flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+                  <TbFlag className="w-5 h-5 fill-red-500" />
                 </div>
-
-                {flaggedPosts.map((post) => (
-                  <div key={post.id} className="bg-slate-50 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-slate-100">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="w-2 h-2 rounded-full bg-red-500 shrink-0"></span>
-                      <p className="text-xs text-slate-700 font-medium truncate">{post.text}</p>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
-                      <span className="bg-slate-200 text-slate-500 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
-                        {post.course}
-                      </span>
-                      <button 
-                        onClick={() => handleDismissFlag(post.id)}
-                        className="text-indigo-600 hover:text-indigo-800 text-xs font-bold transition-colors"
-                      >
-                        Review
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Academic Q&A Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">Academic Q&A</h2>
-              
-              <div className="flex bg-slate-100/70 p-1 rounded-xl border border-slate-200/40 gap-1">
-                <button
-                  onClick={() => setActiveTab('Recent')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer
-                    ${activeTab === 'Recent' 
-                      ? 'bg-white text-slate-700 shadow-sm' 
-                      : 'text-slate-400 hover:text-slate-600'
-                    }`}
-                >
-                  Recent
-                </button>
-                <button
-                  onClick={() => setActiveTab('Unanswered')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer
-                    ${activeTab === 'Unanswered' 
-                      ? 'bg-indigo-55/90 text-[#3b28cc] bg-indigo-50 shadow-sm' 
-                      : 'text-slate-400 hover:text-slate-600'
-                    }`}
-                >
-                  Unanswered
-                </button>
-              </div>
-            </div>
-
-            {/* Questions list */}
-            <div className="space-y-4">
-              {questions.map((q) => (
-                <div key={q.id} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-start gap-4">
-                  
-                  {/* Upvote controller */}
-                  <div className="flex flex-col items-center bg-slate-50 border border-slate-200/50 rounded-xl p-1.5 shrink-0">
-                    <button 
-                      onClick={() => handleVote(q.id, 1)}
-                      className="text-slate-400 hover:text-indigo-600 transition-colors p-1"
-                    >
-                      <TbChevronUp className="w-5 h-5 stroke-[2.5]" />
-                    </button>
-                    <span className="text-xs font-bold text-slate-800 my-0.5">{q.votes}</span>
-                    <button 
-                      onClick={() => handleVote(q.id, -1)}
-                      className="text-slate-400 hover:text-indigo-600 transition-colors p-1"
-                    >
-                      <TbChevronDown className="w-5 h-5 stroke-[2.5]" />
-                    </button>
-                  </div>
-
-                  <div className="flex-1 min-w-0 pr-2">
-                    {/* Meta Row */}
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase ${q.subjectClass}`}>
-                        {q.subject}
-                      </span>
-                      <span className="text-slate-400 text-xs">Asked by {q.student} • {q.time}</span>
-                    </div>
-
-                    {/* Question Title & Description */}
-                    <h3 className="text-lg font-bold text-slate-900 mb-2 leading-snug">
-                      {q.title}
-                    </h3>
-                    <p className="text-slate-500 text-xs leading-relaxed mb-4">
-                      {q.body}
+                <div className="flex-1 space-y-4">
+                  <div>
+                    <h3 className="font-bold text-slate-950 text-base">Needs Moderation</h3>
+                    <p className="text-slate-500 text-xs mt-0.5">
+                      {flaggedPosts.length} student post{flaggedPosts.length > 1 ? 's' : ''} flagged for faculty review regarding academic integrity or conduct.
                     </p>
+                  </div>
 
-                    {/* Action Row */}
-                    <div className="flex items-center justify-between border-t border-slate-50 pt-4">
-                      <div className="flex items-center gap-1.5 text-slate-400 text-xs font-semibold">
-                        <FiMessageSquare className="w-4 h-4 text-slate-400" />
-                        {q.replies} Answers
+                  {flaggedPosts.map((post) => (
+                    <div key={post._id} className="bg-slate-50 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border border-slate-200/60">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-500 shrink-0"></span>
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-800 font-bold truncate">{post.title}</p>
+                          <p className="text-[11px] text-slate-500 truncate mt-0.5">Reason: {post.flagReason || 'User flag'}</p>
+                        </div>
                       </div>
                       
-                      <button 
-                        onClick={() => handleProvideGuidance(q.title)}
-                        className="text-indigo-600 hover:text-indigo-800 text-xs font-bold transition-colors"
-                      >
-                        Provide Guidance
-                      </button>
+                      <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+                        <span className="bg-slate-200 text-slate-600 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
+                          {post.course}
+                        </span>
+                        <button 
+                          onClick={() => handleDismissFlag(post._id)}
+                          className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                        >
+                          <FiCheckCircle className="w-3.5 h-3.5" /> Dismiss Flag
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+            )}
+
+            {/* Academic Q&A Section */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-slate-900">Academic Q&A & Peer Support</h2>
+                
+                <div className="flex bg-slate-100/70 p-1 rounded-xl border border-slate-200/40 gap-1">
+                  <button
+                    onClick={() => setActiveTab('Recent')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer
+                      ${activeTab === 'Recent' 
+                        ? 'bg-white text-slate-700 shadow-sm' 
+                        : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                  >
+                    Recent
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('Unanswered')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer
+                      ${activeTab === 'Unanswered' 
+                        ? 'bg-indigo-50 text-[#3b28cc] shadow-sm' 
+                        : 'text-slate-400 hover:text-slate-600'
+                      }`}
+                  >
+                    Unanswered
+                  </button>
+                </div>
+              </div>
+
+              {/* Questions list */}
+              {isLoading ? (
+                <div className="bg-white rounded-2xl p-12 text-center text-slate-500 font-medium border border-slate-100">
+                  Loading student discussion threads...
+                </div>
+              ) : questions.length === 0 ? (
+                <div className="bg-white rounded-2xl p-12 text-center text-slate-500 font-medium border border-slate-100">
+                  No student questions found in this category.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {questions.map((q) => (
+                    <div key={q._id} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-start gap-4">
+                      
+                      {/* Upvote controller */}
+                      <div className="flex flex-col items-center bg-slate-50 border border-slate-200/50 rounded-xl p-1.5 shrink-0">
+                        <button 
+                          onClick={() => handleVote(q._id, 1)}
+                          className="text-slate-400 hover:text-indigo-600 transition-colors p-1 cursor-pointer"
+                        >
+                          <TbChevronUp className="w-5 h-5 stroke-[2.5]" />
+                        </button>
+                        <span className="text-xs font-bold text-slate-800 my-0.5">{q.votes || 0}</span>
+                        <button 
+                          onClick={() => handleVote(q._id, -1)}
+                          className="text-slate-400 hover:text-indigo-600 transition-colors p-1 cursor-pointer"
+                        >
+                          <TbChevronDown className="w-5 h-5 stroke-[2.5]" />
+                        </button>
+                      </div>
+
+                      <div className="flex-1 min-w-0 pr-2">
+                        {/* Meta Row */}
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full border tracking-wide uppercase bg-teal-50 text-teal-700 border-teal-150">
+                            {q.course || 'GENERAL'}
+                          </span>
+                          <span className="text-slate-400 text-xs">Asked by {q.authorName} • {q.createdAt ? new Date(q.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Recently'}</span>
+                        </div>
+
+                        {/* Question Title & Description */}
+                        <h3 className="text-lg font-bold text-slate-900 mb-2 leading-snug">
+                          {q.title}
+                        </h3>
+                        <p className="text-slate-500 text-xs leading-relaxed mb-4 whitespace-pre-line">
+                          {q.body}
+                        </p>
+
+                        {/* Show answers list if any */}
+                        {q.replies && q.replies.length > 0 && (
+                          <div className="mb-4 space-y-2 bg-slate-50/70 p-3.5 rounded-xl border border-slate-100">
+                            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Current Responses ({q.replies.length}):</span>
+                            {q.replies.map((r, i) => (
+                              <div key={i} className={`p-2.5 rounded-lg text-xs ${r.authorRole === 'teacher' ? 'bg-teal-50 border border-teal-200 font-medium' : 'bg-white border border-slate-200'}`}>
+                                <span className="font-bold text-slate-800">{r.authorName} ({r.authorRole === 'teacher' ? 'Instructor' : 'Student'}):</span> {r.text}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Action Row */}
+                        <div className="flex items-center justify-between border-t border-slate-50 pt-4">
+                          <div className="flex items-center gap-1.5 text-slate-400 text-xs font-semibold">
+                            <FiMessageSquare className="w-4 h-4 text-slate-400" />
+                            {q.replies ? q.replies.length : 0} Answers
+                          </div>
+                          
+                          <button 
+                            onClick={() => handleOpenGuidanceModal(q)}
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                          >
+                            <FiSend className="w-3.5 h-3.5" /> Provide Guidance
+                          </button>
+                        </div>
+                      </div>
+
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
+
+          {/* Right Column (Sidebar Photo Card) */}
+          <div className="w-full lg:w-[320px] shrink-0 space-y-6">
+            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm overflow-hidden group">
+              <div className="rounded-xl overflow-hidden shadow-sm relative">
+                <img 
+                  src={communityBannerImg} 
+                  alt="AcademiX Faculty & Student Community" 
+                  className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent p-4 flex flex-col justify-end">
+                  <h4 className="text-white font-bold text-base leading-tight">Faculty & Student Lounge</h4>
+                  <p className="text-slate-200 text-xs mt-1">Provide guidance & foster academic excellence.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
+      )}
 
-        {/* Right Column (Sidecards) */}
-        <div className="w-full lg:w-[320px] shrink-0 space-y-6">
-          
-          {/* Trending Topics */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
-            <h3 className="text-[15px] font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <FiTrendingUp className="text-indigo-600" /> Trending Topics
-            </h3>
-            
-            <div className="flex flex-wrap gap-2">
-              {['#MidtermPrep', '#AI_in_Education', '#LabSafety Protocol', '#SyllabusUpdate', '#PeerReview'].map((tag) => (
-                <span 
-                  key={tag}
-                  className="bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-xl px-3 py-1.5 text-xs text-slate-600 font-semibold cursor-pointer transition-colors"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Faculty Discussions */}
-          <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col">
-            <h3 className="text-[15px] font-bold text-slate-900 mb-5">Faculty Discussions</h3>
-            
-            <div className="space-y-4 flex-1">
-              {/* Row 1 */}
-              <div className="flex items-start gap-3 group cursor-pointer">
-                <div className="w-9 h-9 rounded-full bg-slate-900 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                  JD
-                </div>
-                <div className="min-w-0">
-                  <h4 className="font-semibold text-slate-800 text-[13px] leading-snug group-hover:text-indigo-600 transition-colors truncate">
-                    Best practices for hybrid seminar attendance?
-                  </h4>
-                  <p className="text-[10px] text-slate-400 mt-1">12 Replies • Last active 10m ago</p>
-                </div>
-              </div>
-
-              {/* Row 2 */}
-              <div className="flex items-start gap-3 group cursor-pointer border-t border-slate-50 pt-4">
-                <div className="w-9 h-9 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                  SL
-                </div>
-                <div className="min-w-0">
-                  <h4 className="font-semibold text-slate-800 text-[13px] leading-snug group-hover:text-indigo-600 transition-colors truncate">
-                    Integrating new research tool into the core syllabus
-                  </h4>
-                  <p className="text-[10px] text-slate-400 mt-1">5 Replies • Last active 1h ago</p>
-                </div>
-              </div>
-            </div>
-
+      {/* Provide Guidance Modal */}
+      {guidancePost && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl relative animate-scaleUp">
             <button 
-              onClick={() => alert('Viewing all faculty discussions...')}
-              className="w-full mt-6 text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors text-center"
+              onClick={() => setGuidancePost(null)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
             >
-              View All Discussions
+              <FiX className="w-5 h-5" />
             </button>
-          </div>
 
-          {/* Shared Resources (Gradient Card) */}
-          <div className="rounded-2xl p-6 bg-gradient-to-br from-[#e6f7f8] to-[#f0f1fa] shadow-sm relative overflow-hidden">
-            {/* Background decorative elements */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/40 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-teal-100/40 rounded-full blur-2xl -ml-10 -mb-10 pointer-events-none"></div>
+            <h2 className="text-2xl font-bold text-slate-900 mb-1">Provide Academic Guidance</h2>
+            <p className="text-xs text-slate-500 mb-4">Official response will be marked with an instructor verified badge.</p>
 
-            <div className="relative z-10 flex flex-col">
-              <div className="flex justify-between items-center mb-5">
-                <h3 className="text-[15px] font-bold text-slate-900 flex items-center gap-1.5">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-800"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                  Shared Resources
-                </h3>
+            <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/70 mb-4">
+              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block mb-1">{guidancePost.course}</span>
+              <h4 className="font-bold text-slate-900 text-sm mb-1">{guidancePost.title}</h4>
+              <p className="text-xs text-slate-600 line-clamp-2">{guidancePost.body}</p>
+            </div>
+
+            <form onSubmit={handleSubmitGuidance} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Instructor Response</label>
+                <textarea 
+                  required
+                  rows="5"
+                  placeholder="Type your official guidance or explanation for student..."
+                  value={guidanceText}
+                  onChange={(e) => setGuidanceText(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 outline-none focus:border-indigo-500 resize-none"
+                ></textarea>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
                 <button 
-                  onClick={() => alert('Add new shared resource...')}
-                  className="w-6 h-6 rounded-full bg-white hover:bg-slate-50 text-indigo-600 flex items-center justify-center shadow-sm cursor-pointer transition-colors"
+                  type="button"
+                  onClick={() => setGuidancePost(null)}
+                  className="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
-                  <FiPlus className="w-3.5 h-3.5 stroke-[3px]" />
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isSubmittingGuidance}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isSubmittingGuidance ? 'Publishing...' : 'Publish Guidance'}
                 </button>
               </div>
-
-              <div className="space-y-4">
-                {/* File 1 */}
-                <div className="flex items-center gap-3 bg-white/70 hover:bg-white rounded-xl p-3.5 transition-all cursor-pointer shadow-sm hover:shadow border border-white/50">
-                  <div className="w-9 h-9 rounded-lg bg-teal-50 flex items-center justify-center text-teal-600 shrink-0">
-                    <FiFileText className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="font-bold text-slate-800 text-[12px] leading-snug truncate">2024 Academic Integrity Policy.pdf</h4>
-                    <p className="text-[10px] text-slate-400 mt-0.5 truncate">Added by Admin</p>
-                  </div>
-                </div>
-
-                {/* File 2 */}
-                <div className="flex items-center gap-3 bg-white/70 hover:bg-white rounded-xl p-3.5 transition-all cursor-pointer shadow-sm hover:shadow border border-white/50">
-                  <div className="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
-                    <FiPlay className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="font-bold text-slate-800 text-[12px] leading-snug truncate">Template: Interactive Lecture Decl</h4>
-                    <p className="text-[10px] text-slate-400 mt-0.5 truncate">Added by Dr. Smith</p>
-                  </div>
-                </div>
-
-                {/* File 3 */}
-                <div className="flex items-center gap-3 bg-white/70 hover:bg-white rounded-xl p-3.5 transition-all cursor-pointer shadow-sm hover:shadow border border-white/50">
-                  <div className="w-9 h-9 rounded-lg bg-sky-50 flex items-center justify-center text-sky-600 shrink-0">
-                    <FiLink className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h4 className="font-bold text-slate-800 text-[12px] leading-snug truncate">Database of approved citation toc</h4>
-                    <p className="text-[10px] text-slate-400 mt-0.5 truncate">External Link</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            </form>
           </div>
-
         </div>
+      )}
 
-      </div>
     </div>
   );
 }
