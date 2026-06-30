@@ -1,5 +1,8 @@
 const QuizResult = require('../models/QuizResult');
 const FollowupResult = require('../models/FollowupResult');
+const Student = require('../models/Student');
+const Quiz = require('../models/Quiz');
+const CommunityPost = require('../models/CommunityPost');
 
 // @desc    Get Analytics Records
 // @route   GET /api/analytics
@@ -342,11 +345,233 @@ const getIndividualStudentAnalytics = async (req, res, next) => {
     }
 };
 
+// @desc    Get stats and student tracker data for Teacher Dashboard
+// @route   GET /api/analytics/teacher-dashboard
+// @access  Private
+const getTeacherDashboardStats = async (req, res, next) => {
+    try {
+        const { module: moduleQuery } = req.query;
+        const page = parseInt(req.query.page, 10) || 1;
+        const limit = parseInt(req.query.limit, 10) || 5; // Default 5 items per page
+        const skip = (page - 1) * limit;
+
+        // 1. Get total students count
+        const totalStudents = await Student.countDocuments({ status: { $ne: 'Inactive' } });
+
+        // 2. Get active modules count
+        const activeModules = await Quiz.countDocuments();
+
+        // 3. Get quiz results using aggregation to map the lessonName (bundleTopic)
+        const aggregationStages = [
+            { $lookup: {
+                from: 'quizzes',
+                localField: 'quizId',
+                foreignField: 'quizCode',
+                as: 'quizData'
+            }},
+            { $unwind: { path: '$quizData', preserveNullAndEmptyArrays: true } },
+            { $project: {
+                _id: 1,
+                quizId: 1,
+                studentId: 1,
+                studentName: 1,
+                score: 1,
+                correctAnswers: 1,
+                totalQuestions: 1,
+                percentage: 1,
+                submittedAt: 1,
+                lessonName: { $ifNull: ["$quizData.bundleTopic", "Unknown Lesson"] }
+            }}
+        ];
+
+        if (moduleQuery && moduleQuery !== 'All Modules') {
+            aggregationStages.push({ $match: { lessonName: moduleQuery } });
+        }
+
+        const allQuizResults = await QuizResult.aggregate(aggregationStages);
+        
+        let classAverage = 0;
+        if (allQuizResults.length > 0) {
+            const sum = allQuizResults.reduce((acc, curr) => acc + (curr.percentage || 0), 0);
+            classAverage = Math.round(sum / allQuizResults.length);
+        }
+
+        // 4. Get at-risk students count
+        const atRiskCount = await Student.countDocuments({ status: 'At Risk' });
+
+        // 5. Group quiz results by studentId (lowercase)
+        const resultsByStudent = {};
+        allQuizResults.forEach(result => {
+            if (!result.studentId) return;
+            const sId = result.studentId.toLowerCase();
+            if (!resultsByStudent[sId]) {
+                resultsByStudent[sId] = [];
+            }
+            resultsByStudent[sId].push(result);
+        });
+
+        // Sort each student's results by submittedAt descending
+        Object.keys(resultsByStudent).forEach(sId => {
+            resultsByStudent[sId].sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+        });
+
+        // 6. Fetch all active/at-risk students to populate student tracker
+        const students = await Student.find({ status: { $ne: 'Inactive' } }).sort({ name: 1 });
+
+        const studentTrackerList = students.map(student => {
+            const usernameLower = student.studentId ? student.studentId.toLowerCase() : '';
+            const results = resultsByStudent[usernameLower] || [];
+
+            let recentScore = null;
+            let averageScore = 0;
+            let trend = [0, 0, 0, 0];
+            let improvement = 0;
+
+            if (results.length > 0) {
+                recentScore = results[0].percentage;
+                const totalPct = results.reduce((sum, r) => sum + (r.percentage || 0), 0);
+                averageScore = Math.round(totalPct / results.length);
+
+                // Get last 4 quiz percentages (oldest to newest)
+                const lastQuizzes = results.slice(0, 4).reverse();
+                trend = lastQuizzes.map(q => q.percentage);
+                while (trend.length < 4) {
+                    trend.unshift(0);
+                }
+
+                // Calculate improvement compared to the previous quiz
+                if (results.length > 1) {
+                    improvement = results[0].percentage - results[1].percentage;
+                }
+            }
+
+            // Determine status based on performance if not set or just reflect model status
+            let displayStatus = student.status || 'Active';
+            if (results.length > 0 && averageScore < 50) {
+                displayStatus = 'At Risk';
+            }
+
+            return {
+                id: student._id,
+                studentId: student.studentId,
+                name: student.name,
+                initials: student.initials || student.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2),
+                recentScore,
+                averageScore,
+                improvement,
+                trend,
+                status: displayStatus
+            };
+        });
+
+        // 7. Get recent community posts needing guidance/activity
+        const recentPosts = await CommunityPost.find()
+            .sort({ createdAt: -1 })
+            .limit(2);
+
+        const communityActivity = recentPosts.map(post => {
+            const repliesCount = post.replies ? post.replies.length : 0;
+            const minsAgo = Math.floor((Date.now() - new Date(post.createdAt)) / 60000);
+            let timeStr = 'Recently';
+            if (minsAgo < 60) {
+                timeStr = `${minsAgo}m ago`;
+            } else if (minsAgo < 1440) {
+                timeStr = `${Math.floor(minsAgo / 60)}h ago`;
+            } else {
+                timeStr = `${Math.floor(minsAgo / 1440)}d ago`;
+            }
+
+            return {
+                id: post._id,
+                title: post.title,
+                body: post.body,
+                authorName: post.authorName,
+                repliesCount,
+                needsTeacherInput: post.needsTeacherInput || false,
+                time: timeStr
+            };
+        });
+
+        // 8. Generate predictive insights dynamically
+        const lessonMap = {};
+        allQuizResults.forEach(r => {
+            const lesson = r.quizId ? r.quizId.split('.')[0] : 'General';
+            if (!lessonMap[lesson]) {
+                lessonMap[lesson] = { totalPct: 0, count: 0 };
+            }
+            lessonMap[lesson].totalPct += r.percentage;
+            lessonMap[lesson].count += 1;
+        });
+
+        let weakestLesson = 'Advanced Calculus';
+        let lowestLessonAvg = 100;
+        Object.keys(lessonMap).forEach(lesson => {
+            const avg = lessonMap[lesson].totalPct / lessonMap[lesson].count;
+            if (avg < lowestLessonAvg) {
+                lowestLessonAvg = avg;
+                weakestLesson = lesson;
+            }
+        });
+
+        const insights = [
+            {
+                type: 'midterm-projection',
+                title: 'Midterm Exam Prediction',
+                description: `Based on current trajectory, the class average is projected to be ${classAverage > 0 ? classAverage : 82}%. Suggest reviewing "${weakestLesson}" to boost scores.`,
+                actionRecommended: true
+            }
+        ];
+
+        if (atRiskCount > 0) {
+            insights.push({
+                type: 'intervention-alert',
+                title: `Intervention Alert: ${atRiskCount} At-Risk Student(s)`,
+                description: `${atRiskCount} student(s) show dropping performance or are flagged. Immediate intervention is highly recommended.`,
+                actionText: 'Message Students'
+            });
+        } else if (studentTrackerList.filter(s => s.status === 'At Risk').length > 0) {
+            const riskCount = studentTrackerList.filter(s => s.status === 'At Risk').length;
+            insights.push({
+                type: 'intervention-alert',
+                title: `Intervention Alert: ${riskCount} Student(s) Underperforming`,
+                description: `${riskCount} student(s) have a quiz average below 50%. Suggest sending review materials.`,
+                actionText: 'Message Students'
+            });
+        }
+
+        // Apply pagination
+        const totalRecords = studentTrackerList.length;
+        const paginatedTracker = studentTrackerList.slice(skip, skip + limit);
+
+        res.status(200).json({
+            metrics: {
+                totalStudents,
+                activeModules,
+                classAverage,
+                atRiskCount
+            },
+            insights,
+            communityActivity,
+            studentTracker: paginatedTracker,
+            pagination: {
+                totalRecords,
+                currentPage: page,
+                totalPages: Math.ceil(totalRecords / limit),
+                limit
+            }
+        });
+    } catch (error) {
+        console.error('Teacher Dashboard Stats Error:', error);
+        next(error);
+    }
+};
+
 module.exports = {
     getAnalytics,
     getAvailableQuizzes,
     getAvailableLessons,
     getStudentPerformance,
     getAllStudents,
-    getIndividualStudentAnalytics
+    getIndividualStudentAnalytics,
+    getTeacherDashboardStats
 };

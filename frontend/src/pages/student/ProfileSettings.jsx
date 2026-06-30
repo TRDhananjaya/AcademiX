@@ -168,7 +168,7 @@ export default function ProfileSettings() {
 
                 <div className="bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-full px-4 py-1.5 flex items-center gap-1.5 transition-colors cursor-pointer">
                   <TbSchool className="text-slate-500 w-4.5 h-4.5" />
-                  <span className="text-slate-600 text-xs font-semibold">Grade 11 Student</span>
+                  <span className="text-slate-600 text-xs font-semibold">Grade 10 Student</span>
                 </div>
               </div>
 

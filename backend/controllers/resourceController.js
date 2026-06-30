@@ -14,7 +14,7 @@ const getResources = async (req, res) => {
       query = { lessonId };
     }
     const resources = await Resource.find(query).sort({ createdAt: 1 });
-    
+
     // Map to remove url field for heavy Base64 data (like uploaded PDFs or Videos)
     const mappedResources = resources.map(resource => {
       const resObj = resource.toObject();
