@@ -9,31 +9,52 @@ export default function Notifications() {
   const { user } = useAuth();
   const [activeNav, setActiveNav] = useState('notifications');
   const [activeFilter, setActiveFilter] = useState('All');
-<<<<<<< HEAD
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-=======
   const [expandedNotifs, setExpandedNotifs] = useState({});
 
   const toggleExpand = (id) => {
     setExpandedNotifs(prev => ({ ...prev, [id]: !prev[id] }));
   };
->>>>>>> main
 
   useEffect(() => {
     fetchNotifications();
-  }, []);
+  }, [user]);
 
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/notifications', {
+      // Fetch dynamic notifications from /api/notifications
+      const res1 = await fetch('/api/notifications', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(data);
+      let notifs1 = [];
+      if (res1.ok) {
+        notifs1 = await res1.json();
       }
+
+      // Fetch dynamic quiz results (from main branch)
+      let notifs2 = [];
+      const studentId = user?.username || 'student1';
+      const res2 = await fetch(`/api/quiz-results/student/${studentId}`);
+      if (res2.ok) {
+        const data = await res2.json();
+        if (Array.isArray(data) && data.length > 0) {
+          notifs2 = data.map(item => ({
+            _id: `quiz-res-${item._id}`,
+            isQuizResult: true,
+            notificationType: 'Quiz Results',
+            title: `Quiz Completed: ${item.quizTitle || item.quizId}`,
+            message: `You scored ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct). Time taken: ${item.timeTaken || 'N/A'}.`,
+            createdAt: item.submittedAt || new Date().toISOString(),
+            isRead: false,
+            actionLabel: 'Quiz Details'
+          }));
+        }
+      }
+
+      // Combine them
+      setNotifications([...notifs1, ...notifs2].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -41,53 +62,22 @@ export default function Notifications() {
     }
   };
 
-<<<<<<< HEAD
   const handleMarkAllRead = async () => {
     try {
       const token = localStorage.getItem('token');
-      const unread = notifications.filter(n => !n.isRead);
+      const unread = notifications.filter(n => !n.isRead && !n.isQuizResult); // Quiz results don't have a read status in DB currently
       for (const notif of unread) {
-        await fetch(`/api/notifications/${notif._id}/read`, {
-          method: 'PUT',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        if(notif._id) {
+          await fetch(`/api/notifications/${notif._id}/read`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        }
       }
       setNotifications(notifications.map(n => ({ ...n, isRead: true })));
     } catch (error) {
       console.error('Error marking all as read:', error);
     }
-=======
-  useEffect(() => {
-    const studentId = user?.username || 'student1';
-    fetch(`/api/quiz-results/student/${studentId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          const quizNotifs = data.map(item => ({
-            id: `quiz-res-${item._id}`,
-            isQuizResult: true,
-            type: 'Quiz Results',
-            category: 'Quiz Results',
-            icon: <TbFileText className="w-5 h-5 text-indigo-600" />,
-            title: `Quiz Completed: ${item.quizTitle || item.quizId}`,
-            details: `You scored ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct). Time taken: ${item.timeTaken || 'N/A'}.`,
-            time: item.submittedAt ? new Date(item.submittedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Recently',
-            unread: true,
-            actionLabel: 'Quiz Details',
-            actionClass: 'border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold py-2 px-4 rounded-lg transition-colors cursor-pointer',
-          }));
-          setNotifications(prev => {
-            const staticNotifs = prev.filter(n => typeof n.id !== 'string' || !n.id.startsWith('quiz-res-'));
-            return [...quizNotifs, ...staticNotifs];
-          });
-        }
-      })
-      .catch(err => console.error('Error fetching student quiz results:', err));
-  }, [user]);
-
-  const handleMarkAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, unread: false })));
->>>>>>> main
   };
 
   const handleFilterClick = (filter) => {
@@ -201,22 +191,10 @@ export default function Notifications() {
                           </span>
                         </div>
 
-<<<<<<< HEAD
-                        <p className={`text-sm leading-relaxed mb-4
-                          ${!notif.isRead ? 'text-slate-600' : 'text-slate-400/90'}`}>
-                          {notif.message}
-                        </p>
-
-                        {/* Action Button */}
-                        {notif.notificationType === 'StudyPlanGenerated' && (
-                          <a href="/student/study-plans" className="bg-[#3b28cc] hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors inline-block">
-                            Review Plan
-                          </a>
-=======
-                        {notif.body && (
+                        {notif.message && (
                           <p className={`text-sm leading-relaxed mb-4
-                            ${notif.unread ? 'text-slate-600' : 'text-slate-400/90'}`}>
-                            {notif.body}
+                            ${!notif.isRead ? 'text-slate-600' : 'text-slate-400/90'}`}>
+                            {notif.message}
                           </p>
                         )}
 
@@ -236,26 +214,25 @@ export default function Notifications() {
                         {notif.isQuizResult ? (
                           <div className="mt-3 space-y-3">
                             <button 
-                              onClick={() => toggleExpand(notif.id)}
+                              onClick={() => toggleExpand(notif._id)}
                               className="border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold py-2 px-4 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
                             >
-                              {notif.actionIcon}
-                              {expandedNotifs[notif.id] ? 'Hide Quiz Details' : 'Quiz Details'}
-                              <FiArrowRight className={`w-3.5 h-3.5 transition-transform ${expandedNotifs[notif.id] ? 'rotate-90' : ''}`} />
+                              {expandedNotifs[notif._id] ? 'Hide Quiz Details' : 'Quiz Details'}
+                              <FiArrowRight className={`w-3.5 h-3.5 transition-transform ${expandedNotifs[notif._id] ? 'rotate-90' : ''}`} />
                             </button>
 
-                            {expandedNotifs[notif.id] && (
+                            {expandedNotifs[notif._id] && (
                               <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1 animate-fadeIn">
-                                <p className="text-sm font-semibold text-slate-700">{notif.details}</p>
+                                <p className="text-sm font-semibold text-slate-700">{notif.message}</p>
                               </div>
                             )}
                           </div>
                         ) : (
-                          <button className={notif.actionClass}>
-                            {notif.actionIcon}
-                            {notif.actionLabel}
-                          </button>
->>>>>>> main
+                          notif.notificationType === 'StudyPlanGenerated' && (
+                            <a href="/student/study-plans" className="bg-[#3b28cc] hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors inline-block">
+                              Review Plan
+                            </a>
+                          )
                         )}
                       </div>
                     </div>

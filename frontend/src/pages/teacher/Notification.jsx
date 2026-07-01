@@ -1,13 +1,18 @@
 import { useState, useEffect } from 'react';
 import { FiCheck, FiArrowRight } from 'react-icons/fi';
-<<<<<<< HEAD
 import { TbAlertTriangle, TbFileText, TbMessageShare, TbCalendarStats, TbBrain } from 'react-icons/tb';
+import { navigate } from '../../App';
 
 export default function TeacherNotifications() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [approving, setApproving] = useState(null);
+  const [expandedNotifs, setExpandedNotifs] = useState({});
+
+  const toggleExpand = (id) => {
+    setExpandedNotifs(prev => ({ ...prev, [id]: !prev[id] }));
+  };
 
   useEffect(() => {
     fetchNotifications();
@@ -15,113 +20,87 @@ export default function TeacherNotifications() {
 
   const fetchNotifications = async () => {
     try {
-      // Get token (assuming standard localStorage based auth)
       const token = localStorage.getItem('token');
-      const response = await fetch('/api/notifications', {
+      // Fetch dynamic notifications from /api/notifications
+      const res1 = await fetch('/api/notifications', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(data);
+      let notifs1 = [];
+      if (res1.ok) {
+        notifs1 = await res1.json();
       }
+
+      // Fetch dynamic quiz results (from main branch)
+      let notifs2 = [];
+      const res2 = await fetch('/api/quiz-results');
+      if (res2.ok) {
+        const data = await res2.json();
+        if (Array.isArray(data)) {
+          notifs2 = data.map(item => ({
+            _id: `quiz-result-${item._id}`,
+            isQuizResult: true,
+            notificationType: 'Quiz Results',
+            badgeLabel: 'Quiz Result',
+            badgeClass: item.percentage >= 50 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600',
+            createdAt: item.submittedAt || new Date().toISOString(),
+            title: `${item.studentName} completed ${item.quizTitle || item.quizId}`,
+            message: `Student ID: ${item.studentId} • Score: ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct) • Time: ${item.timeTaken || 'N/A'}`,
+            actionLabel: 'Quiz Details',
+            actionPath: '/teacher/quiz-report',
+            isRead: false
+          }));
+        }
+      }
+
+      // Add static notifications for presentation
+      const staticNotifs = [
+        {
+          _id: 'static-1',
+          notificationType: 'Academic Alerts',
+          badgeLabel: 'Academic Alert',
+          badgeClass: 'bg-red-50 text-red-600',
+          createdAt: new Date(Date.now() - 10*60000).toISOString(),
+          title: '5 Students at risk in Physics 101',
+          message: 'Recent midterm scores for 5 students have fallen below the 60% threshold. Intervention is recommended.',
+          actionLabel: 'View Student Profiles',
+          actionPath: '/teacher/students',
+          isRead: false,
+        },
+        {
+          _id: 'static-3',
+          notificationType: 'Student Activity',
+          badgeLabel: 'Student Activity',
+          badgeClass: 'bg-slate-100 text-slate-600',
+          createdAt: new Date(Date.now() - 3*3600000).toISOString(),
+          title: 'New question in Community Hub',
+          message: 'Sarah Jenkins posted a new question regarding the upcoming assignment criteria in the Advanced Calculus hub.',
+          actionLabel: 'Reply to Thread',
+          actionPath: '/teacher/community',
+          isRead: true,
+        },
+      ];
+
+      setNotifications([...notifs1, ...notifs2, ...staticNotifs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
-=======
-import { TbAlertTriangle, TbFileText, TbMessageShare, TbCalendarStats } from 'react-icons/tb';
-import { navigate } from '../../App';
-
-export default function TeacherNotifications() {
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [expandedNotifs, setExpandedNotifs] = useState({});
-
-  const toggleExpand = (id) => {
-    setExpandedNotifs(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      category: 'Academic Alerts',
-      badgeLabel: 'Academic Alert',
-      badgeClass: 'bg-red-50 text-red-600',
-      time: '10 mins ago',
-      title: '5 Students at risk in Physics 101',
-      body: 'Recent midterm scores for 5 students have fallen below the 60% threshold. Intervention is recommended.',
-      actionLabel: 'View Student Profiles',
-      actionPath: '/teacher/students',
-      unread: true,
-      icon: (
-        <div className="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0">
-          <TbAlertTriangle className="w-5 h-5" />
-        </div>
-      )
-    },
-    {
-      id: 2,
-      category: 'Student Activity',
-      badgeLabel: 'Student Activity',
-      badgeClass: 'bg-purple-50 text-purple-600',
-      time: '1 hour ago',
-      title: 'Quiz results for Module 3 available',
-      body: 'The automated grading for Module 3 Quiz is complete. The class average is 82%.',
-      actionLabel: 'View Analytics',
-      actionPath: '/teacher/quiz-report',
-      unread: true,
-      icon: (
-        <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center shrink-0">
-          <TbFileText className="w-5 h-5" />
-        </div>
-      )
-    },
-    {
-      id: 3,
-      category: 'Student Activity',
-      badgeLabel: 'Student Activity',
-      badgeClass: 'bg-slate-100 text-slate-600',
-      time: '3 hours ago',
-      title: 'New question in Community Hub',
-      body: 'Sarah Jenkins posted a new question regarding the upcoming assignment criteria in the Advanced Calculus hub.',
-      actionLabel: 'Reply to Thread',
-      actionPath: '/teacher/community',
-      unread: false,
-      icon: (
-        <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
-          <TbMessageShare className="w-5 h-5" />
-        </div>
-      )
-    },
-    {
-      id: 4,
-      category: 'Academic Alerts',
-      badgeLabel: 'Academic Alert',
-      badgeClass: 'bg-[#e0f2f1] text-[#00695c]',
-      time: 'Yesterday',
-      title: 'Class attendance low today',
-      body: 'Attendance for Intro to Computer Science dropped below 70% during today\'s morning lecture.',
-      unread: false,
-      icon: (
-        <div className="w-10 h-10 rounded-full bg-[#e0f2f1] text-[#00695c] flex items-center justify-center shrink-0">
-          <TbCalendarStats className="w-5 h-5" />
-        </div>
-      )
->>>>>>> main
     }
   };
 
-<<<<<<< HEAD
   const handleMarkAllRead = async () => {
     try {
       const token = localStorage.getItem('token');
-      const unread = notifications.filter(n => !n.isRead);
+      const unread = notifications.filter(n => !n.isRead && !n.isQuizResult && !n._id.startsWith('static-'));
       for (const notif of unread) {
-        await fetch(`/api/notifications/${notif._id}/read`, {
-          method: 'PUT',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        if (notif._id) {
+          await fetch(`/api/notifications/${notif._id}/read`, {
+            method: 'PUT',
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+        }
       }
       setNotifications(notifications.map((n) => ({ ...n, isRead: true })));
     } catch (error) {
@@ -139,7 +118,6 @@ export default function TeacherNotifications() {
       });
       
       if (response.ok) {
-        // Update local state
         setNotifications(notifications.map((n) => 
           n._id === id ? { ...n, status: 'Approved', isRead: true } : n
         ));
@@ -161,45 +139,13 @@ export default function TeacherNotifications() {
         return <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0"><TbBrain className="w-5 h-5" /></div>;
       case 'Academic Alerts':
         return <div className="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0"><TbAlertTriangle className="w-5 h-5" /></div>;
+      case 'Student Activity':
+        return <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0"><TbMessageShare className="w-5 h-5" /></div>;
+      case 'Quiz Results':
+        return <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><TbFileText className="w-5 h-5" /></div>;
       default:
         return <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0"><TbFileText className="w-5 h-5" /></div>;
     }
-=======
-  useEffect(() => {
-    fetch('/api/quiz-results')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          const quizNotifs = data.map(item => ({
-            id: `quiz-result-${item._id}`,
-            isQuizResult: true,
-            category: 'Quiz Results',
-            badgeLabel: 'Quiz Result',
-            badgeClass: item.percentage >= 50 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600',
-            time: item.submittedAt ? new Date(item.submittedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Recently',
-            title: `${item.studentName} completed ${item.quizTitle || item.quizId}`,
-            details: `Student ID: ${item.studentId} • Score: ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct) • Time: ${item.timeTaken || 'N/A'}`,
-            actionLabel: 'Quiz Details',
-            actionPath: '/teacher/quiz-report',
-            unread: true,
-            icon: (
-              <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                <TbFileText className="w-5 h-5" />
-              </div>
-            )
-          }));
-          setNotifications(prev => {
-            const staticNotifs = prev.filter(n => typeof n.id !== 'string' || !n.id.startsWith('quiz-result-'));
-            return [...quizNotifs, ...staticNotifs];
-          });
-        }
-      })
-      .catch(err => console.error('Error fetching quiz results:', err));
-  }, []);
-
-  const handleMarkAllRead = () => {
-    setNotifications(notifications.map((n) => ({ ...n, unread: false })));
->>>>>>> main
   };
 
   const filteredNotifications = activeFilter === 'All'
@@ -230,11 +176,7 @@ export default function TeacherNotifications() {
 
       {/* Filters */}
       <div className="flex gap-2.5 mb-6 overflow-x-auto pb-1">
-<<<<<<< HEAD
-        {['All', 'StudyPlanApproval', 'Academic Alerts', 'System Updates'].map((filter) => (
-=======
-        {['All', 'Quiz Results', 'Academic Alerts', 'Student Activity', 'System Updates'].map((filter) => (
->>>>>>> main
+        {['All', 'StudyPlanApproval', 'Quiz Results', 'Academic Alerts', 'Student Activity', 'System Updates'].map((filter) => (
           <button
             key={filter}
             onClick={() => setActiveFilter(filter)}
@@ -274,8 +216,8 @@ export default function TeacherNotifications() {
                 <div className="flex-1 pr-6">
                   {/* Badge & Time Row */}
                   <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-indigo-50 text-indigo-600">
-                      {notif.notificationType}
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${notif.badgeClass || 'bg-indigo-50 text-indigo-600'}`}>
+                      {notif.badgeLabel || notif.notificationType}
                     </span>
                     <span className="text-slate-400 text-xs">{new Date(notif.createdAt).toLocaleString()}</span>
                   </div>
@@ -285,10 +227,12 @@ export default function TeacherNotifications() {
                     ${!notif.isRead ? 'text-slate-900' : 'text-slate-700'}`}>
                     {notif.title}
                   </h3>
-<<<<<<< HEAD
-                  <p className="text-slate-500 text-sm leading-relaxed mb-3">
-                    {notif.message}
-                  </p>
+                  
+                  {notif.message && (
+                    <p className="text-slate-500 text-sm leading-relaxed mb-3">
+                      {notif.message}
+                    </p>
+                  )}
 
                   {/* Actions */}
                   {notif.notificationType === 'StudyPlanApproval' && notif.status === 'Pending' && (
@@ -296,7 +240,7 @@ export default function TeacherNotifications() {
                       <button
                         onClick={() => handleApprove(notif._id)}
                         disabled={approving === notif._id}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer"
                       >
                         {approving === notif._id ? 'Approving...' : 'Approve Plan Generation'}
                       </button>
@@ -308,27 +252,22 @@ export default function TeacherNotifications() {
                         <FiCheck /> Approved
                       </span>
                     </div>
-=======
-                  {notif.body && (
-                    <p className="text-slate-500 text-sm leading-relaxed mb-3">
-                      {notif.body}
-                    </p>
                   )}
 
                   {/* Action Link / Details Toggle */}
                   {notif.isQuizResult ? (
                     <div className="mt-3 space-y-3">
                       <button 
-                        onClick={() => toggleExpand(notif.id)}
+                        onClick={() => toggleExpand(notif._id)}
                         className="text-indigo-600 hover:text-indigo-800 text-xs font-bold flex items-center gap-1 group transition-colors cursor-pointer bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100"
                       >
-                        {expandedNotifs[notif.id] ? 'Hide Quiz Details' : 'Quiz Details'}
-                        <FiArrowRight className={`w-3.5 h-3.5 transition-transform ${expandedNotifs[notif.id] ? 'rotate-90' : ''}`} />
+                        {expandedNotifs[notif._id] ? 'Hide Quiz Details' : 'Quiz Details'}
+                        <FiArrowRight className={`w-3.5 h-3.5 transition-transform ${expandedNotifs[notif._id] ? 'rotate-90' : ''}`} />
                       </button>
 
-                      {expandedNotifs[notif.id] && (
+                      {expandedNotifs[notif._id] && (
                         <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 animate-fadeIn">
-                          <p className="text-sm font-semibold text-slate-700">{notif.details}</p>
+                          <p className="text-sm font-semibold text-slate-700">{notif.message}</p>
                           <button
                             onClick={() => navigate('/teacher/quiz-report')}
                             className="text-xs text-indigo-600 font-bold hover:underline cursor-pointer inline-block mt-1"
@@ -348,7 +287,6 @@ export default function TeacherNotifications() {
                         <FiArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                       </button>
                     )
->>>>>>> main
                   )}
                 </div>
               </div>
@@ -363,4 +301,3 @@ export default function TeacherNotifications() {
     </div>
   );
 }
-
