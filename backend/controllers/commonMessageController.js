@@ -39,21 +39,21 @@ const getMessages = async (req, res) => {
 
     const messages = await CommonMessage.find({}).sort({ timestamp: 1 }).limit(200);
 
-    // Map unique senderIds to their database-saved profile pictures
-    const senderIds = [...new Set(messages.map(msg => msg.senderId))];
+    // Map unique senderIds to their database-saved profile pictures (normalized to lowercase)
+    const senderIds = [...new Set(messages.map(msg => (msg.senderId || '').toLowerCase()))];
     const users = await User.find({ username: { $in: senderIds } }, 'username profilePicture');
     const userMap = new Map();
     users.forEach(u => {
-      if (u.profilePicture) {
-        userMap.set(u.username, u.profilePicture);
+      if (u.username) {
+        userMap.set(u.username.toLowerCase(), u.profilePicture || '');
       }
     });
 
     const enrichedMessages = messages.map(msg => {
-      const dbProfilePicture = userMap.get(msg.senderId);
-      if (dbProfilePicture) {
+      const senderKey = (msg.senderId || '').toLowerCase();
+      if (userMap.has(senderKey)) {
         const msgObj = msg.toObject();
-        msgObj.senderAvatar = dbProfilePicture;
+        msgObj.senderAvatar = userMap.get(senderKey);
         return msgObj;
       }
       return msg;
@@ -70,7 +70,7 @@ const getMessages = async (req, res) => {
 // @route   POST /api/common-messages
 const sendMessage = async (req, res) => {
   try {
-    const { text, senderId, senderName, senderRole, senderAvatar } = req.body;
+    const { text, senderId, senderName, senderRole } = req.body;
     if (!text || !text.trim()) {
       return res.status(400).json({ message: 'Message text is required' });
     }
@@ -80,8 +80,8 @@ const sendMessage = async (req, res) => {
     const sName = senderName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Community Member');
     const sRole = senderRole || (user ? user.role : 'student');
 
-    const dbUser = await User.findOne({ username: sId }, 'profilePicture');
-    const sAvatar = (dbUser && dbUser.profilePicture) || senderAvatar || `https://i.pravatar.cc/150?u=${encodeURIComponent(sId)}`;
+    const dbUser = await User.findOne({ username: sId.toLowerCase() }, 'profilePicture');
+    const sAvatar = (dbUser && dbUser.profilePicture) || '';
 
     const message = new CommonMessage({
       senderId: sId,

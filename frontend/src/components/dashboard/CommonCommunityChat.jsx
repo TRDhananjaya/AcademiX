@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiSend, FiUsers, FiSmile, FiPaperclip, FiCheckCircle } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
+import propic from '../../assets/propic.png';
 
 export default function CommonCommunityChat() {
   const { user } = useAuth();
@@ -70,7 +71,7 @@ export default function CommonCommunityChat() {
       senderId: currentUserId,
       senderName: currentUserName,
       senderRole: currentUserRole,
-      senderAvatar: user?.profilePicture || `https://i.pravatar.cc/150?u=${encodeURIComponent(currentUserId)}`,
+      senderAvatar: user?.profilePicture || '',
       text: textToSend,
       timestamp: new Date().toISOString()
     };
@@ -87,7 +88,7 @@ export default function CommonCommunityChat() {
           senderId: currentUserId,
           senderName: currentUserName,
           senderRole: currentUserRole,
-          senderAvatar: user?.profilePicture || `https://i.pravatar.cc/150?u=${encodeURIComponent(currentUserId)}`
+          senderAvatar: user?.profilePicture || ''
         })
       });
 
@@ -143,9 +144,10 @@ export default function CommonCommunityChat() {
             return (
               <div key={msg._id} className={`flex items-start gap-3 max-w-[85%] md:max-w-[75%] ${isMe ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}>
                 <img 
-                  src={msg.senderAvatar || `https://i.pravatar.cc/150?u=${encodeURIComponent(msg.senderId)}`} 
+                  src={msg.senderAvatar || (msg.senderRole === 'teacher' ? 'https://i.pravatar.cc/150?img=47' : propic)} 
                   alt={msg.senderName} 
                   className="w-9 h-9 rounded-full border border-slate-200 shrink-0 mt-0.5 shadow-sm"
+                  onError={(e) => { e.target.src = msg.senderRole === 'teacher' ? 'https://i.pravatar.cc/150?img=47' : propic; }}
                 />
 
                 <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
