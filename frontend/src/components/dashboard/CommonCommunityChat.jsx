@@ -70,7 +70,7 @@ export default function CommonCommunityChat() {
       senderId: currentUserId,
       senderName: currentUserName,
       senderRole: currentUserRole,
-      senderAvatar: `https://i.pravatar.cc/150?u=${encodeURIComponent(currentUserId)}`,
+      senderAvatar: user?.profilePicture || `https://i.pravatar.cc/150?u=${encodeURIComponent(currentUserId)}`,
       text: textToSend,
       timestamp: new Date().toISOString()
     };
@@ -87,7 +87,7 @@ export default function CommonCommunityChat() {
           senderId: currentUserId,
           senderName: currentUserName,
           senderRole: currentUserRole,
-          senderAvatar: `https://i.pravatar.cc/150?u=${encodeURIComponent(currentUserId)}`
+          senderAvatar: user?.profilePicture || `https://i.pravatar.cc/150?u=${encodeURIComponent(currentUserId)}`
         })
       });
 
