@@ -9,7 +9,7 @@ export default function QuizManagement() {
   // State variables for report view have been delegated to QuizReportContent page.
 
   useEffect(() => {
-    const fetchData = async () => {
+    async function fetchData() {
       try {
         const [modulesRes, quizzesRes, resultsRes] = await Promise.all([
           fetch('http://localhost:5000/api/quizzes/modules'),

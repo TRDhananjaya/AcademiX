@@ -20,7 +20,7 @@ export default function CreateQuizContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    const fetchModulesAndQuizzes = async () => {
+    async function fetchModulesAndQuizzes() {
       try {
         const [modulesRes, quizzesRes] = await Promise.all([
           fetch('http://localhost:5000/api/quizzes/modules'),
@@ -85,7 +85,7 @@ export default function CreateQuizContent() {
     }
   };
 
-  const handleReshuffleQuestions = async () => {
+  async function handleReshuffleQuestions() {
     if (!selectedModuleCode) return;
     
     if (!window.confirm('This will replace the current questions with a new set of 20 random questions from the module bank. Are you sure?')) {
@@ -120,7 +120,7 @@ export default function CreateQuizContent() {
     setQuestions(questions.filter(q => q.id !== id && q._id !== id));
   };
 
-  const handlePublish = async () => {
+  async function handlePublish() {
     const activeMod = modules.find(m => m.quizCode === selectedModuleCode);
     if (!activeMod) {
       alert('Please select a valid module');

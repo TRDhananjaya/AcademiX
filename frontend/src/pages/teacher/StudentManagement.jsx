@@ -26,7 +26,7 @@ export default function StudentManagement() {
     fetchStudents();
   }, []);
 
-  const fetchStudents = async () => {
+  async function fetchStudents() {
     try {
       const response = await fetch('http://localhost:5000/api/students');
       if (response.ok) {

@@ -19,7 +19,7 @@ export default function TakeQuiz() {
 
   useEffect(() => {
     if (!user) return;
-    const loadQuizData = async () => {
+    async function loadQuizData() {
       try {
         // Fetch quizzes and student results in parallel for better performance
         const [quizRes, studentRes] = await Promise.all([
@@ -53,7 +53,7 @@ export default function TakeQuiz() {
   const questionId = currentQuestion ? (currentQuestion._id || currentQuestion.id) : null;
   const isCurrentQuestionAnswered = questionId ? selectedAnswers[questionId] !== undefined : false;
   
-  const handleSubmit = async () => {
+  async function handleSubmit() {
     setIsSubmitted(true);
     if (!currentQuiz) return;
 

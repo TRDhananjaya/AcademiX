@@ -30,7 +30,7 @@ export default function Lessons() {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
+  async function fetchData() {
     try {
       const lessonsRes = await fetch('http://localhost:5000/api/lessons');
       const lessonsData = await lessonsRes.json();

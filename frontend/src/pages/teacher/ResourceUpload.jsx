@@ -73,7 +73,7 @@ export default function LessonManagement() {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
+  async function fetchData() {
     try {
       // 1. Fetch Lessons
       const lessonsRes = await fetch('http://localhost:5000/api/lessons');
@@ -118,7 +118,7 @@ export default function LessonManagement() {
     }
   };
 
-  const seedDatabase = async () => {
+  async function seedDatabase() {
     try {
       const seedLessons = [
         {
@@ -587,7 +587,7 @@ export default function LessonManagement() {
     });
   };
 
-  const executeDelete = async () => {
+  async function executeDelete() {
     const { type, id } = deleteConfirm;
     if (!id) return;
 

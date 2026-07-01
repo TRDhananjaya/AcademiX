@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import ReactMarkdown from 'react-markdown';
 import Sidebar from '../../components/common/student/Sidebar';
 import StudentTopBar from '../../components/dashboard/StudentTopBar';
 import { useAuth } from '../../context/AuthContext';
@@ -15,6 +16,31 @@ const performanceData = [
 export default function StudyPlans() {
   const { user } = useAuth();
   const [activeNav, setActiveNav] = useState('study-plans');
+  const [studyPlans, setStudyPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStudyPlans();
+  }, []);
+
+  const fetchStudyPlans = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/study-plans', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStudyPlans(data);
+      }
+    } catch (error) {
+      console.error('Error fetching study plans:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen font-sans bg-[#fcfdff]" id="study-plans-layout">
@@ -37,66 +63,47 @@ export default function StudyPlans() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
             
             {/* AI Study Plan Card */}
-            <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 relative overflow-hidden flex flex-col">
+            <div className="lg:col-span-2 bg-white rounded-3xl p-8 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-slate-100 relative overflow-hidden flex flex-col min-h-[400px]">
               
               {/* Background Gradient Blob */}
               <div className="absolute right-0 top-0 w-64 h-64 bg-fuchsia-100 opacity-60 rounded-bl-full blur-3xl pointer-events-none transform translate-x-10 -translate-y-10"></div>
               
-              <div className="relative z-10 flex justify-between items-start mb-6">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg className="text-indigo-600 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 3v18M3 12h18M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728" strokeOpacity="0.2"/>
-                      <path d="M12 8v8M8 12h8" />
-                    </svg>
-                    <h2 className="text-[22px] font-bold text-slate-800">Your AI Study Plan</h2>
-                  </div>
-                  <p className="text-slate-500 text-[15px]">Focused on Weak Areas: Advanced Calculus</p>
+              {loading ? (
+                <div className="flex-1 flex items-center justify-center text-slate-500">
+                  Loading your personalized AI Study Plan...
                 </div>
-                
-                <div className="bg-indigo-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-indigo-200">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-200"></span>
-                  Active
-                </div>
-              </div>
+              ) : studyPlans.length > 0 ? (
+                studyPlans.map((plan) => (
+                  <div key={plan._id} className="mb-8 last:mb-0">
+                    <div className="relative z-10 flex justify-between items-start mb-6">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="text-indigo-600 w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 3v18M3 12h18M18.364 5.636l-12.728 12.728M5.636 5.636l12.728 12.728" strokeOpacity="0.2"/>
+                            <path d="M12 8v8M8 12h8" />
+                          </svg>
+                          <h2 className="text-[22px] font-bold text-slate-800">Your AI Study Plan</h2>
+                        </div>
+                        <p className="text-slate-500 text-[15px]">Lesson: {plan.lessonId?.title || 'Unknown Lesson'}</p>
+                      </div>
+                      
+                      <div className="bg-indigo-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-sm shadow-indigo-200">
+                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-200"></span>
+                        {plan.status}
+                      </div>
+                    </div>
 
-              {/* Tasks List */}
-              <div className="relative z-10 space-y-4 mt-2">
-                
-                {/* Task 1 */}
-                <div className="flex gap-4">
-                  <div className="flex flex-col items-center mt-1">
-                    <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-200 shrink-0 z-10">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    <div className="relative z-10 prose prose-indigo max-w-none text-slate-700">
+                      <ReactMarkdown>{plan.generatedStudyPlan}</ReactMarkdown>
                     </div>
-                    <div className="w-[1.5px] h-full bg-slate-200 mt-2 mb-1"></div>
                   </div>
-                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex-1 flex justify-between items-center group cursor-pointer hover:bg-indigo-50/50 transition-colors">
-                    <div>
-                      <h4 className="font-semibold text-slate-800 text-[15px]">Review Short Notes</h4>
-                      <p className="text-sm text-slate-500 mt-0.5">Derivatives & Integrals (15 min)</p>
-                    </div>
-                    <svg className="w-5 h-5 text-slate-400 group-hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/></svg>
-                  </div>
+                ))
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-center text-slate-500 relative z-10">
+                  <p className="mb-2 text-lg font-semibold text-slate-700">No AI Study Plans generated yet.</p>
+                  <p className="text-sm">Complete a lesson's quizzes to get a personalized study roadmap from our AI.</p>
                 </div>
-
-                {/* Task 2 */}
-                <div className="flex gap-4">
-                  <div className="flex flex-col items-center mt-1">
-                    <div className="w-9 h-9 rounded-full bg-white border-[2px] border-indigo-400 text-indigo-500 flex items-center justify-center shrink-0 z-10">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                    </div>
-                  </div>
-                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex-1 flex justify-between items-center group cursor-pointer hover:bg-indigo-50/50 transition-colors">
-                    <div>
-                      <h4 className="font-semibold text-slate-800 text-[15px]">Practice Questions</h4>
-                      <p className="text-sm text-slate-500 mt-0.5">10 Adaptive MCQs</p>
-                    </div>
-                    <svg className="w-5 h-5 text-slate-400 group-hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/></svg>
-                  </div>
-                </div>
-
-              </div>
+              )}
             </div>
 
             {/* Next Quiz Widget */}
@@ -119,7 +126,7 @@ export default function StudyPlans() {
                     02<span className="text-indigo-300 mx-0.5">:</span>45<span className="text-indigo-300 mx-0.5">:</span>00
                   </div>
                   
-                  <button className="w-full py-2.5 bg-white border border-indigo-100 text-indigo-600 rounded-xl text-[13px] font-semibold shadow-sm hover:bg-indigo-50 transition-colors">
+                  <button className="w-full py-2.5 bg-white border border-indigo-100 text-indigo-600 rounded-xl text-[13px] font-semibold shadow-sm hover:bg-indigo-50 transition-colors cursor-pointer">
                     Review Material
                   </button>
                 </div>

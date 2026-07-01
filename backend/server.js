@@ -15,6 +15,8 @@ const reportRoutes = require('./routes/reportRoutes');
 const lessonRoutes = require('./routes/lessonRoutes');
 const moduleRoutes = require('./routes/moduleRoutes');
 const resourceRoutes = require('./routes/resourceRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const studyPlanRoutes = require('./routes/studyPlanRoutes');
 
 const app = express();
 
@@ -44,6 +46,8 @@ app.use('/api/reports', authMiddleware, reportRoutes);
 app.use('/api/lessons', authMiddleware, lessonRoutes);
 app.use('/api/modules', authMiddleware, moduleRoutes);
 app.use('/api/resources', authMiddleware, resourceRoutes);
+app.use('/api/notifications', authMiddleware, notificationRoutes);
+app.use('/api/study-plans', authMiddleware, studyPlanRoutes);
 
 // Error handling middleware (must be after routes)
 app.use(errorMiddleware);

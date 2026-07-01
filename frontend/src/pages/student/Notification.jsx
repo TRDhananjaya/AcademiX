@@ -1,69 +1,50 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/student/Sidebar';
 import StudentTopBar from '../../components/dashboard/StudentTopBar';
 import { FiSliders, FiCheck, FiArrowRight, FiPlay, FiBookOpen } from 'react-icons/fi';
-import { TbRobot, TbFileText, TbCalendarEvent } from 'react-icons/tb';
+import { TbRobot, TbFileText, TbCalendarEvent, TbBrain } from 'react-icons/tb';
 
 export default function Notifications() {
   const [activeNav, setActiveNav] = useState('notifications');
   const [activeFilter, setActiveFilter] = useState('All');
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Sample notifications data matching the mockup exactly
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      type: 'AI Recommendations',
-      icon: <TbRobot className="w-5 h-5 text-indigo-600" />,
-      title: 'New Learning Path Generated',
-      body: 'Based on your recent quiz scores, we\'ve adjusted your calculus study plan to focus on derivatives. Our AI has curated 3 new micro-lessons for you.',
-      time: 'Just now',
-      unread: true,
-      category: 'AI Recommendations',
-      actionLabel: 'Review Plan',
-      actionClass: 'bg-[#3b28cc] hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors',
-    },
-    {
-      id: 2,
-      type: 'Quiz Results',
-      icon: <TbFileText className="w-5 h-5 text-indigo-600" />,
-      title: 'Physics Midterm Graded',
-      body: 'Your results are in. You scored 92%. Great job on the kinematics section, but review fluid dynamics.',
-      time: '2 hours ago',
-      unread: true,
-      category: 'Quiz Results',
-      actionLabel: 'View Result',
-      actionClass: 'border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold py-2 px-4 rounded-lg transition-colors',
-    },
-    {
-      id: 3,
-      type: 'Attendance',
-      icon: <TbCalendarEvent className="w-5 h-5 text-slate-400" />,
-      title: 'Missed Lecture Alert',
-      body: 'You missed "Intro to Computer Science: Data Structures" today at 10:00 AM.',
-      time: 'Yesterday',
-      unread: false,
-      category: 'Attendance',
-      actionLabel: 'Watch Recording',
-      actionIcon: <FiPlay className="w-3.5 h-3.5 mr-1.5" />,
-      actionClass: 'border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold py-2 px-4 rounded-lg flex items-center transition-colors',
-    },
-    {
-      id: 4,
-      type: 'Study Plans',
-      icon: <FiBookOpen className="w-5 h-5 text-slate-400" />,
-      title: 'Upcoming Deadline',
-      body: 'Your "Literature Review Essay Draft" is due in 2 days. You have completed 60% of the required reading.',
-      time: 'Oct 24',
-      unread: false,
-      category: 'Study Plans',
-      progress: 60,
-      actionLabel: 'Go to Assignment',
-      actionClass: 'border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold py-2 px-4 rounded-lg transition-colors',
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/notifications', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
-  const handleMarkAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, unread: false })));
+  const handleMarkAllRead = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const unread = notifications.filter(n => !n.isRead);
+      for (const notif of unread) {
+        await fetch(`/api/notifications/${notif._id}/read`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+      }
+      setNotifications(notifications.map(n => ({ ...n, isRead: true })));
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
   };
 
   const handleFilterClick = (filter) => {
@@ -72,7 +53,20 @@ export default function Notifications() {
 
   const filteredNotifications = activeFilter === 'All' 
     ? notifications 
-    : notifications.filter(n => n.category === activeFilter);
+    : notifications.filter(n => n.notificationType === activeFilter);
+
+  const getIconForType = (type) => {
+    switch(type) {
+      case 'StudyPlanGenerated':
+        return <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0"><TbBrain className="w-5 h-5" /></div>;
+      case 'AI Recommendations':
+        return <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0"><TbRobot className="w-5 h-5" /></div>;
+      case 'Attendance':
+        return <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0"><TbCalendarEvent className="w-5 h-5" /></div>;
+      default:
+        return <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0"><TbFileText className="w-5 h-5" /></div>;
+    }
+  };
 
   // Stats for the Weekly Overview
   const stats = [
@@ -99,7 +93,7 @@ export default function Notifications() {
               </p>
             </div>
             
-            {notifications.some(n => n.unread) && (
+            {notifications.some(n => !n.isRead) && (
               <button 
                 onClick={handleMarkAllRead}
                 className="text-[#3b28cc] hover:text-indigo-800 text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
@@ -112,7 +106,7 @@ export default function Notifications() {
 
           {/* Filters */}
           <div className="flex gap-2.5 mb-6 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-            {['All', 'Quiz Results', 'Attendance', 'Study Plans', 'AI Recommendations'].map((filter) => (
+            {['All', 'StudyPlanGenerated', 'Quiz Results', 'Attendance'].map((filter) => (
               <button
                 key={filter}
                 onClick={() => handleFilterClick(filter)}
@@ -122,7 +116,7 @@ export default function Notifications() {
                     : 'bg-white border border-slate-100 text-slate-600 hover:bg-slate-50 hover:text-slate-800'
                   }`}
               >
-                {filter}
+                {filter === 'StudyPlanGenerated' ? 'Study Plans' : filter}
               </button>
             ))}
           </div>
@@ -131,62 +125,50 @@ export default function Notifications() {
             
             {/* Left Column (Notifications List) */}
             <div className="flex-1 space-y-4">
-              {filteredNotifications.length > 0 ? (
+              {loading ? (
+                <p className="text-slate-500">Loading notifications...</p>
+              ) : filteredNotifications.length > 0 ? (
                 filteredNotifications.map((notif) => (
                   <div
-                    key={notif.id}
+                    key={notif._id}
                     className={`relative rounded-2xl p-6 border transition-all duration-200 bg-white
-                      ${notif.unread
+                      ${!notif.isRead
                         ? 'border-indigo-100 shadow-sm border-l-4 border-l-indigo-600'
                         : 'border-slate-100/70 shadow-sm opacity-90'
                       }`}
                   >
                     {/* Unread indicator dot */}
-                    {notif.unread && (
+                    {!notif.isRead && (
                       <span className="absolute top-6 right-6 w-2 h-2 rounded-full bg-cyan-500"></span>
                     )}
 
                     <div className="flex items-start gap-4">
                       {/* Icon container */}
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0
-                        ${notif.unread ? 'bg-indigo-50' : 'bg-slate-100'}`}>
-                        {notif.icon}
-                      </div>
+                      {getIconForType(notif.notificationType)}
 
                       <div className="flex-1 min-w-0 pr-6">
                         <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1 mb-1">
                           <h3 className={`text-base font-bold leading-snug truncate
-                            ${notif.unread ? 'text-slate-900' : 'text-slate-400'}`}>
+                            ${!notif.isRead ? 'text-slate-900' : 'text-slate-400'}`}>
                             {notif.title}
                           </h3>
                           <span className={`text-xs whitespace-nowrap
-                            ${notif.unread ? 'text-indigo-600 font-semibold' : 'text-slate-400'}`}>
-                            {notif.time}
+                            ${!notif.isRead ? 'text-indigo-600 font-semibold' : 'text-slate-400'}`}>
+                            {new Date(notif.createdAt).toLocaleString()}
                           </span>
                         </div>
 
                         <p className={`text-sm leading-relaxed mb-4
-                          ${notif.unread ? 'text-slate-600' : 'text-slate-400/90'}`}>
-                          {notif.body}
+                          ${!notif.isRead ? 'text-slate-600' : 'text-slate-400/90'}`}>
+                          {notif.message}
                         </p>
 
-                        {/* Progress bar if present */}
-                        {notif.progress !== undefined && (
-                          <div className="max-w-md mb-5">
-                            <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                              <div 
-                                className="bg-[#3b28cc] h-full rounded-full transition-all duration-500" 
-                                style={{ width: `${notif.progress}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        )}
-
                         {/* Action Button */}
-                        <button className={notif.actionClass}>
-                          {notif.actionIcon}
-                          {notif.actionLabel}
-                        </button>
+                        {notif.notificationType === 'StudyPlanGenerated' && (
+                          <a href="/student/study-plans" className="bg-[#3b28cc] hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors inline-block">
+                            Review Plan
+                          </a>
+                        )}
                       </div>
                     </div>
                   </div>

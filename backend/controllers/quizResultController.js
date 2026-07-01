@@ -27,6 +27,89 @@ const submitQuiz = async (req, res) => {
     });
 
     const savedResult = await result.save();
+    
+    // --- START AI STUDY PLAN WORKFLOW LOGIC ---
+    try {
+      const Module = require('../models/Module');
+      const Lesson = require('../models/Lesson');
+      const StudyPlan = require('../models/StudyPlan');
+      const Notification = require('../models/Notification');
+      const User = require('../models/User');
+
+      let currentModule = null;
+      if (mongoose.Types.ObjectId.isValid(quiz.moduleId)) {
+         currentModule = await Module.findById(quiz.moduleId);
+      }
+
+      if (currentModule && currentModule.lessonId) {
+        // Find all modules for this lesson
+        const lessonModules = await Module.find({ lessonId: currentModule.lessonId });
+        const moduleIds = lessonModules.map(m => m._id.toString());
+        
+        // Find all quizzes for these modules
+        const lessonQuizzes = await Quiz.find({ 
+          $or: [
+             { moduleId: { $in: moduleIds } },
+             { moduleId: { $in: lessonModules.map(m => m._id) } }
+          ]
+        });
+
+        if (lessonQuizzes.length > 0) {
+          const quizCodes = lessonQuizzes.map(q => q.quizCode);
+          
+          // Find all results for this student on these quizzes
+          const studentResults = await QuizResult.find({
+            studentId,
+            quizId: { $in: quizCodes }
+          });
+
+          // Unique completed quizzes by this student
+          const completedQuizCodes = [...new Set(studentResults.map(r => r.quizId))];
+
+          // Check if all quizzes are completed
+          if (completedQuizCodes.length === quizCodes.length) {
+            // Verify no pending notification or generated study plan already exists
+            const existingPlan = await StudyPlan.findOne({
+              studentId,
+              lessonId: currentModule.lessonId
+            });
+
+            const existingNotification = await Notification.findOne({
+              relatedStudentId: studentId,
+              relatedLessonId: currentModule.lessonId,
+              notificationType: 'StudyPlanApproval',
+              status: { $in: ['Pending', 'Approved'] }
+            });
+
+            if (!existingPlan && !existingNotification) {
+              const lesson = await Lesson.findById(currentModule.lessonId);
+              const lessonName = lesson ? lesson.title : 'the lesson';
+              
+              const teachers = await User.find({ role: 'teacher' });
+              
+              if (teachers.length > 0) {
+                const notificationsToCreate = teachers.map(teacher => ({
+                  recipientId: teacher._id,
+                  recipientRole: 'teacher',
+                  title: 'Study Plan Approval Needed',
+                  message: `Student ${studentName || studentId} has completed all quizzes for "${lessonName}". Would you like to generate a personalized AI Study Plan?`,
+                  notificationType: 'StudyPlanApproval',
+                  relatedLessonId: currentModule.lessonId,
+                  relatedStudentId: studentId,
+                  status: 'Pending'
+                }));
+                
+                await Notification.insertMany(notificationsToCreate);
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error triggering study plan workflow:', err);
+    }
+    // --- END AI STUDY PLAN WORKFLOW LOGIC ---
+
     res.status(201).json(savedResult);
   } catch (error) {
     console.error('Error submitting quiz:', error);

@@ -38,7 +38,7 @@ export default function Analytics() {
 
   // Initial Fetch (Quizzes & Lessons)
   useEffect(() => {
-    const fetchInitialData = async () => {
+    async function fetchInitialData() {
       try {
         const [quizzesRes, lessonsRes, studentsRes] = await Promise.all([
           fetch('http://localhost:5000/api/analytics/quizzes'),
@@ -139,7 +139,7 @@ export default function Analytics() {
   }, [lessonFilter, studentSearch, viewMode]);
 
   // Fetch Individual Student Data
-  const fetchIndividualAnalytics = async () => {
+  async function fetchIndividualAnalytics() {
     if (!individualStudentFilter) return;
     setIndividualLoading(true);
     setError(null);

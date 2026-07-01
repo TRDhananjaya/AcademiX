@@ -22,7 +22,7 @@ export default function ExamPrediction() {
     fetchStudents();
   }, []);
 
-  const fetchLessons = async () => {
+  async function fetchLessons() {
     try {
       const res = await fetch('http://localhost:5000/api/analytics/lessons');
       if (res.ok) {
@@ -37,7 +37,7 @@ export default function ExamPrediction() {
     }
   };
 
-  const fetchStudents = async () => {
+  async function fetchStudents() {
     try {
       const res = await fetch('http://localhost:5000/api/students');
       if (res.ok) {
@@ -52,7 +52,7 @@ export default function ExamPrediction() {
     }
   };
 
-  const handlePredictIndividual = async () => {
+  async function handlePredictIndividual() {
     if (!selectedStudentId || !selectedLesson) return;
     setIsLoading(true);
     setError(null);
