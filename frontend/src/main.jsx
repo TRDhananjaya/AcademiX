@@ -8,7 +8,7 @@ import { AuthProvider } from './context/AuthContext.jsx'
 const originalFetch = window.fetch;
 window.fetch = async (url, options = {}) => {
   const token = localStorage.getItem('token');
-  const isApiUrl = typeof url === 'string' && (url.startsWith('http://localhost:5000/api') || url.startsWith('/api'));
+  const isApiUrl = typeof url === 'string' && (url.startsWith('/api') || url.startsWith('/api'));
   if (token && isApiUrl) {
     options.headers = {
       ...options.headers,

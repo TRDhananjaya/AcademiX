@@ -4,3 +4,6 @@ __pycache__/
 *.pyc
 .vscode/
 .DS_Store
+dist/
+.ipynb_checkpoints/
+.venv/

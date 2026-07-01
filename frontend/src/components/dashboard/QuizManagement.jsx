@@ -12,9 +12,9 @@ export default function QuizManagement() {
     async function fetchData() {
       try {
         const [modulesRes, quizzesRes, resultsRes] = await Promise.all([
-          fetch('http://localhost:5000/api/quizzes/modules'),
-          fetch('http://localhost:5000/api/quizzes'),
-          fetch('http://localhost:5000/api/quiz-results')
+          fetch('/api/quizzes/modules'),
+          fetch('/api/quizzes'),
+          fetch('/api/quiz-results')
         ]);
         
         if (modulesRes.ok && quizzesRes.ok && resultsRes.ok) {
@@ -56,12 +56,12 @@ export default function QuizManagement() {
     }
     
     try {
-      const response = await fetch(`http://localhost:5000/api/quizzes/${quizId}`, {
+      const response = await fetch(`/api/quizzes/${quizId}`, {
         method: 'DELETE'
       });
       if (response.ok) {
         // Refresh quizzes list
-        const quizzesRes = await fetch('http://localhost:5000/api/quizzes');
+        const quizzesRes = await fetch('/api/quizzes');
         if (quizzesRes.ok) {
           const quizzesData = await quizzesRes.json();
           setQuizzes(quizzesData);

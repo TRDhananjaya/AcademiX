@@ -185,4 +185,92 @@ const updateProfile = async (req, res) => {
 	}
 };
 
-module.exports = { loginUser, getMe, registerUser, updateProfile };
+/**
+ * @desc    Verify identity for password reset (username + email)
+ * @route   POST /api/auth/forgot-password
+ * @access  Public
+ */
+const forgotPassword = async (req, res) => {
+	try {
+		const { username, email } = req.body;
+
+		if (!username || !email) {
+			return res.status(400).json({ message: 'Please provide both username and email' });
+		}
+
+		// Find user matching BOTH username and email
+		const user = await User.findOne({
+			username: username.trim(),
+			email: email.trim().toLowerCase(),
+		});
+
+		if (!user) {
+			return res.status(404).json({ message: 'No account found with that username and email combination' });
+		}
+
+		// Generate a short-lived reset token (5 minutes)
+		const jwt = require('jsonwebtoken');
+		const resetToken = jwt.sign(
+			{ id: user._id, purpose: 'password-reset' },
+			process.env.JWT_SECRET,
+			{ expiresIn: '5m' }
+		);
+
+		res.json({
+			message: 'Identity verified. You can now reset your password.',
+			resetToken,
+		});
+	} catch (error) {
+		console.error('ForgotPassword error:', error);
+		res.status(500).json({ message: 'Server error' });
+	}
+};
+
+/**
+ * @desc    Reset password using reset token
+ * @route   POST /api/auth/reset-password
+ * @access  Public (with valid reset token)
+ */
+const resetPassword = async (req, res) => {
+	try {
+		const { token, newPassword } = req.body;
+
+		if (!token || !newPassword) {
+			return res.status(400).json({ message: 'Please provide token and new password' });
+		}
+
+		if (newPassword.length < 6) {
+			return res.status(400).json({ message: 'Password must be at least 6 characters' });
+		}
+
+		// Verify the reset token
+		const jwt = require('jsonwebtoken');
+		let decoded;
+		try {
+			decoded = jwt.verify(token, process.env.JWT_SECRET);
+		} catch (err) {
+			return res.status(400).json({ message: 'Reset link has expired. Please try again.' });
+		}
+
+		// Ensure this token was issued for password reset
+		if (decoded.purpose !== 'password-reset') {
+			return res.status(400).json({ message: 'Invalid reset token' });
+		}
+
+		// Find user and update password
+		const user = await User.findById(decoded.id);
+		if (!user) {
+			return res.status(404).json({ message: 'User not found' });
+		}
+
+		user.password = newPassword; // Will be hashed by the pre-save hook
+		await user.save();
+
+		res.json({ message: 'Password has been reset successfully' });
+	} catch (error) {
+		console.error('ResetPassword error:', error);
+		res.status(500).json({ message: 'Server error' });
+	}
+};
+
+module.exports = { loginUser, getMe, registerUser, updateProfile, forgotPassword, resetPassword };

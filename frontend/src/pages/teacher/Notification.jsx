@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FiCheck, FiArrowRight } from 'react-icons/fi';
+<<<<<<< HEAD
 import { TbAlertTriangle, TbFileText, TbMessageShare, TbCalendarStats, TbBrain } from 'react-icons/tb';
 
 export default function TeacherNotifications() {
@@ -29,9 +30,89 @@ export default function TeacherNotifications() {
       console.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
+=======
+import { TbAlertTriangle, TbFileText, TbMessageShare, TbCalendarStats } from 'react-icons/tb';
+import { navigate } from '../../App';
+
+export default function TeacherNotifications() {
+  const [activeFilter, setActiveFilter] = useState('All');
+  const [expandedNotifs, setExpandedNotifs] = useState({});
+
+  const toggleExpand = (id) => {
+    setExpandedNotifs(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      category: 'Academic Alerts',
+      badgeLabel: 'Academic Alert',
+      badgeClass: 'bg-red-50 text-red-600',
+      time: '10 mins ago',
+      title: '5 Students at risk in Physics 101',
+      body: 'Recent midterm scores for 5 students have fallen below the 60% threshold. Intervention is recommended.',
+      actionLabel: 'View Student Profiles',
+      actionPath: '/teacher/students',
+      unread: true,
+      icon: (
+        <div className="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0">
+          <TbAlertTriangle className="w-5 h-5" />
+        </div>
+      )
+    },
+    {
+      id: 2,
+      category: 'Student Activity',
+      badgeLabel: 'Student Activity',
+      badgeClass: 'bg-purple-50 text-purple-600',
+      time: '1 hour ago',
+      title: 'Quiz results for Module 3 available',
+      body: 'The automated grading for Module 3 Quiz is complete. The class average is 82%.',
+      actionLabel: 'View Analytics',
+      actionPath: '/teacher/quiz-report',
+      unread: true,
+      icon: (
+        <div className="w-10 h-10 rounded-full bg-purple-50 text-purple-500 flex items-center justify-center shrink-0">
+          <TbFileText className="w-5 h-5" />
+        </div>
+      )
+    },
+    {
+      id: 3,
+      category: 'Student Activity',
+      badgeLabel: 'Student Activity',
+      badgeClass: 'bg-slate-100 text-slate-600',
+      time: '3 hours ago',
+      title: 'New question in Community Hub',
+      body: 'Sarah Jenkins posted a new question regarding the upcoming assignment criteria in the Advanced Calculus hub.',
+      actionLabel: 'Reply to Thread',
+      actionPath: '/teacher/community',
+      unread: false,
+      icon: (
+        <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
+          <TbMessageShare className="w-5 h-5" />
+        </div>
+      )
+    },
+    {
+      id: 4,
+      category: 'Academic Alerts',
+      badgeLabel: 'Academic Alert',
+      badgeClass: 'bg-[#e0f2f1] text-[#00695c]',
+      time: 'Yesterday',
+      title: 'Class attendance low today',
+      body: 'Attendance for Intro to Computer Science dropped below 70% during today\'s morning lecture.',
+      unread: false,
+      icon: (
+        <div className="w-10 h-10 rounded-full bg-[#e0f2f1] text-[#00695c] flex items-center justify-center shrink-0">
+          <TbCalendarStats className="w-5 h-5" />
+        </div>
+      )
+>>>>>>> main
     }
   };
 
+<<<<<<< HEAD
   const handleMarkAllRead = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -83,6 +164,42 @@ export default function TeacherNotifications() {
       default:
         return <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0"><TbFileText className="w-5 h-5" /></div>;
     }
+=======
+  useEffect(() => {
+    fetch('/api/quiz-results')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          const quizNotifs = data.map(item => ({
+            id: `quiz-result-${item._id}`,
+            isQuizResult: true,
+            category: 'Quiz Results',
+            badgeLabel: 'Quiz Result',
+            badgeClass: item.percentage >= 50 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600',
+            time: item.submittedAt ? new Date(item.submittedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : 'Recently',
+            title: `${item.studentName} completed ${item.quizTitle || item.quizId}`,
+            details: `Student ID: ${item.studentId} • Score: ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct) • Time: ${item.timeTaken || 'N/A'}`,
+            actionLabel: 'Quiz Details',
+            actionPath: '/teacher/quiz-report',
+            unread: true,
+            icon: (
+              <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <TbFileText className="w-5 h-5" />
+              </div>
+            )
+          }));
+          setNotifications(prev => {
+            const staticNotifs = prev.filter(n => typeof n.id !== 'string' || !n.id.startsWith('quiz-result-'));
+            return [...quizNotifs, ...staticNotifs];
+          });
+        }
+      })
+      .catch(err => console.error('Error fetching quiz results:', err));
+  }, []);
+
+  const handleMarkAllRead = () => {
+    setNotifications(notifications.map((n) => ({ ...n, unread: false })));
+>>>>>>> main
   };
 
   const filteredNotifications = activeFilter === 'All'
@@ -113,7 +230,11 @@ export default function TeacherNotifications() {
 
       {/* Filters */}
       <div className="flex gap-2.5 mb-6 overflow-x-auto pb-1">
+<<<<<<< HEAD
         {['All', 'StudyPlanApproval', 'Academic Alerts', 'System Updates'].map((filter) => (
+=======
+        {['All', 'Quiz Results', 'Academic Alerts', 'Student Activity', 'System Updates'].map((filter) => (
+>>>>>>> main
           <button
             key={filter}
             onClick={() => setActiveFilter(filter)}
@@ -164,6 +285,7 @@ export default function TeacherNotifications() {
                     ${!notif.isRead ? 'text-slate-900' : 'text-slate-700'}`}>
                     {notif.title}
                   </h3>
+<<<<<<< HEAD
                   <p className="text-slate-500 text-sm leading-relaxed mb-3">
                     {notif.message}
                   </p>
@@ -186,6 +308,47 @@ export default function TeacherNotifications() {
                         <FiCheck /> Approved
                       </span>
                     </div>
+=======
+                  {notif.body && (
+                    <p className="text-slate-500 text-sm leading-relaxed mb-3">
+                      {notif.body}
+                    </p>
+                  )}
+
+                  {/* Action Link / Details Toggle */}
+                  {notif.isQuizResult ? (
+                    <div className="mt-3 space-y-3">
+                      <button 
+                        onClick={() => toggleExpand(notif.id)}
+                        className="text-indigo-600 hover:text-indigo-800 text-xs font-bold flex items-center gap-1 group transition-colors cursor-pointer bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100"
+                      >
+                        {expandedNotifs[notif.id] ? 'Hide Quiz Details' : 'Quiz Details'}
+                        <FiArrowRight className={`w-3.5 h-3.5 transition-transform ${expandedNotifs[notif.id] ? 'rotate-90' : ''}`} />
+                      </button>
+
+                      {expandedNotifs[notif.id] && (
+                        <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 animate-fadeIn">
+                          <p className="text-sm font-semibold text-slate-700">{notif.details}</p>
+                          <button
+                            onClick={() => navigate('/teacher/quiz-report')}
+                            className="text-xs text-indigo-600 font-bold hover:underline cursor-pointer inline-block mt-1"
+                          >
+                            View Full Quiz Report &rarr;
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    notif.actionLabel && (
+                      <button 
+                        onClick={() => notif.actionPath && navigate(notif.actionPath)}
+                        className="text-indigo-600 hover:text-indigo-800 text-xs font-bold flex items-center gap-1 group transition-colors cursor-pointer mt-2"
+                      >
+                        {notif.actionLabel}
+                        <FiArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    )
+>>>>>>> main
                   )}
                 </div>
               </div>
@@ -200,3 +363,4 @@ export default function TeacherNotifications() {
     </div>
   );
 }
+

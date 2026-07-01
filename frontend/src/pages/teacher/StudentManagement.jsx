@@ -28,7 +28,7 @@ export default function StudentManagement() {
 
   async function fetchStudents() {
     try {
-      const response = await fetch('http://localhost:5000/api/students');
+      const response = await fetch('/api/students');
       if (response.ok) {
         const data = await response.json();
         setStudents(data);
@@ -57,7 +57,7 @@ export default function StudentManagement() {
     if (!newStudent.name.trim() || !newStudent.email.trim() || !newStudent.studentMobile.trim() || !newStudent.parentMobile.trim()) return;
 
     try {
-      const url = newStudent._id ? `http://localhost:5000/api/students/${newStudent._id}` : 'http://localhost:5000/api/students';
+      const url = newStudent._id ? `/api/students/${newStudent._id}` : '/api/students';
       const method = newStudent._id ? 'PUT' : 'POST';
 
       const response = await fetch(url, {

@@ -41,9 +41,9 @@ export default function Analytics() {
     async function fetchInitialData() {
       try {
         const [quizzesRes, lessonsRes, studentsRes] = await Promise.all([
-          fetch('http://localhost:5000/api/analytics/quizzes'),
-          fetch('http://localhost:5000/api/analytics/lessons'),
-          fetch('http://localhost:5000/api/analytics/students')
+          fetch('/api/analytics/quizzes'),
+          fetch('/api/analytics/lessons'),
+          fetch('/api/analytics/students')
         ]);
         const quizzesData = await quizzesRes.json();
         const lessonsData = await lessonsRes.json();
@@ -74,7 +74,7 @@ export default function Analytics() {
     setQuizLoading(true);
     setError(null);
     try {
-      let url = `http://localhost:5000/api/analytics?page=${page}&limit=10&quizId=${quizFilter}`;
+      let url = `/api/analytics?page=${page}&limit=10&quizId=${quizFilter}`;
       if (quizStudentSearch.trim() !== '') url += `&studentName=${encodeURIComponent(quizStudentSearch)}`;
 
       const res = await fetch(url);
@@ -109,7 +109,7 @@ export default function Analytics() {
     setStudentLoading(true);
     setError(null);
     try {
-      let url = `http://localhost:5000/api/analytics/student-performance?page=${page}&limit=10&lessonId=${lessonFilter}`;
+      let url = `/api/analytics/student-performance?page=${page}&limit=10&lessonId=${lessonFilter}`;
       if (studentSearch.trim() !== '') url += `&studentName=${encodeURIComponent(studentSearch)}`;
 
       const res = await fetch(url);
@@ -144,7 +144,7 @@ export default function Analytics() {
     setIndividualLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:5000/api/analytics/student/${individualStudentFilter}`);
+      const res = await fetch(`/api/analytics/student/${individualStudentFilter}`);
       const data = await res.json();
       if (res.ok) {
         setIndividualData(data);

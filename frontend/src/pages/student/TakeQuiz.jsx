@@ -23,8 +23,8 @@ export default function TakeQuiz() {
       try {
         // Fetch quizzes and student results in parallel for better performance
         const [quizRes, studentRes] = await Promise.all([
-          fetch('http://localhost:5000/api/quizzes'),
-          fetch(`http://localhost:5000/api/quiz-results/student/${user.username}`)
+          fetch('/api/quizzes'),
+          fetch(`/api/quiz-results/student/${user.username}`)
         ]);
 
         const quizzesData = await quizRes.json();
@@ -65,7 +65,7 @@ export default function TakeQuiz() {
     const timeTakenStr = `${mins}m ${secs.toString().padStart(2, '0')}s`;
 
     try {
-      const response = await fetch('http://localhost:5000/api/quiz-results', {
+      const response = await fetch('/api/quiz-results', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

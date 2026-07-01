@@ -5,13 +5,16 @@ const FollowupResult = require('../models/FollowupResult');
 
 // Helper function to calculate features
 const calculateFeatures = async (studentId, lessonId) => {
-    // Fetch quizzes matching lesson
-    const matchStage = lessonId ? { quizId: { $regex: `^${lessonId}` }, studentId: studentId } : { studentId: studentId };
+    // Fetch quizzes matching lesson - case-insensitive lookup
+    const targetStudentId = studentId ? studentId.toLowerCase() : '';
+    const matchStage = lessonId 
+        ? { quizId: { $regex: `^${lessonId}` }, studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') } } 
+        : { studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') } };
     const quizResults = await QuizResult.find(matchStage).sort({ submittedAt: 1 });
-    
-    // Fetch followups
+
+    // Fetch followups - case-insensitive
     const followupResults = await FollowupResult.find({
-        studentId: studentId 
+        studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') }
     }).sort({ submittedAt: -1 });
 
     let m1 = 70, m2 = 75, m3 = 80, followup = 85;
@@ -21,7 +24,7 @@ const calculateFeatures = async (studentId, lessonId) => {
         m2 = quizResults[1] ? quizResults[1].percentage || (quizResults[1].score / 20) * 100 : m1;
         m3 = quizResults[2] ? quizResults[2].percentage || (quizResults[2].score / 20) * 100 : (m1 + m2) / 2;
     }
-    
+
     if (followupResults.length > 0) {
         followup = followupResults[0]?.percentage || followup;
     } else if (quizResults.length > 3) {
@@ -46,8 +49,11 @@ const calculateFeatures = async (studentId, lessonId) => {
 const generatePrediction = async (req, res, next) => {
     try {
         const { studentId, lessonId } = req.body;
-        const student = await Student.findOne({ studentId: studentId });
-        
+        // Case-insensitive lookup on student record
+        const student = await Student.findOne({ 
+            studentId: { $regex: new RegExp(`^${studentId}$`, 'i') } 
+        });
+
         if (!student) {
             return res.status(404).json({ message: 'Student not found' });
         }
@@ -60,18 +66,35 @@ const generatePrediction = async (req, res, next) => {
             return res.status(400).json({ error: "Not enough data available to generate prediction." });
         }
 
-        const mlResponse = await fetch('http://127.0.0.1:5001/predict', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(features)
-        });
+        let predictedScore = 75; // Heuristic fallback score
+        let mlSuccess = false;
 
-        if (!mlResponse.ok) {
-            throw new Error(`ML Service error: ${mlResponse.statusText}`);
+        try {
+            const mlResponse = await fetch('https://academix-ml-3of1.onrender.com/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(features),
+                signal: AbortSignal.timeout(1500) // 1.5 seconds timeout
+            });
+
+            if (mlResponse.ok) {
+                const mlData = await mlResponse.json();
+                predictedScore = mlData.predicted_score;
+                mlSuccess = true;
+            } else {
+                console.warn(`ML Service returned status ${mlResponse.status}. Using fallback prediction.`);
+            }
+        } catch (mlErr) {
+            console.warn('ML Service offline or timed out. Using fallback heuristic prediction:', mlErr.message);
         }
 
-        const mlData = await mlResponse.json();
-        const predictedScore = mlData.predicted_score; // Expected to be percentage e.g. 75
+        // Fallback heuristic scoring
+        if (!mlSuccess) {
+            const avg = features.Avg_Module_Score || 70;
+            const followup = features.Followup_Quiz_Score || 75;
+            predictedScore = Math.min(100, Math.max(0, parseFloat((avg * 0.75 + followup * 0.25).toFixed(1))));
+        }
+
         const predictedMarks = parseFloat(((predictedScore / 100) * 25).toFixed(1));
 
         const prediction = await Prediction.create({
@@ -81,8 +104,8 @@ const generatePrediction = async (req, res, next) => {
             predictedScore: predictedScore
         });
 
-        const improvementPercentage = features.Avg_Module_Score > 0 
-            ? ((features.Followup_Quiz_Score - features.Avg_Module_Score) / features.Avg_Module_Score) * 100 
+        const improvementPercentage = features.Avg_Module_Score > 0
+            ? ((features.Followup_Quiz_Score - features.Avg_Module_Score) / features.Avg_Module_Score) * 100
             : 0;
 
         res.status(201).json({

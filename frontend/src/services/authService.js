@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:5000/api/auth';
+const API_BASE = '/api/auth';
 
 /**
  * Login with username and password.
@@ -50,6 +50,58 @@ export async function updateProfile(profileData) {
 		}
 
 		return { ok: true, data };
+	} catch (error) {
+		return { ok: false, message: 'Network error. Is the server running?' };
+	}
+}
+
+/**
+ * Verify identity for password reset
+ * @param {string} username
+ * @param {string} email
+ * @returns {Promise<{ok: boolean, data?: object, message?: string}>}
+ */
+export async function forgotPassword(username, email) {
+	try {
+		const res = await fetch(`${API_BASE}/forgot-password`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ username, email }),
+		});
+
+		const data = await res.json();
+
+		if (!res.ok) {
+			return { ok: false, message: data.message || 'Verification failed' };
+		}
+
+		return { ok: true, data };
+	} catch (error) {
+		return { ok: false, message: 'Network error. Is the server running?' };
+	}
+}
+
+/**
+ * Reset password using a reset token
+ * @param {string} token - Reset token from forgotPassword
+ * @param {string} newPassword
+ * @returns {Promise<{ok: boolean, message?: string}>}
+ */
+export async function resetPassword(token, newPassword) {
+	try {
+		const res = await fetch(`${API_BASE}/reset-password`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ token, newPassword }),
+		});
+
+		const data = await res.json();
+
+		if (!res.ok) {
+			return { ok: false, message: data.message || 'Password reset failed' };
+		}
+
+		return { ok: true, message: data.message };
 	} catch (error) {
 		return { ok: false, message: 'Network error. Is the server running?' };
 	}

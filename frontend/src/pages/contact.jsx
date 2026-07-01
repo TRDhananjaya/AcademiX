@@ -7,14 +7,41 @@ export default function Contact() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+
+    const formData = {
+      access_key: "2c05d548-4f17-49d0-ab96-ddccf17769fd",
+      name: `${e.target.firstName.value} ${e.target.lastName.value}`,
+      email: e.target.email.value,
+      message: e.target.message.value,
+    };
+
+    try {
+      const response = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setSuccess(true);
+        e.target.reset();
+        setTimeout(() => setSuccess(false), 5000);
+      } else {
+        alert("Failed to send message. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error submitting contact form:", error);
+      alert("Something went wrong. Please check your connection and try again.");
+    } finally {
       setLoading(false);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 5000);
-    }, 1500);
+    }
   };
 
   return (
@@ -57,22 +84,22 @@ export default function Contact() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label htmlFor="firstName" className="block text-[13.5px] font-medium text-slate-700 mb-2 tracking-wide uppercase">First Name</label>
-                    <input type="text" id="firstName" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all text-slate-800 placeholder-slate-400" placeholder="John" />
+                    <input type="text" id="firstName" name="firstName" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all text-slate-800 placeholder-slate-400" placeholder="Enter your first name" />
                   </div>
                   <div>
                     <label htmlFor="lastName" className="block text-[13.5px] font-medium text-slate-700 mb-2 tracking-wide uppercase">Last Name</label>
-                    <input type="text" id="lastName" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all text-slate-800 placeholder-slate-400" placeholder="Doe" />
+                    <input type="text" id="lastName" name="lastName" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all text-slate-800 placeholder-slate-400" placeholder="Enter your last name" />
                   </div>
                 </div>
 
                 <div>
                   <label htmlFor="email" className="block text-[13.5px] font-medium text-slate-700 mb-2 tracking-wide uppercase">Email Address</label>
-                  <input type="email" id="email" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all text-slate-800 placeholder-slate-400" placeholder="john@example.com" />
+                  <input type="email" id="email" name="email" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all text-slate-800 placeholder-slate-400" placeholder="sample@email.com" />
                 </div>
 
                 <div>
                   <label htmlFor="message" className="block text-[13.5px] font-medium text-slate-700 mb-2 tracking-wide uppercase">Message</label>
-                  <textarea id="message" rows="5" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all text-slate-800 placeholder-slate-400 resize-none" placeholder="How can we help you?"></textarea>
+                  <textarea id="message" name="message" rows="5" required className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all text-slate-800 placeholder-slate-400 resize-none" placeholder="How can we help you?"></textarea>
                 </div>
 
                 <div className="flex justify-end">
