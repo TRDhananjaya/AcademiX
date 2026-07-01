@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 // @access  Public (for now)
 const submitQuiz = async (req, res) => {
   try {
-    const { quizId, studentId, studentName, correctAnswers, totalQuestions, percentage, timeTaken } = req.body;
+    const { quizId, studentId, studentName, correctAnswers, totalQuestions, percentage, timeTaken, answersDetails } = req.body;
 
     const quiz = await Quiz.findById(quizId);
     if (!quiz) {
@@ -23,7 +23,8 @@ const submitQuiz = async (req, res) => {
       totalQuestions,
       percentage,
       timeTaken,
-      status: percentage >= 50 ? 'Pass' : 'Fail'
+      status: percentage >= 50 ? 'Pass' : 'Fail',
+      answersDetails: answersDetails || []
     });
 
     const savedResult = await result.save();

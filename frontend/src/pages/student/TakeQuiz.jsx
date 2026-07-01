@@ -64,6 +64,18 @@ export default function TakeQuiz() {
     const secs = secsTaken % 60;
     const timeTakenStr = `${mins}m ${secs.toString().padStart(2, '0')}s`;
 
+    const answersDetails = activeQuestions.map((q) => {
+      const questionId = q._id || q.id;
+      const isCorrect = selectedAnswers[questionId] === q.correctOption;
+      return {
+        questionId: questionId,
+        questionText: q.text,
+        selectedOption: selectedAnswers[questionId],
+        correctOption: q.correctOption,
+        isCorrect: isCorrect
+      };
+    });
+
     try {
       const response = await fetch('/api/quiz-results', {
         method: 'POST',
@@ -77,7 +89,8 @@ export default function TakeQuiz() {
           correctAnswers: score,
           totalQuestions: totalQuestions,
           percentage: pct,
-          timeTaken: timeTakenStr
+          timeTaken: timeTakenStr,
+          answersDetails: answersDetails
         })
       });
 

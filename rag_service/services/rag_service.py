@@ -49,96 +49,82 @@ def retrieve_module_context(module: str) -> str:
         logging.error(f"Error retrieving context: {e}")
         return ""
 
-def build_prompt(module: str, score: float) -> str:
-    context = retrieve_module_context(module)
+from typing import List
+from models.request_models import ModuleData
+
+def build_prompt(overall_score: float, modules_data: List[ModuleData]) -> str:
+    all_context = ""
+    all_incorrect_questions = []
+    module_scores = []
+    
+    for mod in modules_data:
+        module_scores.append(f"Module {mod.module_id}: {mod.score}%")
+        context = retrieve_module_context(mod.module_id)
+        if context:
+            all_context += f"\n--- Context for Module {mod.module_id} ---\n{context}\n"
+        else:
+            logging.warning(f"No context found for module {mod.module_id}")
+            
+        all_incorrect_questions.extend(mod.incorrect_questions)
+
+    incorrect_str = "\n".join([f"- {q}" for q in all_incorrect_questions]) if all_incorrect_questions else "None"
+    scores_str = "\n".join(module_scores)
 
     prompt = f"""
 You are an experienced Grade 10 ICT teacher.
+A student completed a set of quizzes for a lesson.
 
-A student completed a quiz.
+Overall Score: {overall_score}%
+Module Scores:
+{scores_str}
 
-Module : {module}
+Incorrect Questions (Weak Topics):
+{incorrect_str}
 
-Quiz Score : {score}%
-
-Below is the official learning material.
-
-========================
-
-{context}
+Below is the official learning material retrieved from the RAG database for these modules:
 
 ========================
+{all_context}
+========================
+
+IMPORTANT INSTRUCTIONS:
+Do NOT say "No learning material was provided" or "Learning material could not be found".
+Do NOT generate generic textbook notes. Generate study notes ONLY by summarizing and extracting from the retrieved context above.
+If the context is empty, simply use the student's weak concepts and general knowledge to build a helpful guide.
 
 Your task is to create a PERSONALIZED STUDY PLAN.
+The study plan MUST contain EXACTLY these 9 sections in this order. Use Markdown formatting.
 
-The study plan MUST contain exactly these sections.
+1. Performance Summary
+Explain the student's overall performance.
 
---------------------------------------------------
+2. Strong Concepts
+Identify what the student did well (based on the score and topics).
 
-1. Performance Analysis
+3. Weak Concepts (Ranked)
+Analyze the Incorrect Questions provided above and rank the weak concepts from weakest to strongest.
 
-Explain the student's performance.
+4. Personalized Study Notes
+Generate study notes from the retrieved RAG content. Summarize the content, explain concepts in simple language, highlight important definitions, include key points, and include examples from the learning materials. Prioritize concepts the student answered incorrectly. Do NOT add external generic information.
 
-Mention whether this module is
+5. Key Definitions
+List key definitions found in the retrieved material, focusing on weak topics.
 
-• Strong
+6. Important Revision Points
+Provide bullet points for crucial revision facts.
 
-• Average
+7. Personalized Practice Quiz
+Generate a practice quiz of 10 to 15 questions focusing on the weak topics identified. Avoid repeating the exact incorrect questions if possible; instead, test the underlying concepts. Use multiple difficulty levels. Provide the answers and explanations at the end of this section.
 
-• Weak
+8. Study Schedule
+Recommend a dynamic study time duration (e.g. 1 hour, 2 hours, 3 hours) and schedule based on the quiz score, number of mistakes, and weak concepts. Allocate more study time to weaker topics.
 
---------------------------------------------------
-
-2. Personalized Study Note
-
-Generate a study note ONLY using the retrieved content.
-
-Do NOT add external information.
-
-If score >75%
-
-Generate a concise revision note.
-
-If score between 50 and 75
-
-Generate a medium explanation.
-
-If score below 50
-
-Generate a detailed explanation.
-
---------------------------------------------------
-
-3. Topics to Focus
-
-List the most important topics.
-
---------------------------------------------------
-
-4. Study Time Recommendation
-
-Recommend study duration.
-
-Example
-
-30 Minutes
-
-1 Hour
-
-2 Hours
-
-3 Hours
-
-depending on performance.
-
---------------------------------------------------
-
-5. Practice Questions
-
-Provide 3 practice questions based ONLY on the retrieved content.
+9. Final Motivation
+End with an encouraging and motivational message.
 """
     return prompt
 
-def generate_study_plan(module: str, score: float) -> str:
-    prompt = build_prompt(module, score)
+def generate_study_plan(overall_score: float, modules_data: List[ModuleData]) -> str:
+    prompt = build_prompt(overall_score, modules_data)
+    logging.info("Constructed prompt for study plan. Sending to Gemini...")
     return call_gemini(prompt)

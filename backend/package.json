@@ -20,6 +20,8 @@
     "express": "^5.2.1",
     "json2csv": "^6.0.0-alpha.2",
     "jsonwebtoken": "^9.0.3",
-    "mongoose": "^9.6.3"
+    "marked": "^18.0.5",
+    "mongoose": "^9.6.3",
+    "puppeteer": "^25.3.0"
   }
 }

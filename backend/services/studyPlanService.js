@@ -55,16 +55,62 @@ const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
     
     let averageScore = totalQuestions > 0 ? (totalScore / totalQuestions) * 100 : 0;
 
+    let modulesData = [];
+    
+    lessonModules.forEach(m => {
+       const match = m.title.match(/Module\s+(\d+)\.(\d+)/i);
+       let moduleIdStr = "";
+       if (match) {
+         moduleIdStr = `${match[1]}.${match[2]}`; // e.g., "1.1"
+       } else {
+         moduleIdStr = m.title;
+       }
+
+       // find quizzes for this module
+       const moduleQuizzes = lessonQuizzes.filter(q => 
+           q.moduleId === m._id.toString() || 
+           (match && q.moduleId === `MODULE_${match[1]}_${match[2]}`)
+       );
+       
+       let mScore = 0;
+       let mTotal = 0;
+       let incorrectQuestions = [];
+
+       moduleQuizzes.forEach(q => {
+          const result = studentResults.find(r => r.quizId === q.quizCode);
+          if (result) {
+             mScore += (result.correctAnswers || 0);
+             mTotal += (result.totalQuestions || 0);
+             
+             if (result.answersDetails && result.answersDetails.length > 0) {
+                result.answersDetails.forEach(ans => {
+                   if (!ans.isCorrect) {
+                      incorrectQuestions.push(ans.questionText);
+                   }
+                });
+             }
+          }
+       });
+
+       const mScorePct = mTotal > 0 ? (mScore / mTotal) * 100 : 0;
+       
+       modulesData.push({
+          module_id: moduleIdStr,
+          score: mScorePct,
+          incorrect_questions: incorrectQuestions
+       });
+    });
+
     // Call RAG Service (FastAPI)
     const ragApiUrl = process.env.RAG_API_URL || 'http://localhost:8000';
     const requestBody = {
       studentId: studentId,
-      module: lesson.title, // passing lesson title as module context for AI
-      score: averageScore,
-      lessonId: lessonId.toString()
+      overall_score: averageScore,
+      lessonId: lessonId.toString(),
+      modules_data: modulesData
     };
 
-    console.log('[StudyPlanService] Calling RAG service with:', requestBody);
+    console.log('[StudyPlanService] Calling RAG service with:', JSON.stringify(requestBody, null, 2));
     let studyPlanData;
     
     try {
@@ -103,23 +149,28 @@ const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
     console.log(`[StudyPlanService] Saved generated study plan for student ${studentId}`);
 
     // Create notification for the student
+    let linkedUser = null;
     const studentUser = await Student.findOne({ studentId });
     if (studentUser) {
-      const linkedUser = await User.findOne({ email: studentUser.email });
-      if (linkedUser) {
-        const studentNotification = new Notification({
-          recipientId: linkedUser._id,
-          recipientRole: 'student',
-          title: 'AI Study Plan Ready',
-          message: `Your personalized AI Study Plan for "${lesson.title}" has been generated successfully.`,
-          notificationType: 'StudyPlanGenerated',
-          relatedLessonId: lessonId,
-          relatedStudentId: studentId,
-          status: 'N/A'
-        });
-        await studentNotification.save();
-        console.log(`[StudyPlanService] Notification sent to student ${studentId}`);
-      }
+      linkedUser = await User.findOne({ email: studentUser.email });
+    } else {
+      // Fallback: the frontend often sends user.username as studentId
+      linkedUser = await User.findOne({ username: studentId });
+    }
+
+    if (linkedUser) {
+      const studentNotification = new Notification({
+        recipientId: linkedUser._id,
+        recipientRole: 'student',
+        title: 'AI Study Plan Ready',
+        message: `Your personalized AI Study Plan for "${lesson.title}" has been generated successfully.`,
+        notificationType: 'StudyPlanGenerated',
+        relatedLessonId: lessonId,
+        relatedStudentId: studentId,
+        status: 'Unread' // Fixed from 'N/A' which might be invalid
+      });
+      await studentNotification.save();
+      console.log(`[StudyPlanService] Notification sent to student ${studentId}`);
     }
   } catch (error) {
     console.error('[StudyPlanService] Unexpected error:', error);

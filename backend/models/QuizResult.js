@@ -10,7 +10,14 @@ const quizResultSchema = new mongoose.Schema({
   percentage: { type: Number, required: true, index: true },
   timeTaken: { type: String, required: true },
   submittedAt: { type: Date, default: Date.now, index: true },
-  status: { type: String } // Existing DB data has status, so add it to avoid losing it during saves/updates, even though frontend ignores it
+  status: { type: String }, // Existing DB data has status, so add it to avoid losing it during saves/updates, even though frontend ignores it
+  answersDetails: [{
+    questionId: { type: String },
+    questionText: { type: String },
+    selectedOption: { type: Number },
+    correctOption: { type: Number },
+    isCorrect: { type: Boolean }
+  }]
 });
 
 module.exports = mongoose.model('QuizResult', quizResultSchema, 'quizz_results');

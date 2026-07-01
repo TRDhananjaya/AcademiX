@@ -11,7 +11,7 @@ app = FastAPI(title="AcademiX RAG Service", description="AI Study Plan Generatio
 @app.post("/generate_plan", response_model=StudyPlanResponse)
 async def generate_plan_endpoint(req: StudyPlanRequest):
     try:
-        study_plan_text = generate_study_plan(req.module, req.score)
+        study_plan_text = generate_study_plan(req.overall_score, req.modules_data)
         return StudyPlanResponse(
             success=True,
             studyPlan=study_plan_text
