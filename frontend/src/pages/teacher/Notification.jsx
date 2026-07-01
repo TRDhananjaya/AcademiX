@@ -7,7 +7,6 @@ export default function TeacherNotifications() {
   const [activeFilter, setActiveFilter] = useState('All');
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [approving, setApproving] = useState(null);
   const [expandedNotifs, setExpandedNotifs] = useState({});
 
   const toggleExpand = (id) => {
@@ -15,80 +14,80 @@ export default function TeacherNotifications() {
   };
 
   useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        // Fetch dynamic notifications from /api/notifications
+        const res1 = await fetch('/api/notifications', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        let notifs1 = [];
+        if (res1.ok) {
+          notifs1 = await res1.json();
+        }
+
+        // Fetch dynamic quiz results (from main branch)
+        let notifs2 = [];
+        const res2 = await fetch('/api/quiz-results');
+        if (res2.ok) {
+          const data = await res2.json();
+          if (Array.isArray(data)) {
+            notifs2 = data.map(item => ({
+              _id: `quiz-result-${item._id}`,
+              isQuizResult: true,
+              notificationType: 'Quiz Results',
+              badgeLabel: 'Quiz Result',
+              badgeClass: item.percentage >= 50 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600',
+              createdAt: item.submittedAt || new Date().toISOString(),
+              title: `${item.studentName} completed ${item.quizTitle || item.quizId}`,
+              message: `Student ID: ${item.studentId} • Score: ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct) • Time: ${item.timeTaken || 'N/A'}`,
+              actionLabel: 'Quiz Details',
+              actionPath: '/teacher/quiz-report',
+              isRead: false
+            }));
+          }
+        }
+
+        // Add static notifications for presentation
+        const staticNotifs = [
+          {
+            _id: 'static-1',
+            notificationType: 'Academic Alerts',
+            badgeLabel: 'Academic Alert',
+            badgeClass: 'bg-red-50 text-red-600',
+            createdAt: new Date(Date.now() - 10*60000).toISOString(),
+            title: '5 Students at risk in Physics 101',
+            message: 'Recent midterm scores for 5 students have fallen below the 60% threshold. Intervention is recommended.',
+            actionLabel: 'View Student Profiles',
+            actionPath: '/teacher/students',
+            isRead: false,
+          },
+          {
+            _id: 'static-3',
+            notificationType: 'Student Activity',
+            badgeLabel: 'Student Activity',
+            badgeClass: 'bg-slate-100 text-slate-600',
+            createdAt: new Date(Date.now() - 3*3600000).toISOString(),
+            title: 'New question in Community Hub',
+            message: 'Sarah Jenkins posted a new question regarding the upcoming assignment criteria in the Advanced Calculus hub.',
+            actionLabel: 'Reply to Thread',
+            actionPath: '/teacher/community',
+            isRead: true,
+          },
+        ];
+
+        setNotifications([...notifs1, ...notifs2, ...staticNotifs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchNotifications();
   }, []);
-
-  const fetchNotifications = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      // Fetch dynamic notifications from /api/notifications
-      const res1 = await fetch('/api/notifications', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      let notifs1 = [];
-      if (res1.ok) {
-        notifs1 = await res1.json();
-      }
-
-      // Fetch dynamic quiz results (from main branch)
-      let notifs2 = [];
-      const res2 = await fetch('/api/quiz-results');
-      if (res2.ok) {
-        const data = await res2.json();
-        if (Array.isArray(data)) {
-          notifs2 = data.map(item => ({
-            _id: `quiz-result-${item._id}`,
-            isQuizResult: true,
-            notificationType: 'Quiz Results',
-            badgeLabel: 'Quiz Result',
-            badgeClass: item.percentage >= 50 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600',
-            createdAt: item.submittedAt || new Date().toISOString(),
-            title: `${item.studentName} completed ${item.quizTitle || item.quizId}`,
-            message: `Student ID: ${item.studentId} • Score: ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct) • Time: ${item.timeTaken || 'N/A'}`,
-            actionLabel: 'Quiz Details',
-            actionPath: '/teacher/quiz-report',
-            isRead: false
-          }));
-        }
-      }
-
-      // Add static notifications for presentation
-      const staticNotifs = [
-        {
-          _id: 'static-1',
-          notificationType: 'Academic Alerts',
-          badgeLabel: 'Academic Alert',
-          badgeClass: 'bg-red-50 text-red-600',
-          createdAt: new Date(Date.now() - 10*60000).toISOString(),
-          title: '5 Students at risk in Physics 101',
-          message: 'Recent midterm scores for 5 students have fallen below the 60% threshold. Intervention is recommended.',
-          actionLabel: 'View Student Profiles',
-          actionPath: '/teacher/students',
-          isRead: false,
-        },
-        {
-          _id: 'static-3',
-          notificationType: 'Student Activity',
-          badgeLabel: 'Student Activity',
-          badgeClass: 'bg-slate-100 text-slate-600',
-          createdAt: new Date(Date.now() - 3*3600000).toISOString(),
-          title: 'New question in Community Hub',
-          message: 'Sarah Jenkins posted a new question regarding the upcoming assignment criteria in the Advanced Calculus hub.',
-          actionLabel: 'Reply to Thread',
-          actionPath: '/teacher/community',
-          isRead: true,
-        },
-      ];
-
-      setNotifications([...notifs1, ...notifs2, ...staticNotifs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
-    } catch (error) {
-      console.error('Error fetching notifications:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleMarkAllRead = async () => {
     try {
@@ -108,30 +107,7 @@ export default function TeacherNotifications() {
     }
   };
 
-  const handleApprove = async (id) => {
-    try {
-      setApproving(id);
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/notifications/${id}/approve`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (response.ok) {
-        setNotifications(notifications.map((n) => 
-          n._id === id ? { ...n, status: 'Approved', isRead: true } : n
-        ));
-      } else {
-        const err = await response.json();
-        alert(err.message || 'Failed to approve');
-      }
-    } catch (error) {
-      console.error('Error approving study plan:', error);
-      alert('Error approving study plan');
-    } finally {
-      setApproving(null);
-    }
-  };
+
 
   const getIconForType = (type) => {
     switch(type) {
@@ -176,7 +152,7 @@ export default function TeacherNotifications() {
 
       {/* Filters */}
       <div className="flex gap-2.5 mb-6 overflow-x-auto pb-1">
-        {['All', 'StudyPlanApproval', 'Quiz Results', 'Academic Alerts', 'Student Activity', 'System Updates'].map((filter) => (
+        {['All', 'Quiz Results', 'Academic Alerts', 'Student Activity', 'System Updates'].map((filter) => (
           <button
             key={filter}
             onClick={() => setActiveFilter(filter)}
@@ -186,7 +162,7 @@ export default function TeacherNotifications() {
                 : 'bg-white border border-slate-100 text-slate-600 hover:bg-slate-50 hover:text-slate-800'
               }`}
           >
-            {filter === 'StudyPlanApproval' ? 'Approvals' : filter}
+            {filter}
           </button>
         ))}
       </div>
@@ -235,24 +211,7 @@ export default function TeacherNotifications() {
                   )}
 
                   {/* Actions */}
-                  {notif.notificationType === 'StudyPlanApproval' && notif.status === 'Pending' && (
-                    <div className="flex gap-3 mt-4">
-                      <button
-                        onClick={() => handleApprove(notif._id)}
-                        disabled={approving === notif._id}
-                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 cursor-pointer"
-                      >
-                        {approving === notif._id ? 'Approving...' : 'Approve Plan Generation'}
-                      </button>
-                    </div>
-                  )}
-                  {notif.notificationType === 'StudyPlanApproval' && notif.status === 'Approved' && (
-                    <div className="flex gap-3 mt-4">
-                      <span className="text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-lg text-sm font-semibold flex items-center gap-1">
-                        <FiCheck /> Approved
-                      </span>
-                    </div>
-                  )}
+
 
                   {/* Action Link / Details Toggle */}
                   {notif.isQuizResult ? (

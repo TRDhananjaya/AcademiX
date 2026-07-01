@@ -39,6 +39,12 @@ const submitQuiz = async (req, res) => {
       let currentModule = null;
       if (mongoose.Types.ObjectId.isValid(quiz.moduleId)) {
          currentModule = await Module.findById(quiz.moduleId);
+      } else if (typeof quiz.moduleId === 'string' && quiz.moduleId.startsWith('MODULE_')) {
+         const parts = quiz.moduleId.split('_');
+         if (parts.length >= 3) {
+            const modulePrefix = `Module ${parts[1]}.${parts[2]}`;
+            currentModule = await Module.findOne({ title: { $regex: `^${modulePrefix}`, $options: 'i' } });
+         }
       }
 
       if (currentModule && currentModule.lessonId) {
@@ -46,11 +52,20 @@ const submitQuiz = async (req, res) => {
         const lessonModules = await Module.find({ lessonId: currentModule.lessonId });
         const moduleIds = lessonModules.map(m => m._id.toString());
         
+        const stringModuleIds = lessonModules.map(m => {
+           const match = m.title.match(/Module\s+(\d+)\.(\d+)/i);
+           if (match) {
+              return `MODULE_${match[1]}_${match[2]}`;
+           }
+           return null;
+        }).filter(Boolean);
+        
         // Find all quizzes for these modules
         const lessonQuizzes = await Quiz.find({ 
           $or: [
              { moduleId: { $in: moduleIds } },
-             { moduleId: { $in: lessonModules.map(m => m._id) } }
+             { moduleId: { $in: lessonModules.map(m => m._id) } },
+             { moduleId: { $in: stringModuleIds } }
           ]
         });
 
@@ -82,25 +97,12 @@ const submitQuiz = async (req, res) => {
             });
 
             if (!existingPlan && !existingNotification) {
-              const lesson = await Lesson.findById(currentModule.lessonId);
-              const lessonName = lesson ? lesson.title : 'the lesson';
+              const { generateStudyPlanAsync } = require('../services/studyPlanService');
               
-              const teachers = await User.find({ role: 'teacher' });
-              
-              if (teachers.length > 0) {
-                const notificationsToCreate = teachers.map(teacher => ({
-                  recipientId: teacher._id,
-                  recipientRole: 'teacher',
-                  title: 'Study Plan Approval Needed',
-                  message: `Student ${studentName || studentId} has completed all quizzes for "${lessonName}". Would you like to generate a personalized AI Study Plan?`,
-                  notificationType: 'StudyPlanApproval',
-                  relatedLessonId: currentModule.lessonId,
-                  relatedStudentId: studentId,
-                  status: 'Pending'
-                }));
-                
-                await Notification.insertMany(notificationsToCreate);
-              }
+              // Trigger the AI study plan generation in the background!
+              // We do not await this, so the quiz submission HTTP request completes immediately.
+              generateStudyPlanAsync(studentId, studentName, currentModule.lessonId)
+                .catch(err => console.error('Background study plan generation failed:', err));
             }
           }
         }

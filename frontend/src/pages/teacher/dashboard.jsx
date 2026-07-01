@@ -38,10 +38,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
     fetchLessonsList();
   }, []);
 
-  // Reset page to 1 when filter changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [moduleFilter]);
+
 
   // Fetch dashboard stats dynamically on mount and when filter/page changes
   useEffect(() => {
@@ -82,7 +79,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
       case 'attendance':
         return <AttendanceMonitor />;
       case 'dashboard':
-      default:
+      default: {
         if (loading) {
           return (
             <div className="flex flex-col items-center justify-center py-20">
@@ -312,7 +309,10 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                 <div className="relative">
                   <select 
                     value={moduleFilter}
-                    onChange={(e) => setModuleFilter(e.target.value)}
+                    onChange={(e) => {
+                      setModuleFilter(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     className="appearance-none bg-slate-50 border border-slate-200/80 rounded-xl pl-4 pr-10 py-2 text-xs font-semibold text-slate-600 outline-none focus:bg-white focus:border-indigo-300 transition-all cursor-pointer"
                   >
                     <option>All Modules</option>
@@ -418,6 +418,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
 
           </div>
         );
+      }
     }
   };
 

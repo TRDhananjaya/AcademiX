@@ -18,39 +18,39 @@ export default function ExamPrediction() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    async function fetchLessons() {
+      try {
+        const res = await fetch('/api/analytics/lessons');
+        if (res.ok) {
+          const data = await res.json();
+          setLessons(data.lessons || []);
+          if (data.lessons && data.lessons.length > 0) {
+            setSelectedLesson(data.lessons[0]);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function fetchStudents() {
+      try {
+        const res = await fetch('/api/students');
+        if (res.ok) {
+          const data = await res.json();
+          setStudents(data);
+          if (data.length > 0) {
+            setSelectedStudentId(data[0].studentId);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
     fetchLessons();
     fetchStudents();
   }, []);
-
-  async function fetchLessons() {
-    try {
-      const res = await fetch('/api/analytics/lessons');
-      if (res.ok) {
-        const data = await res.json();
-        setLessons(data.lessons || []);
-        if (data.lessons && data.lessons.length > 0) {
-          setSelectedLesson(data.lessons[0]);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  async function fetchStudents() {
-    try {
-      const res = await fetch('/api/students');
-      if (res.ok) {
-        const data = await res.json();
-        setStudents(data);
-        if (data.length > 0) {
-          setSelectedStudentId(data[0].studentId);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   async function handlePredictIndividual() {
     if (!selectedStudentId || !selectedLesson) return;

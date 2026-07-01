@@ -23,20 +23,20 @@ export default function StudentManagement() {
   });
 
   useEffect(() => {
+    async function fetchStudents() {
+      try {
+        const response = await fetch('/api/students');
+        if (response.ok) {
+          const data = await response.json();
+          setStudents(data);
+        }
+      } catch (error) {
+        console.error('Error fetching students:', error);
+      }
+    }
+    
     fetchStudents();
   }, []);
-
-  async function fetchStudents() {
-    try {
-      const response = await fetch('/api/students');
-      if (response.ok) {
-        const data = await response.json();
-        setStudents(data);
-      }
-    } catch (error) {
-      console.error('Error fetching students:', error);
-    }
-  };
 
   // Handlers
   const handleEditStudent = (student) => {

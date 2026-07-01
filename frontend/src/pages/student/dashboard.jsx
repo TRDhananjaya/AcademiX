@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import Sidebar from '../../components/common/student/Sidebar';
 import StudentTopBar from '../../components/dashboard/StudentTopBar';
+import { navigate } from '../../App';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -13,6 +14,46 @@ export default function StudentDashboard() {
   const [analytics, setAnalytics] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [streak, setStreak] = useState(0);
+
+  // Helper to calculate learning streak from quiz submission history
+  const calculateStreak = (history) => {
+    if (!history || history.length === 0) return 0;
+    
+    // Extract unique dates of submission in YYYY-MM-DD local format
+    const dates = history.map(item => {
+      const d = new Date(item.submittedAt);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    });
+    
+    const uniqueDates = [...new Set(dates)].sort((a, b) => new Date(b) - new Date(a));
+    
+    let currentStreak = 0;
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+    
+    if (!uniqueDates.includes(todayStr) && !uniqueDates.includes(yesterdayStr)) {
+      return 0;
+    }
+    
+    let currentCheckStr = uniqueDates.includes(todayStr) ? todayStr : yesterdayStr;
+    let checkDate = new Date(currentCheckStr);
+    
+    for (let i = 0; i < uniqueDates.length; i++) {
+      const dateStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
+      if (uniqueDates.includes(dateStr)) {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    
+    return currentStreak;
+  };
 
   // Fetch Student Analytics
   useEffect(() => {
@@ -68,45 +109,7 @@ export default function StudentDashboard() {
     fetchPrediction();
   }, [user]);
 
-  // Helper to calculate learning streak from quiz submission history
-  const calculateStreak = (history) => {
-    if (!history || history.length === 0) return 0;
-    
-    // Extract unique dates of submission in YYYY-MM-DD local format
-    const dates = history.map(item => {
-      const d = new Date(item.submittedAt);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    });
-    
-    const uniqueDates = [...new Set(dates)].sort((a, b) => new Date(b) - new Date(a));
-    
-    let currentStreak = 0;
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
-    
-    if (!uniqueDates.includes(todayStr) && !uniqueDates.includes(yesterdayStr)) {
-      return 0;
-    }
-    
-    let currentCheckStr = uniqueDates.includes(todayStr) ? todayStr : yesterdayStr;
-    let checkDate = new Date(currentCheckStr);
-    
-    for (let i = 0; i < uniqueDates.length; i++) {
-      const dateStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
-      if (uniqueDates.includes(dateStr)) {
-        currentStreak++;
-        checkDate.setDate(checkDate.getDate() - 1);
-      } else {
-        break;
-      }
-    }
-    
-    return currentStreak;
-  };
+
 
   if (loading) {
     return (
