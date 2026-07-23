@@ -4,6 +4,7 @@ import StudentTopBar from '../../components/dashboard/StudentTopBar';
 import CommonCommunityChat from '../../components/dashboard/CommonCommunityChat';
 import communityBannerImg from '../../assets/community_banner.png';
 import { useAuth } from '../../context/AuthContext';
+import propic from '../../assets/propic.png';
 import { FiEdit, FiFilter, FiTrendingUp, FiShield, FiMoreHorizontal, FiMessageSquare, FiShare2, FiBookmark, FiX, FiFlag, FiSend, FiMessageCircle } from 'react-icons/fi';
 import { BiUpvote, BiDownvote } from 'react-icons/bi';
 
@@ -115,7 +116,7 @@ export default function CommunityHub() {
           tags: newPostTags.split(',').map(t => t.trim()),
           authorName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Student Contributor',
           authorRole: 'student',
-          authorAvatar: `https://i.pravatar.cc/150?u=${encodeURIComponent(user?.username || 'student')}`
+          authorAvatar: user?.profilePicture || ''
         })
       });
 
@@ -145,7 +146,7 @@ export default function CommunityHub() {
           text: text.trim(),
           authorName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Peer Student',
           authorRole: 'student',
-          authorAvatar: `https://i.pravatar.cc/150?u=${encodeURIComponent(user?.username || 'peer')}`
+          authorAvatar: user?.profilePicture || ''
         })
       });
 
@@ -246,9 +247,10 @@ export default function CommunityHub() {
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
                           <img 
-                            src={post.authorAvatar || `https://i.pravatar.cc/150?u=${encodeURIComponent(post.authorName)}`} 
+                            src={post.authorAvatar || (post.authorRole === 'teacher' ? 'https://i.pravatar.cc/150?img=47' : propic)} 
                             alt={post.authorName} 
                             className="w-10 h-10 rounded-full border border-slate-100" 
+                            onError={(e) => { e.target.src = post.authorRole === 'teacher' ? 'https://i.pravatar.cc/150?img=47' : propic; }} 
                           />
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">

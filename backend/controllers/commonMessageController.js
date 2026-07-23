@@ -1,4 +1,5 @@
 const CommonMessage = require('../models/CommonMessage');
+const User = require('../models/User');
 
 const seedMessages = [
   {
@@ -37,7 +38,28 @@ const getMessages = async (req, res) => {
     }
 
     const messages = await CommonMessage.find({}).sort({ timestamp: 1 }).limit(200);
-    res.status(200).json(messages);
+
+    // Map unique senderIds to their database-saved profile pictures (normalized to lowercase)
+    const senderIds = [...new Set(messages.map(msg => (msg.senderId || '').toLowerCase()))];
+    const users = await User.find({ username: { $in: senderIds } }, 'username profilePicture');
+    const userMap = new Map();
+    users.forEach(u => {
+      if (u.username) {
+        userMap.set(u.username.toLowerCase(), u.profilePicture || '');
+      }
+    });
+
+    const enrichedMessages = messages.map(msg => {
+      const senderKey = (msg.senderId || '').toLowerCase();
+      if (userMap.has(senderKey)) {
+        const msgObj = msg.toObject();
+        msgObj.senderAvatar = userMap.get(senderKey);
+        return msgObj;
+      }
+      return msg;
+    });
+
+    res.status(200).json(enrichedMessages);
   } catch (error) {
     console.error('Error fetching common messages:', error);
     res.status(500).json({ message: 'Server error fetching messages' });
@@ -48,7 +70,7 @@ const getMessages = async (req, res) => {
 // @route   POST /api/common-messages
 const sendMessage = async (req, res) => {
   try {
-    const { text, senderId, senderName, senderRole, senderAvatar } = req.body;
+    const { text, senderId, senderName, senderRole } = req.body;
     if (!text || !text.trim()) {
       return res.status(400).json({ message: 'Message text is required' });
     }
@@ -58,11 +80,14 @@ const sendMessage = async (req, res) => {
     const sName = senderName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Community Member');
     const sRole = senderRole || (user ? user.role : 'student');
 
+    const dbUser = await User.findOne({ username: sId.toLowerCase() }, 'profilePicture');
+    const sAvatar = (dbUser && dbUser.profilePicture) || '';
+
     const message = new CommonMessage({
       senderId: sId,
       senderName: sName,
       senderRole: sRole,
-      senderAvatar: senderAvatar || `https://i.pravatar.cc/150?u=${encodeURIComponent(sId)}`,
+      senderAvatar: sAvatar,
       text: text.trim(),
       timestamp: new Date()
     });

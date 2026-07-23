@@ -1,11 +1,115 @@
 const Student = require('../models/Student');
 const User = require('../models/User');
 
+// Helper to synchronize Student and User tables, and enforce Grade 10 on all students
+const syncStudentsAndUsers = async () => {
+    try {
+        // Enforce Grade 10 on all existing students first
+        await Student.updateMany({ grade: { $ne: 'Grade 10' } }, { $set: { grade: 'Grade 10' } });
+
+        const users = await User.find({ role: 'student' });
+        const students = await Student.find();
+
+        const studentEmails = new Set(students.map(s => s.email ? s.email.toLowerCase() : '').filter(Boolean));
+        const studentIds = new Set(students.map(s => s.studentId ? s.studentId.toLowerCase() : '').filter(Boolean));
+
+        // 1. Sync User -> Student (Create missing Student records)
+        for (const user of users) {
+            const userEmailLower = user.email ? user.email.toLowerCase() : '';
+            const usernameLower = user.username ? user.username.toLowerCase() : '';
+            
+            if (userEmailLower && usernameLower && !studentEmails.has(userEmailLower) && !studentIds.has(usernameLower)) {
+                const nameParts = [user.firstName, user.lastName].filter(Boolean);
+                const fullName = nameParts.join(' ').trim() || user.username;
+                
+                await Student.create({
+                    studentId: user.username.toUpperCase(),
+                    name: fullName,
+                    email: user.email,
+                    studentMobile: 'N/A',
+                    parentMobile: 'N/A',
+                    grade: 'Grade 10', // Enforce Grade 10
+                    status: 'Active'
+                });
+                console.log(`Synced: Created Student record for user ${user.username}`);
+            }
+        }
+
+        // Re-fetch students to capture newly created ones
+        const updatedStudents = await Student.find();
+        
+        // Build in-memory maps of users for fast lookups
+        const userByUsername = new Map();
+        const userByEmail = new Map();
+        for (const u of users) {
+            if (u.username) userByUsername.set(u.username.toLowerCase(), u);
+            if (u.email) userByEmail.set(u.email.toLowerCase(), u);
+        }
+
+        // 2. Sync Student -> User (Create missing User accounts, or update details if out of sync)
+        for (const student of updatedStudents) {
+            const studentEmailLower = student.email ? student.email.toLowerCase() : '';
+            const studentIdLower = student.studentId ? student.studentId.toLowerCase() : '';
+
+            if (!studentIdLower || !studentEmailLower) continue;
+
+            // Find matching user from in-memory maps
+            const user = userByUsername.get(studentIdLower) || userByEmail.get(studentEmailLower);
+
+            if (!user) {
+                // Create missing User record
+                const nameParts = student.name ? student.name.trim().split(/\s+/) : ['Student'];
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+
+                await User.create({
+                    username: studentIdLower,
+                    email: student.email.toLowerCase(),
+                    password: `${studentIdLower}123`, // Default password
+                    role: 'student',
+                    firstName,
+                    lastName
+                });
+                console.log(`Synced: Created User record for student ${student.studentId}`);
+            } else {
+                // If user exists, make sure details are synced
+                let modified = false;
+                if (user.username !== studentIdLower) {
+                    user.username = studentIdLower;
+                    modified = true;
+                }
+                if (user.email !== studentEmailLower) {
+                    user.email = studentEmailLower;
+                    modified = true;
+                }
+                const nameParts = student.name ? student.name.trim().split(/\s+/) : ['Student'];
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+                if (user.firstName !== firstName) {
+                    user.firstName = firstName;
+                    modified = true;
+                }
+                if (user.lastName !== lastName) {
+                    user.lastName = lastName;
+                    modified = true;
+                }
+                if (modified) {
+                    await user.save();
+                    console.log(`Synced: Updated User details for student ${student.studentId}`);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error syncing students and users:', error);
+    }
+};
+
 // @desc    Get all students
 // @route   GET /api/students
 // @access  Public
 const getStudents = async (req, res, next) => {
     try {
+        await syncStudentsAndUsers();
         const students = await Student.find().sort({ createdAt: -1 });
         res.status(200).json(students);
     } catch (error) {
@@ -34,7 +138,7 @@ const getStudentById = async (req, res, next) => {
 // @access  Public
 const addStudent = async (req, res, next) => {
     try {
-        const { name, email, studentMobile, parentMobile, grade, status } = req.body;
+        const { name, email, studentMobile, parentMobile, grade, status, username, password } = req.body;
 
         const studentExists = await Student.findOne({ email });
         if (studentExists) {
@@ -48,13 +152,36 @@ const addStudent = async (req, res, next) => {
             throw new Error('User account with this email already exists');
         }
 
+        let studentId = undefined;
+        if (username && username.trim()) {
+            const normalizedUsername = username.trim().toLowerCase();
+            
+            // Check User collection
+            const usernameExists = await User.findOne({ username: normalizedUsername });
+            if (usernameExists) {
+                res.status(400);
+                throw new Error('Username is already taken');
+            }
+
+            // Check Student collection
+            const customStudentId = username.trim().toUpperCase();
+            const studentIdExists = await Student.findOne({ studentId: customStudentId });
+            if (studentIdExists) {
+                res.status(400);
+                throw new Error('Student ID / Username is already taken');
+            }
+
+            studentId = customStudentId;
+        }
+
         const student = await Student.create({
             name,
             email,
             studentMobile,
             parentMobile,
-            grade,
-            status
+            grade: 'Grade 10', // Enforce Grade 10
+            status,
+            ...(studentId && { studentId })
         });
 
         // Split name for User creation
@@ -64,10 +191,12 @@ const addStudent = async (req, res, next) => {
 
         // Create the corresponding User account
         const usernameLower = student.studentId.toLowerCase();
+        const userPassword = (password && password.trim()) ? password.trim() : `${usernameLower}123`;
+
         await User.create({
             username: usernameLower,
             email: student.email.toLowerCase(),
-            password: `${usernameLower}123`, // Default password is username + '123' (e.g. stu-1234123)
+            password: userPassword,
             role: 'student',
             firstName,
             lastName
@@ -96,7 +225,7 @@ const updateStudent = async (req, res, next) => {
 
         const updatedStudent = await Student.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            { ...req.body, grade: 'Grade 10' }, // Enforce Grade 10
             { new: true, runValidators: true }
         );
 
@@ -158,6 +287,12 @@ const deleteStudent = async (req, res, next) => {
 
         student.status = 'Inactive';
         const updatedStudent = await student.save();
+
+        // Also delete/deactivate user from User collection to keep them synced
+        if (student.studentId) {
+            await User.deleteOne({ username: student.studentId.toLowerCase() });
+            console.log(`Synced: Deleted User record for inactive student ${student.studentId}`);
+        }
 
         res.status(200).json(updatedStudent);
     } catch (error) {

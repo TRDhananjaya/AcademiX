@@ -15,6 +15,17 @@ const getStudents = async (req, res) => {
 	}
 };
 
+const checkUsername = async (req, res) => {
+	try {
+		const exists = await User.findOne({ username: req.params.username.toLowerCase() });
+		res.status(200).json({ exists: !!exists });
+	} catch (error) {
+		console.error('Check username error:', error);
+		res.status(500).json({ message: 'Server error' });
+	}
+};
+
 module.exports = {
 	getStudents,
+	checkUsername,
 };

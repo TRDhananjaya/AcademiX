@@ -1,4 +1,5 @@
 const CommunityPost = require('../models/CommunityPost');
+const User = require('../models/User');
 
 // Initial seed posts if database collection is empty
 const seedPosts = [
@@ -80,7 +81,46 @@ const getPosts = async (req, res) => {
     }
 
     const posts = await CommunityPost.find(query).sort(sortOptions);
-    res.status(200).json(posts);
+    
+    // Fetch all users to map names/usernames to their latest profile pictures
+    const users = await User.find({}, 'firstName lastName username profilePicture');
+    const profilePicMap = new Map();
+    users.forEach(u => {
+      if (u.profilePicture) {
+        const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim().toLowerCase();
+        if (fullName) {
+          profilePicMap.set(fullName, u.profilePicture);
+        }
+        if (u.username) {
+          profilePicMap.set(u.username.toLowerCase(), u.profilePicture);
+        }
+      }
+    });
+
+    const enrichedPosts = posts.map(post => {
+      const postObj = post.toObject();
+      
+      const authorKey = (postObj.authorName || '').toLowerCase();
+      const dbProfilePic = profilePicMap.get(authorKey);
+      if (dbProfilePic) {
+        postObj.authorAvatar = dbProfilePic;
+      }
+      
+      if (postObj.replies && postObj.replies.length > 0) {
+        postObj.replies = postObj.replies.map(reply => {
+          const replyAuthorKey = (reply.authorName || '').toLowerCase();
+          const replyDbProfilePic = profilePicMap.get(replyAuthorKey);
+          if (replyDbProfilePic) {
+            reply.authorAvatar = replyDbProfilePic;
+          }
+          return reply;
+        });
+      }
+      
+      return postObj;
+    });
+
+    res.status(200).json(enrichedPosts);
   } catch (error) {
     console.error('Error fetching community posts:', error);
     res.status(500).json({ message: 'Server error fetching community posts' });
