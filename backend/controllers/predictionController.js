@@ -10,7 +10,9 @@ const calculateFeatures = async (studentId, lessonId) => {
     const matchStage = lessonId 
         ? { quizId: { $regex: `^${lessonId}` }, studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') } } 
         : { studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') } };
-    const quizResults = await QuizResult.find(matchStage).sort({ submittedAt: 1 });
+    
+    // Sort by submittedAt descending to get the latest attempt first
+    const quizResults = await QuizResult.find(matchStage).sort({ submittedAt: -1 });
 
     // Fetch followups - case-insensitive
     const followupResults = await FollowupResult.find({
@@ -19,19 +21,31 @@ const calculateFeatures = async (studentId, lessonId) => {
 
     let m1 = 70, m2 = 75, m3 = 80, followup = 85;
 
-    if (quizResults.length > 0) {
-        m1 = quizResults[0] ? quizResults[0].percentage || (quizResults[0].score / 20) * 100 : m1;
-        m2 = quizResults[1] ? quizResults[1].percentage || (quizResults[1].score / 20) * 100 : m1;
-        m3 = quizResults[2] ? quizResults[2].percentage || (quizResults[2].score / 20) * 100 : (m1 + m2) / 2;
+    // Group by unique quizId taking the latest score
+    const latestQuizzes = {};
+    for (const result of quizResults) {
+        if (!latestQuizzes[result.quizId]) {
+            latestQuizzes[result.quizId] = result.percentage || (result.score / 20) * 100;
+        }
     }
 
+    const uniqueQuizIds = Object.keys(latestQuizzes).sort(); // Order Q1.1, Q1.2, Q1.3
+    
+    if (uniqueQuizIds.length > 0) m1 = latestQuizzes[uniqueQuizIds[0]];
+    if (uniqueQuizIds.length > 1) m2 = latestQuizzes[uniqueQuizIds[1]];
+    if (uniqueQuizIds.length > 2) m3 = latestQuizzes[uniqueQuizIds[2]];
+
+    let hasFollowup = false;
     if (followupResults.length > 0) {
         followup = followupResults[0]?.percentage || followup;
-    } else if (quizResults.length > 3) {
-        followup = quizResults[3] ? quizResults[3].percentage || (quizResults[3].score / 20) * 100 : m3;
+        hasFollowup = true;
+    } else if (uniqueQuizIds.length > 3) {
+        followup = latestQuizzes[uniqueQuizIds[3]];
+        hasFollowup = true;
     }
 
     const avg = (m1 + m2 + m3) / 3;
+    const totalQuizzesAnalyzed = uniqueQuizIds.length + (hasFollowup && followupResults.length > 0 ? 1 : 0);
 
     return {
         Module_1_Score: m1,
@@ -39,7 +53,7 @@ const calculateFeatures = async (studentId, lessonId) => {
         Module_3_Score: m3,
         Avg_Module_Score: avg,
         Followup_Quiz_Score: followup,
-        quizzesAnalyzed: quizResults.length
+        quizzesAnalyzed: totalQuizzesAnalyzed
     };
 };
 
@@ -66,20 +80,32 @@ const generatePrediction = async (req, res, next) => {
             return res.status(400).json({ error: "Not enough data available to generate prediction." });
         }
 
-        let predictedScore = 75; // Heuristic fallback score
+        const mlFeatures = {
+            Module_1_Score: features.Module_1_Score / 4,
+            Module_2_Score: features.Module_2_Score / 4,
+            Module_3_Score: features.Module_3_Score / 4,
+            Avg_Module_Score: features.Avg_Module_Score / 4,
+            Followup_Quiz_Score: features.Followup_Quiz_Score / 4,
+            LessonID: lessonId ? lessonId.replace('Q', 'L') : ''
+        };
+
+        let predictedScore = 75; // Heuristic fallback score (out of 100)
+        let predictedMarks = 18.75; // out of 25
         let mlSuccess = false;
 
         try {
-            const mlResponse = await fetch('https://academix-ml-3of1.onrender.com/predict', {
+            const mlUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001/predict';
+            const mlResponse = await fetch(mlUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(features),
+                body: JSON.stringify(mlFeatures),
                 signal: AbortSignal.timeout(1500) // 1.5 seconds timeout
             });
 
             if (mlResponse.ok) {
                 const mlData = await mlResponse.json();
-                predictedScore = mlData.predicted_score;
+                predictedMarks = parseFloat(mlData.predicted_score.toFixed(1));
+                predictedScore = (predictedMarks / 25) * 100;
                 mlSuccess = true;
             } else {
                 console.warn(`ML Service returned status ${mlResponse.status}. Using fallback prediction.`);
@@ -93,9 +119,8 @@ const generatePrediction = async (req, res, next) => {
             const avg = features.Avg_Module_Score || 70;
             const followup = features.Followup_Quiz_Score || 75;
             predictedScore = Math.min(100, Math.max(0, parseFloat((avg * 0.75 + followup * 0.25).toFixed(1))));
+            predictedMarks = parseFloat(((predictedScore / 100) * 25).toFixed(1));
         }
-
-        const predictedMarks = parseFloat(((predictedScore / 100) * 25).toFixed(1));
 
         const prediction = await Prediction.create({
             studentId: student._id,

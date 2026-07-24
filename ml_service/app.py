@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import pandas as pd
 import joblib
 import os
 
@@ -7,6 +8,7 @@ app = Flask(__name__)
 CORS(app)
 
 model = joblib.load("term_score_predictor.pkl")
+model_features = joblib.load("model_features.pkl")
 
 @app.route('/', methods=['GET'])
 def health():
@@ -17,15 +19,21 @@ def predict():
 
     data = request.json
 
-    features = [[
-        data['Module_1_Score'],
-        data['Module_2_Score'],
-        data['Module_3_Score'],
-        data['Avg_Module_Score'],
-        data['Followup_Quiz_Score']
-    ]]
+    sample_dict = {f: 0 for f in model_features}
 
-    prediction = model.predict(features)
+    for f in ['Module_1_Score', 'Module_2_Score', 'Module_3_Score', 'Avg_Module_Score', 'Followup_Quiz_Score']:
+        if f in data:
+            sample_dict[f] = data[f]
+
+    lesson_id = data.get('LessonID')
+    if lesson_id:
+        lesson_col = f"LessonID_{lesson_id}"
+        if lesson_col in sample_dict:
+            sample_dict[lesson_col] = 1
+
+    sample = pd.DataFrame([sample_dict])[model_features]
+
+    prediction = model.predict(sample)
 
     return jsonify({
         "predicted_score": float(prediction[0])
