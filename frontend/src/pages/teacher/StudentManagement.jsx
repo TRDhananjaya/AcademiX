@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
-import { FiUserPlus, FiEdit, FiSearch, FiSliders, FiUsers, FiCheckCircle, FiAlertTriangle, FiBookOpen } from 'react-icons/fi';
+import { FiUserPlus, FiEdit, FiSearch, FiSliders, FiUsers, FiCheckCircle, FiAlertTriangle, FiBookOpen, FiSend, FiClock } from 'react-icons/fi';
 import { isValidSriLankanPhone, formatSriLankanPhone } from '../../utils/phoneUtils';
 
 export default function StudentManagement() {
@@ -10,6 +10,10 @@ export default function StudentManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const gradeFilter = 'All Grades';
   const [statusFilter, setStatusFilter] = useState('All Statuses');
+
+  // Attendance State
+  const [todayAttendanceMap, setTodayAttendanceMap] = useState({});
+  const [markingAttendanceId, setMarkingAttendanceId] = useState(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,10 +71,73 @@ export default function StudentManagement() {
     }
   };
 
+  const fetchTodayAttendance = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/attendance/today', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const result = await response.json();
+        const map = {};
+        if (result.data) {
+          result.data.forEach(item => {
+            const sId = item.student?._id || item.student;
+            if (sId) {
+              map[sId] = item;
+            }
+          });
+        }
+        setTodayAttendanceMap(map);
+      }
+    } catch (error) {
+      console.error('Error fetching today attendance:', error);
+    }
+  };
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchStudents();
+    fetchTodayAttendance();
   }, []);
+
+  const handleMarkAttendance = async (student) => {
+    setMarkingAttendanceId(student._id);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/attendance/mark', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ studentDbId: student._id })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setTodayAttendanceMap(prev => ({
+          ...prev,
+          [student._id]: data.data
+        }));
+        const whatsappNotice = student.parentMobile
+          ? `Parent WhatsApp triggered for ${student.parentMobile}`
+          : 'No parent phone number on file';
+        setUpdateSuccessMessage(`Attendance marked for ${student.name}! (${whatsappNotice})`);
+        setTimeout(() => setUpdateSuccessMessage(''), 6000);
+      } else {
+        alert(data.message || 'Error marking attendance');
+      }
+    } catch (error) {
+      console.error('Error marking attendance:', error);
+      alert('Error connecting to server');
+    } finally {
+      setMarkingAttendanceId(null);
+    }
+  };
 
   // Handlers
   const handleEditStudent = (student) => {
@@ -324,6 +391,7 @@ export default function StudentManagement() {
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Grade</th>
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Enrollment Date</th>
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
+                    <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Attendance (Today)</th>
                     <th className="p-4 pr-6 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
                   </tr>
                 </thead>
@@ -361,6 +429,31 @@ export default function StudentManagement() {
                           </span>
                         </td>
 
+                        {/* Attendance Today & SMS Trigger */}
+                        <td className="p-4">
+                          {todayAttendanceMap[student._id] ? (
+                            <div className="flex flex-col gap-1">
+                              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/60 w-fit">
+                                <FiCheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                Present ({todayAttendanceMap[student._id].timeArrived || 'Today'})
+                              </span>
+                              <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                                <FiSend className="w-3 h-3 text-emerald-600 shrink-0" /> Parent WhatsApp Triggered
+                              </span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleMarkAttendance(student)}
+                              disabled={markingAttendanceId === student._id}
+                              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-[#3b28cc] border border-indigo-100 transition-colors cursor-pointer disabled:opacity-50"
+                              title="Mark student present and send WhatsApp message to parent"
+                            >
+                              <FiSend className="w-3.5 h-3.5" />
+                              {markingAttendanceId === student._id ? 'Marking...' : 'Mark Present'}
+                            </button>
+                          )}
+                        </td>
+
                         {/* Actions */}
                         <td className="p-4 pr-6 text-right">
                           <button
@@ -376,7 +469,7 @@ export default function StudentManagement() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="6" className="p-12 text-center text-slate-400 font-medium text-sm">
+                      <td colSpan="7" className="p-12 text-center text-slate-400 font-medium text-sm">
                         No students found matching filters or search queries.
                       </td>
                     </tr>
