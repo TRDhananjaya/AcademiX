@@ -121,9 +121,34 @@ const updateStudent = async (req, res, next) => {
             throw new Error('Student not found');
         }
 
+        // Destructure to remove _id and immutable fields from update payload
+        const { _id, username, password, ...updateData } = req.body;
+
+        // Auto-format phone numbers if provided (Single standard format: 07X XXX XXXX)
+        const formatLKPhone = (phone) => {
+            if (!phone || typeof phone !== 'string') return phone;
+            let digits = phone.trim().replace(/\D/g, '');
+            if (digits.startsWith('94') && digits.length === 11) {
+                digits = '0' + digits.substring(2);
+            } else if (!digits.startsWith('0') && digits.length === 9) {
+                digits = '0' + digits;
+            }
+            if (/^07\d{8}$/.test(digits)) {
+                return `${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6)}`;
+            }
+            return phone.trim();
+        };
+
+        if (updateData.studentMobile !== undefined) {
+            updateData.studentMobile = formatLKPhone(updateData.studentMobile);
+        }
+        if (updateData.parentMobile !== undefined) {
+            updateData.parentMobile = formatLKPhone(updateData.parentMobile);
+        }
+
         const updatedStudent = await Student.findByIdAndUpdate(
             req.params.id,
-            { ...req.body, grade: 'Grade 10' }, // Enforce Grade 10
+            { $set: { ...updateData, grade: 'Grade 10' } },
             { new: true, runValidators: true }
         );
 
@@ -131,9 +156,6 @@ const updateStudent = async (req, res, next) => {
         if (updatedStudent && updatedStudent.userId) {
             const user = await User.findById(updatedStudent.userId);
             if (user) {
-                if (updatedStudent.studentId) {
-                    user.username = updatedStudent.studentId.toLowerCase();
-                }
                 if (updatedStudent.email) {
                     user.email = updatedStudent.email.toLowerCase();
                 }
@@ -155,13 +177,9 @@ const updateStudent = async (req, res, next) => {
             });
 
             if (user) {
-                // Link and update
                 updatedStudent.userId = user._id;
                 await updatedStudent.save();
 
-                if (updatedStudent.studentId) {
-                    user.username = updatedStudent.studentId.toLowerCase();
-                }
                 if (updatedStudent.email) {
                     user.email = updatedStudent.email.toLowerCase();
                 }
@@ -176,6 +194,7 @@ const updateStudent = async (req, res, next) => {
 
         res.status(200).json(updatedStudent);
     } catch (error) {
+        console.error('Error updating student:', error);
         next(error);
     }
 };

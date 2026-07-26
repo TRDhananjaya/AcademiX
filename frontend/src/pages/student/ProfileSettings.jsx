@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/student/Sidebar';
 import StudentTopBar from '../../components/dashboard/StudentTopBar';
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiAward, FiPlus, FiGrid, FiBell, FiTrash2, FiBookOpen } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiAward, FiPlus, FiGrid, FiBell, FiTrash2, FiBookOpen, FiPhone, FiPhoneCall } from 'react-icons/fi';
 import { TbMessageReport, TbSchool } from 'react-icons/tb';
 import { useAuth } from '../../context/AuthContext';
-import { updateProfile } from '../../services/authService';
+import { updateProfile, getMe } from '../../services/authService';
+import { isValidSriLankanPhone, formatSriLankanPhone } from '../../utils/phoneUtils';
 import propic from '../../assets/propic.png';
 
 export default function ProfileSettings() {
@@ -19,6 +20,8 @@ export default function ProfileSettings() {
     return '';
   });
   const [email, setEmail] = useState(user?.email || '');
+  const [studentMobile, setStudentMobile] = useState(user?.studentMobile || '');
+  const [parentMobile, setParentMobile] = useState(user?.parentMobile || '');
   const [password, setPassword] = useState(''); // New password
   const [confirmPassword, setConfirmPassword] = useState(''); // Confirm new password
   const [showPassword, setShowPassword] = useState(false);
@@ -26,6 +29,17 @@ export default function ProfileSettings() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
+
+  // Fetch current user details on mount to ensure studentMobile and parentMobile are up-to-date
+  useEffect(() => {
+    getMe().then((res) => {
+      if (res.ok && res.data) {
+        if (res.data.studentMobile !== undefined) setStudentMobile(res.data.studentMobile || '');
+        if (res.data.parentMobile !== undefined) setParentMobile(res.data.parentMobile || '');
+        setUser((prev) => ({ ...prev, ...res.data }));
+      }
+    });
+  }, []);
 
   // Subjects state
   const [subjects, setSubjects] = useState(['Computer Science', 'Machine Learning', 'Data Science']);
@@ -78,6 +92,16 @@ export default function ProfileSettings() {
       }
     }
 
+    // Validate student mobile if provided
+    if (studentMobile && studentMobile.trim() !== '') {
+      if (!isValidSriLankanPhone(studentMobile)) {
+        setError('Mobile number must be a valid 10-digit Sri Lankan phone number starting with 07 (e.g., 077 123 4567)');
+        return;
+      }
+    }
+
+    const formattedStudentMobile = studentMobile ? formatSriLankanPhone(studentMobile) : '';
+
     // Split full name into first and last name
     const parts = fullName.trim().split(/\s+/);
     const firstName = parts[0] || '';
@@ -88,6 +112,7 @@ export default function ProfileSettings() {
       lastName,
       email,
       profilePicture,
+      studentMobile: formattedStudentMobile,
     };
 
     // Only send password if user entered a new one
@@ -219,6 +244,41 @@ export default function ProfileSettings() {
                           onChange={(e) => setEmail(e.target.value)}
                           className="border-none outline-none bg-transparent text-[14px] text-slate-800 w-full"
                           required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Student Telephone / Mobile Number (Editable by Student) */}
+                    <div>
+                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-2">Student Mobile Number</label>
+                      <div className="flex items-center gap-2.5 bg-slate-50 rounded-xl p-[11px_16px] border border-slate-200 focus-within:bg-white focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-500/10">
+                        <FiPhone className="text-slate-400 shrink-0" />
+                        <input
+                          type="tel"
+                          value={studentMobile}
+                          onChange={(e) => setStudentMobile(e.target.value)}
+                          placeholder="07X XXX XXXX"
+                          className="border-none outline-none bg-transparent text-[14px] text-slate-800 w-full"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Parent Telephone / Mobile Number (Read-Only for Student, Editable by Teacher Only) */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-slate-400 text-xs font-semibold uppercase">Parent Mobile Number</label>
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          <FiLock className="w-3 h-3 text-amber-600" /> Editable by Teacher Only
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2.5 bg-slate-100/80 rounded-xl p-[11px_16px] border border-slate-200 cursor-not-allowed">
+                        <FiPhoneCall className="text-slate-400 shrink-0" />
+                        <input
+                          type="text"
+                          value={parentMobile || 'Not Provided'}
+                          readOnly
+                          disabled
+                          className="border-none outline-none bg-transparent text-[14px] text-slate-500 w-full cursor-not-allowed font-medium"
                         />
                       </div>
                     </div>

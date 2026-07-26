@@ -56,6 +56,31 @@ export async function updateProfile(profileData) {
 }
 
 /**
+ * Get current authenticated user profile
+ * @returns {Promise<{ok: boolean, data?: object, message?: string}>}
+ */
+export async function getMe() {
+	try {
+		const token = localStorage.getItem('token');
+		const res = await fetch(`${API_BASE}/me`, {
+			headers: {
+				'Authorization': `Bearer ${token}`
+			}
+		});
+
+		const data = await res.json();
+
+		if (!res.ok) {
+			return { ok: false, message: data.message || 'Failed to fetch user' };
+		}
+
+		return { ok: true, data };
+	} catch (error) {
+		return { ok: false, message: 'Network error. Is the server running?' };
+	}
+}
+
+/**
  * Verify identity for password reset
  * @param {string} username
  * @param {string} email
