@@ -1,6 +1,12 @@
 const mongoose = require('mongoose');
 
 const studentSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        unique: true,
+        sparse: true
+    },
     studentId: {
         type: String,
         unique: true
@@ -19,13 +25,13 @@ const studentSchema = new mongoose.Schema({
     },
     studentMobile: {
         type: String,
-        required: true,
-        trim: true
+        trim: true,
+        default: ''
     },
     parentMobile: {
         type: String,
-        required: true,
-        trim: true
+        trim: true,
+        default: ''
     },
     grade: {
         type: String,
