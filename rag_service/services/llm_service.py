@@ -1,3 +1,5 @@
+# pyrefly: ignore [missing-import]
+
 import os
 from langchain_google_genai import ChatGoogleGenerativeAI
 
@@ -16,7 +18,8 @@ def get_llm():
         
         _llm_instance = ChatGoogleGenerativeAI(
             model="gemini-2.5-flash",
-            temperature=0.3,
+            temperature=0.2,
+            max_output_tokens=7000,
             google_api_key=api_key
         )
     return _llm_instance
@@ -24,4 +27,4 @@ def get_llm():
 def call_gemini(prompt: str) -> str:
     llm = get_llm()
     response = llm.invoke(prompt)
-    return response.content
+    return str(response.content)

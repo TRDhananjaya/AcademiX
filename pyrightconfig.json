@@ -1,0 +1,8 @@
+{
+  "venvPath": "e:\\xampp\\htdocs\\Project\\AcademiX\\rag_service",
+  "venv": ".venv",
+  "extraPaths": [
+    "e:\\xampp\\htdocs\\Project\\AcademiX\\rag_service\\.venv\\Lib\\site-packages",
+    "e:\\xampp\\htdocs\\Project\\AcademiX\\rag_service"
+  ]
+}
