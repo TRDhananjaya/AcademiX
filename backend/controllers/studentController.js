@@ -1,6 +1,115 @@
 const Student = require('../models/Student');
 const User = require('../models/User');
 
+// Helper to synchronize Student and User tables, and enforce Grade 10 on all students
+const syncStudentsAndUsers = async () => {
+    try {
+        // Enforce Grade 10 on all existing students first
+        await Student.updateMany({ grade: { $ne: 'Grade 10' } }, { $set: { grade: 'Grade 10' } });
+
+        const users = await User.find({ role: 'student' });
+        const students = await Student.find();
+
+        const studentEmails = new Set(students.map(s => s.email ? s.email.toLowerCase() : '').filter(Boolean));
+        const studentIds = new Set(students.map(s => s.studentId ? s.studentId.toLowerCase() : '').filter(Boolean));
+
+        // 1. Sync User -> Student (Create missing Student records)
+        for (const user of users) {
+            const userEmailLower = user.email ? user.email.toLowerCase() : '';
+            const usernameLower = user.username ? user.username.toLowerCase() : '';
+            
+            if (userEmailLower && usernameLower && !studentEmails.has(userEmailLower) && !studentIds.has(usernameLower)) {
+                const nameParts = [user.firstName, user.lastName].filter(Boolean);
+                const fullName = nameParts.join(' ').trim() || user.username;
+                
+                await Student.create({
+                    studentId: user.username.toUpperCase(),
+                    name: fullName,
+                    email: user.email,
+                    studentMobile: 'N/A',
+                    parentMobile: 'N/A',
+                    grade: 'Grade 10', // Enforce Grade 10
+                    status: 'Active'
+                });
+                console.log(`Synced: Created Student record for user ${user.username}`);
+            }
+        }
+
+        // Re-fetch students to capture newly created ones
+        const updatedStudents = await Student.find();
+        
+        // Generate QR codes for any existing students missing one
+        for (const s of updatedStudents) {
+            if (!s.qrCode) {
+                await s.save();
+            }
+        }
+        
+        // Build in-memory maps of users for fast lookups
+        const userByUsername = new Map();
+        const userByEmail = new Map();
+        for (const u of users) {
+            if (u.username) userByUsername.set(u.username.toLowerCase(), u);
+            if (u.email) userByEmail.set(u.email.toLowerCase(), u);
+        }
+
+        // 2. Sync Student -> User (Create missing User accounts, or update details if out of sync)
+        for (const student of updatedStudents) {
+            const studentEmailLower = student.email ? student.email.toLowerCase() : '';
+            const studentIdLower = student.studentId ? student.studentId.toLowerCase() : '';
+
+            if (!studentIdLower || !studentEmailLower) continue;
+
+            // Find matching user from in-memory maps
+            const user = userByUsername.get(studentIdLower) || userByEmail.get(studentEmailLower);
+
+            if (!user) {
+                // Create missing User record
+                const nameParts = student.name ? student.name.trim().split(/\s+/) : ['Student'];
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+
+                await User.create({
+                    username: studentIdLower,
+                    email: student.email.toLowerCase(),
+                    password: `${studentIdLower}123`, // Default password
+                    role: 'student',
+                    firstName,
+                    lastName
+                });
+                console.log(`Synced: Created User record for student ${student.studentId}`);
+            } else {
+                // If user exists, make sure details are synced
+                let modified = false;
+                if (user.username !== studentIdLower) {
+                    user.username = studentIdLower;
+                    modified = true;
+                }
+                if (user.email !== studentEmailLower) {
+                    user.email = studentEmailLower;
+                    modified = true;
+                }
+                const nameParts = student.name ? student.name.trim().split(/\s+/) : ['Student'];
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+                if (user.firstName !== firstName) {
+                    user.firstName = firstName;
+                    modified = true;
+                }
+                if (user.lastName !== lastName) {
+                    user.lastName = lastName;
+                    modified = true;
+                }
+                if (modified) {
+                    await user.save();
+                    console.log(`Synced: Updated User details for student ${student.studentId}`);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error syncing students and users:', error);
+    }
+};
 // @desc    Get all students
 // @route   GET /api/students
 // @access  Public

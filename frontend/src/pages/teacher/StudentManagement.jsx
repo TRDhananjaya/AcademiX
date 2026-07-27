@@ -199,6 +199,7 @@ export default function StudentManagement() {
             name: data.name,
             email: data.email,
             studentId: data.studentId,
+            qrCode: data.qrCode,
             username: newStudent.username.trim() || data.studentId.toLowerCase(),
             password: newStudent.password.trim() || `${data.studentId.toLowerCase()}123`,
             studentMobile: data.studentMobile,
@@ -389,6 +390,7 @@ export default function StudentManagement() {
                     <th className="p-4 pl-6 text-xs font-bold text-slate-400 uppercase tracking-wider">Student Name</th>
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Email Address</th>
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Grade</th>
+                    <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Attendance QR Code</th>
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Enrollment Date</th>
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Attendance (Today)</th>
@@ -413,6 +415,15 @@ export default function StudentManagement() {
 
                         {/* Grade */}
                         <td className="p-4 text-slate-700 text-sm font-medium">{student.grade || 'N/A'}</td>
+
+                        {/* QR Code */}
+                        <td className="p-4">
+                          {student.qrCode ? (
+                            <img src={student.qrCode} alt="Student QR" className="w-10 h-10 object-contain rounded border border-slate-200 bg-white p-0.5" />
+                          ) : (
+                            <span className="text-slate-400 text-xs">N/A</span>
+                          )}
+                        </td>
 
                         {/* Enrollment Date */}
                         <td className="p-4 text-slate-500 text-sm">{student.enrolled ? new Date(student.enrolled).toISOString().split('T')[0] : 'N/A'}</td>
@@ -655,24 +666,46 @@ export default function StudentManagement() {
 
           {/* Success Student Registered Modal */}
           {successStudentDetails && (
-            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-200 p-6 flex flex-col gap-5">
+            <div
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={() => setSuccessStudentDetails(null)}
+            >
+              <div
+                className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-100 animate-in fade-in zoom-in-95 duration-200 p-6 flex flex-col gap-5 relative"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Top-Right Close Button */}
+                <button
+                  type="button"
+                  onClick={() => setSuccessStudentDetails(null)}
+                  className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 font-bold text-xl bg-slate-100 hover:bg-slate-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors cursor-pointer"
+                  title="Close"
+                >
+                  ×
+                </button>
 
                 {/* Header/Icon */}
-                <div className="flex flex-col items-center gap-3 text-center">
-                  <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3 text-center pt-2">
+                  <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0">
                     <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                   <h3 className="text-xl font-extrabold text-slate-900">Student Registered Successfully</h3>
                   <p className="text-slate-400 text-xs leading-normal">
-                    Student has been added to AcademiX and their LMS portal account is ready.
+                    Student has been added to AcademiX and their attendance QR code is generated.
                   </p>
                 </div>
 
                 {/* Details Box */}
                 <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-sm space-y-3.5 font-sans">
+
+                  {successStudentDetails.qrCode && (
+                    <div className="flex flex-col items-center justify-center pb-3 border-b border-slate-200/60">
+                      <span className="text-slate-400 text-xs font-semibold uppercase mb-2">Attendance QR Code</span>
+                      <img src={successStudentDetails.qrCode} alt="Student QR Code" className="w-36 h-36 object-contain bg-white p-2 rounded-xl border border-slate-200 shadow-sm" />
+                    </div>
+                  )}
 
                   <div className="flex justify-between items-center pb-2.5 border-b border-slate-200/60">
                     <span className="text-slate-400 text-xs font-semibold uppercase">Full Name</span>
@@ -712,7 +745,7 @@ export default function StudentManagement() {
                 </div>
 
                 {/* Footer Buttons */}
-                <div className="flex items-center gap-3 w-full">
+                <div className="flex items-center gap-3 w-full shrink-0">
                   <button
                     type="button"
                     onClick={handleCopyCredentials}
