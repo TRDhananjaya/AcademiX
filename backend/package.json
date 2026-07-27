@@ -23,6 +23,7 @@
     "jsonwebtoken": "^9.0.3",
     "marked": "^18.0.5",
     "mongoose": "^9.6.3",
-    "puppeteer": "^25.3.0"
+    "puppeteer": "^25.3.0",
+    "qrcode": "^1.5.4"
   }
 }

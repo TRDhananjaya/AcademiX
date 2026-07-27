@@ -1,9 +1,13 @@
 const mongoose = require('mongoose');
+const QRCode = require('qrcode');
 
 const studentSchema = new mongoose.Schema({
     studentId: {
         type: String,
         unique: true
+    },
+    qrCode: {
+        type: String
     },
     name: {
         type: String,
@@ -52,7 +56,7 @@ const studentSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Pre-save middleware to set initials, color, and studentId if not provided
+// Pre-save middleware to set initials, color, studentId, and qrCode if not provided
 studentSchema.pre('save', async function() {
     if (!this.studentId) {
         // Generate a random ID like STU-1005
@@ -78,6 +82,19 @@ studentSchema.pre('save', async function() {
     if (!this.color) {
         const colors = ['bg-indigo-500', 'bg-teal-500', 'bg-purple-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500', 'bg-red-500', 'bg-slate-500'];
         this.color = colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    if (this.studentId && (!this.qrCode || this.isModified('studentId') || this.isModified('email'))) {
+        try {
+            const payload = JSON.stringify({
+                studentId: this.studentId,
+                email: this.email,
+                name: this.name
+            });
+            this.qrCode = await QRCode.toDataURL(payload);
+        } catch (err) {
+            console.error('Error generating QR code for student:', err);
+        }
     }
 });
 

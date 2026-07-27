@@ -38,6 +38,13 @@ const syncStudentsAndUsers = async () => {
         // Re-fetch students to capture newly created ones
         const updatedStudents = await Student.find();
         
+        // Generate QR codes for any existing students missing one
+        for (const s of updatedStudents) {
+            if (!s.qrCode) {
+                await s.save();
+            }
+        }
+        
         // Build in-memory maps of users for fast lookups
         const userByUsername = new Map();
         const userByEmail = new Map();

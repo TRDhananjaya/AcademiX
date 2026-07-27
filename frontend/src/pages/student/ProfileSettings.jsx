@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/student/Sidebar';
 import StudentTopBar from '../../components/dashboard/StudentTopBar';
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiAward, FiPlus, FiGrid, FiBell, FiTrash2, FiBookOpen } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiAward, FiPlus, FiGrid, FiBell, FiTrash2, FiBookOpen, FiDownload } from 'react-icons/fi';
 import { TbMessageReport, TbSchool } from 'react-icons/tb';
 import { useAuth } from '../../context/AuthContext';
 import { updateProfile } from '../../services/authService';
@@ -26,6 +26,32 @@ export default function ProfileSettings() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
+  const [studentRecord, setStudentRecord] = useState(null);
+
+  // Fetch student QR Code data from /api/students
+  useEffect(() => {
+    async function fetchStudentData() {
+      try {
+        const res = await fetch('/api/students');
+        if (res.ok) {
+          const students = await res.json();
+          const match = students.find(
+            (s) =>
+              (s.email && user?.email && s.email.toLowerCase() === user.email.toLowerCase()) ||
+              (s.studentId && user?.username && s.studentId.toLowerCase() === user.username.toLowerCase())
+          );
+          if (match) {
+            setStudentRecord(match);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching student profile details:', err);
+      }
+    }
+    if (user) {
+      fetchStudentData();
+    }
+  }, [user]);
 
   // Subjects state
   const [subjects, setSubjects] = useState(['Computer Science', 'Machine Learning', 'Data Science']);
@@ -59,6 +85,16 @@ export default function ProfileSettings() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleDownloadQR = () => {
+    if (!studentRecord?.qrCode) return;
+    const a = document.createElement('a');
+    a.href = studentRecord.qrCode;
+    a.download = `${studentRecord.studentId || 'student'}_attendance_qr.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const handleSaveChanges = async (e) => {
@@ -166,12 +202,32 @@ export default function ProfileSettings() {
                 <h2 className="text-xl font-bold text-slate-800 mb-1">{fullName}</h2>
                 <span className="text-indigo-600 font-semibold text-xs tracking-wider uppercase mb-4">Student</span>
 
-                <div className="bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-full px-4 py-1.5 flex items-center gap-1.5 transition-colors cursor-pointer">
+                <div className="bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-full px-4 py-1.5 flex items-center gap-1.5 transition-colors cursor-pointer mb-5">
                   <TbSchool className="text-slate-500 w-4.5 h-4.5" />
                   <span className="text-slate-600 text-xs font-semibold">Grade 10 Student</span>
                 </div>
-              </div>
 
+                {/* Attendance QR Code Card */}
+                {studentRecord?.qrCode && (
+                  <div className="w-full px-6 pt-5 border-t border-slate-100 flex flex-col items-center">
+                    <span className="text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-3">Attendance QR Code</span>
+                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center">
+                      <img src={studentRecord.qrCode} alt="Attendance QR Code" className="w-36 h-36 object-contain bg-white p-2 rounded-xl border border-slate-200/80" />
+                    </div>
+                    <span className="text-xs font-mono text-slate-600 font-extrabold mt-3 bg-indigo-50 text-indigo-700 border border-indigo-100 px-3 py-1 rounded-full">
+                      ID: {studentRecord.studentId}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleDownloadQR}
+                      className="mt-4 w-full py-2 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <FiDownload className="w-3.5 h-3.5" />
+                      Download QR Code
+                    </button>
+                  </div>
+                )}
+              </div>
 
             </div>
 

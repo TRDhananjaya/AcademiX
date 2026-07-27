@@ -111,6 +111,32 @@ const registerUser = async (req, res) => {
 		});
 
 		if (user) {
+			if (user.role === 'student') {
+				try {
+					const Student = require('../models/Student');
+					const nameParts = [user.firstName, user.lastName].filter(Boolean);
+					const fullName = nameParts.join(' ').trim() || user.username;
+					
+					const existingStudent = await Student.findOne({
+						$or: [{ email: user.email.toLowerCase() }, { studentId: user.username.toUpperCase() }]
+					});
+
+					if (!existingStudent) {
+						await Student.create({
+							studentId: user.username.toUpperCase(),
+							name: fullName,
+							email: user.email.toLowerCase(),
+							studentMobile: 'N/A',
+							parentMobile: 'N/A',
+							grade: 'Grade 10',
+							status: 'Active'
+						});
+					}
+				} catch (studentErr) {
+					console.error('Error creating Student record on registration:', studentErr);
+				}
+			}
+
 			res.status(201).json({
 				_id: user._id,
 				username: user.username,
