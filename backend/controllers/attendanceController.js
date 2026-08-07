@@ -15,25 +15,33 @@ const getTodayMidnight = () => {
 // @access  Private/Public
 const markAttendance = async (req, res, next) => {
   try {
-    const { studentId, studentDbId } = req.body;
+    const { studentId, studentDbId, email } = req.body;
 
-    if (!studentId && !studentDbId) {
+    if (!studentId && !studentDbId && !email) {
       res.status(400);
-      throw new Error('Please provide studentId or studentDbId');
+      throw new Error('Please provide studentId, studentDbId, or email');
     }
 
-    // 1. Find Student by ObjectId or string studentId (e.g. STU-1005)
+    // 1. Find Student by ObjectId, string studentId (e.g. STU-1005), or email
     let student = null;
     if (studentDbId) {
       student = await Student.findById(studentDbId);
-    } else if (studentId) {
+    }
+    
+    if (!student && studentId) {
+      const cleanId = String(studentId).trim();
       student = await Student.findOne({
         $or: [
-          { studentId: studentId.trim().toUpperCase() },
-          { studentId: studentId.trim() },
-          { _id: studentId.match(/^[0-9a-fA-F]{24}$/) ? studentId : null }
+          { studentId: cleanId.toUpperCase() },
+          { studentId: cleanId },
+          { email: cleanId.toLowerCase() },
+          { _id: cleanId.match(/^[0-9a-fA-F]{24}$/) ? cleanId : null }
         ].filter(Boolean)
       });
+    }
+
+    if (!student && email) {
+      student = await Student.findOne({ email: String(email).trim().toLowerCase() });
     }
 
     if (!student) {
@@ -51,10 +59,23 @@ const markAttendance = async (req, res, next) => {
     });
 
     if (existingAttendance) {
+      // If forceSend is requested or WhatsApp notification wasn't sent yet, send now
+      let whatsappSuccess = existingAttendance.whatsappSent;
+      if (req.body.forceSend || !whatsappSuccess) {
+        if (student.parentMobile) {
+          whatsappSuccess = await sendAttendanceWhatsApp(student.parentMobile, student.name, existingAttendance.timeArrived || timeArrived);
+          if (whatsappSuccess) {
+            existingAttendance.whatsappSent = true;
+            await existingAttendance.save();
+          }
+        }
+      }
+
       return res.status(200).json({
         success: true,
         alreadyMarked: true,
-        message: `Attendance for ${student.name} is already marked for today (${existingAttendance.timeArrived || 'Earlier'}).`,
+        message: `Attendance for ${student.name} (${student.studentId}) is already marked for today (${existingAttendance.timeArrived || 'Earlier'}). ${whatsappSuccess ? 'WhatsApp notification sent to parent.' : ''}`,
+        whatsappSent: existingAttendance.whatsappSent,
         data: existingAttendance,
         student
       });
@@ -85,7 +106,7 @@ const markAttendance = async (req, res, next) => {
     res.status(201).json({
       success: true,
       alreadyMarked: false,
-      message: `Attendance marked successfully for ${student.name}.`,
+      message: `Attendance marked successfully for ${student.name} (${student.studentId}).`,
       whatsappSent: whatsappSuccess,
       parentMobile: student.parentMobile || 'Not Provided',
       data: attendance,

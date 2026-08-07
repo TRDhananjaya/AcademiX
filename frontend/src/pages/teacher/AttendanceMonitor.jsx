@@ -5,41 +5,8 @@ import { Html5Qrcode } from 'html5-qrcode';
 
 export default function AttendanceMonitor() {
   const [students, setStudents] = useState([]);
-  const [attendanceData, setAttendanceData] = useState([
-    {
-      id: 'demo-1',
-      studentId: 'STU-1001',
-      name: 'John Smith',
-      initials: 'JS',
-      bgClass: 'bg-indigo-600',
-      time: '09:02 AM',
-      status: 'On Time',
-      statusClass: 'bg-emerald-50 text-emerald-600',
-      notified: true
-    },
-    {
-      id: 'demo-2',
-      studentId: 'STU-1002',
-      name: 'Emma Davis',
-      initials: 'ED',
-      bgClass: 'bg-[#b388ff]',
-      time: '09:05 AM',
-      status: 'On Time',
-      statusClass: 'bg-emerald-50 text-emerald-600',
-      notified: true
-    },
-    {
-      id: 'demo-3',
-      studentId: 'STU-1003',
-      name: 'Michael Johnson',
-      initials: 'MJ',
-      bgClass: 'bg-slate-400',
-      time: '09:15 AM',
-      status: 'Late',
-      statusClass: 'bg-red-50 text-red-600',
-      notified: false
-    }
-  ]);
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // Scanner modal & camera states
   const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -51,20 +18,64 @@ export default function AttendanceMonitor() {
 
   const html5QrCodeRef = useRef(null);
 
-  // Fetch students from backend API
-  useEffect(() => {
-    async function loadStudents() {
-      try {
-        const res = await fetch('/api/students');
-        if (res.ok) {
-          const data = await res.json();
-          setStudents(data);
-        }
-      } catch (err) {
-        console.error('Error fetching students for attendance:', err);
+  // Load students list
+  const loadStudents = async () => {
+    try {
+      const res = await fetch('/api/students');
+      if (res.ok) {
+        const data = await res.json();
+        setStudents(data);
       }
+    } catch (err) {
+      console.error('Error fetching students for attendance:', err);
     }
+  };
+
+  // Load today's attendance logs from database
+  const fetchTodayAttendance = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/attendance/today', {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      if (res.ok) {
+        const result = await res.json();
+        if (result.data) {
+          const formatted = result.data.map(item => {
+            const studentObj = item.student || {};
+            const studentName = studentObj.name || 'Unknown Student';
+            const initials = studentName.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) || 'ST';
+
+            return {
+              id: item._id,
+              studentDbId: studentObj._id,
+              studentId: studentObj.studentId || 'N/A',
+              name: studentName,
+              initials,
+              bgClass: studentObj.color || 'bg-indigo-600',
+              time: item.timeArrived || new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              status: item.status || 'Present',
+              statusClass: 'bg-emerald-50 text-emerald-600',
+              notified: Boolean(item.whatsappSent),
+              parentMobile: studentObj.parentMobile || 'Not Provided'
+            };
+          });
+          setAttendanceData(formatted);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching today attendance logs:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadStudents();
+    fetchTodayAttendance();
   }, []);
 
   // Cleanup scanner instance
@@ -110,7 +121,7 @@ export default function AttendanceMonitor() {
           (decodedText) => {
             handleDecodedQR(decodedText);
           },
-          (errorMessage) => {
+          () => {
             // Ignore repetitive frame parse errors
           }
         );
@@ -134,10 +145,11 @@ export default function AttendanceMonitor() {
     };
   }, [isScannerOpen, activeTab]);
 
-  // Process decoded QR code payload
-  const handleDecodedQR = (decodedText) => {
+  // Process decoded QR code payload & automatically mark attendance in MongoDB
+  const handleDecodedQR = async (decodedText) => {
     stopCamera();
     setScanError('');
+    setScanResult(null);
 
     let parsedData = null;
     try {
@@ -146,54 +158,52 @@ export default function AttendanceMonitor() {
       parsedData = { studentId: decodedText.trim() };
     }
 
-    const searchId = (parsedData.studentId || decodedText).trim().toUpperCase();
-    const searchEmail = (parsedData.email || '').trim().toLowerCase();
+    const searchId = (parsedData.studentId || decodedText).trim();
+    const searchEmail = (parsedData.email || '').trim();
 
-    // Find student in DB list or fallback
-    const matchedStudent = students.find(s => 
-      (s.studentId && s.studentId.toUpperCase() === searchId) ||
-      (s.email && s.email.toLowerCase() === searchEmail)
-    );
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/attendance/mark', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          studentId: searchId,
+          email: searchEmail
+        })
+      });
 
-    const studentName = matchedStudent ? matchedStudent.name : (parsedData.name || searchId);
-    const studentId = matchedStudent ? matchedStudent.studentId : searchId;
-    const initials = matchedStudent ? matchedStudent.initials : studentName.substring(0, 2).toUpperCase();
-    const bgClass = matchedStudent ? (matchedStudent.color || 'bg-indigo-600') : 'bg-indigo-600';
+      const data = await response.json();
 
-    // Check duplicate check-in
-    const alreadyCheckedIn = attendanceData.some(a => a.studentId === studentId || a.name.toLowerCase() === studentName.toLowerCase());
+      if (!response.ok) {
+        setScanError(data.message || 'Failed to mark attendance for scanned QR code.');
+        return;
+      }
 
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const isLate = now.getHours() > 9 || (now.getHours() === 9 && now.getMinutes() > 15);
+      // Re-fetch today's attendance logs from backend DB to update live table & counters
+      await fetchTodayAttendance();
 
-    const newRecord = {
-      id: Date.now().toString(),
-      studentId,
-      name: studentName,
-      initials,
-      bgClass,
-      time: timeStr,
-      status: isLate ? 'Late' : 'On Time',
-      statusClass: isLate ? 'bg-red-50 text-red-600' : 'bg-emerald-50 text-emerald-600',
-      notified: true
-    };
+      const studentName = data.student ? data.student.name : (parsedData.name || searchId);
+      const studentId = data.student ? data.student.studentId : searchId;
+      const timeStr = data.data?.timeArrived || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    if (!alreadyCheckedIn) {
-      setAttendanceData(prev => [newRecord, ...prev]);
       setScanResult({
         success: true,
-        message: `Attendance marked successfully for ${studentName}!`,
-        record: newRecord,
-        isDuplicate: false
+        isDuplicate: data.alreadyMarked,
+        message: data.alreadyMarked
+          ? `Attendance for ${studentName} (${studentId}) is already marked for today at ${timeStr}.`
+          : `Attendance marked successfully for ${studentName} (${studentId})! ${data.whatsappSent ? 'Parent notified on WhatsApp.' : (data.parentMobile !== 'Not Provided' ? 'Parent notification queued.' : 'No parent mobile registered.')}`,
+        record: {
+          name: studentName,
+          studentId: studentId,
+          time: timeStr
+        }
       });
-    } else {
-      setScanResult({
-        success: true,
-        message: `Student ${studentName} (${studentId}) is already checked in for today.`,
-        record: newRecord,
-        isDuplicate: true
-      });
+    } catch (err) {
+      console.error('Error marking attendance via QR code:', err);
+      setScanError('Server error while saving attendance. Please check network connection.');
     }
   };
 
@@ -223,18 +233,60 @@ export default function AttendanceMonitor() {
     setManualIdInput('');
   };
 
+  // Export logs to CSV file
   const handleExport = () => {
-    alert('Exporting attendance logs to CSV...');
+    if (attendanceData.length === 0) {
+      alert('No attendance records available for today to export.');
+      return;
+    }
+
+    const headers = ['Student Name', 'Student ID', 'Check-in Time', 'Status', 'Parent Notified'];
+    const rows = attendanceData.map(a => [
+      `"${a.name}"`,
+      `"${a.studentId}"`,
+      `"${a.time}"`,
+      `"${a.status}"`,
+      `"${a.notified ? 'Yes' : 'No'}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Attendance_Report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  const handleNotifyParent = (id) => {
-    setAttendanceData(attendanceData.map(item => {
-      if (item.id === id) {
-        alert(`Parent notification sent for ${item.name}`);
-        return { ...item, notified: true };
+  // Retry notifying parent via WhatsApp
+  const handleNotifyParent = async (item) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/attendance/mark', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          studentDbId: item.studentDbId || item.id,
+          studentId: item.studentId,
+          forceSend: true
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.whatsappSent) {
+        alert(`Parent notification sent successfully for ${item.name}!`);
+      } else {
+        alert(data.message || `Could not send WhatsApp notification to parent.`);
       }
-      return item;
-    }));
+      await fetchTodayAttendance();
+    } catch (err) {
+      console.error('Error notifying parent:', err);
+      alert('Failed to send parent notification.');
+    }
   };
 
   const totalEnrolled = Math.max(30, students.length);
@@ -249,12 +301,12 @@ export default function AttendanceMonitor() {
         <div>
           <h1 className="text-4xl font-bold text-slate-900 mb-2">QR Attendance</h1>
           <p className="text-slate-500 text-base">
-            Manage daily student check-ins via QR code scanner.
+            Automatic daily student check-ins via QR code scanner.
           </p>
         </div>
         
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => {
               setIsScannerOpen(true);
               setActiveTab('camera');
@@ -263,6 +315,14 @@ export default function AttendanceMonitor() {
           >
             <TbQrcode className="w-5 h-5" />
             Scan Student QR
+          </button>
+
+          <button
+            onClick={fetchTodayAttendance}
+            title="Refresh Attendance Data"
+            className="p-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 rounded-xl transition-colors shadow-sm cursor-pointer"
+          >
+            <FiRefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
 
           <button 
@@ -298,51 +358,61 @@ export default function AttendanceMonitor() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {attendanceData.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50/30 transition-colors">
-                  {/* Student Name */}
-                  <td className="p-4 pl-6 flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-full ${item.bgClass} text-white font-bold text-xs flex items-center justify-center shrink-0`}>
-                      {item.initials}
-                    </div>
-                    <span className="font-bold text-slate-800 text-sm">{item.name}</span>
-                  </td>
-
-                  {/* Student ID */}
-                  <td className="p-4 text-slate-600 font-mono text-xs font-bold">
-                    {item.studentId || 'N/A'}
-                  </td>
-
-                  {/* Check-in Time */}
-                  <td className="p-4 text-slate-500 font-semibold text-sm">
-                    {item.time}
-                  </td>
-
-                  {/* Status */}
-                  <td className="p-4">
-                    <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider ${item.statusClass}`}>
-                      {item.status}
-                    </span>
-                  </td>
-
-                  {/* Parent Notified Status */}
-                  <td className="p-4 pr-6">
-                    {item.notified ? (
-                      <div className="text-teal-600 flex items-center justify-start">
-                        <FiCheckCircle className="w-5 h-5" />
-                      </div>
-                    ) : (
-                      <button 
-                        onClick={() => handleNotifyParent(item.id)}
-                        className="text-red-500 hover:text-red-700 flex items-center justify-start cursor-pointer transition-colors p-1"
-                        title="Click to notify parent"
-                      >
-                        <FiAlertCircle className="w-5 h-5" />
-                      </button>
-                    )}
+              {attendanceData.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="p-8 text-center text-slate-400 text-sm">
+                    No attendance records marked yet for today. Click <span className="font-semibold text-indigo-600">"Scan Student QR"</span> to scan a student's QR code!
                   </td>
                 </tr>
-              ))}
+              ) : (
+                attendanceData.map((item) => (
+                  <tr key={item.id} className="hover:bg-slate-50/30 transition-colors">
+                    {/* Student Name */}
+                    <td className="p-4 pl-6 flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-full ${item.bgClass} text-white font-bold text-xs flex items-center justify-center shrink-0`}>
+                        {item.initials}
+                      </div>
+                      <span className="font-bold text-slate-800 text-sm">{item.name}</span>
+                    </td>
+
+                    {/* Student ID */}
+                    <td className="p-4 text-slate-600 font-mono text-xs font-bold">
+                      {item.studentId || 'N/A'}
+                    </td>
+
+                    {/* Check-in Time */}
+                    <td className="p-4 text-slate-500 font-semibold text-sm">
+                      {item.time}
+                    </td>
+
+                    {/* Status */}
+                    <td className="p-4">
+                      <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider ${item.statusClass}`}>
+                        {item.status}
+                      </span>
+                    </td>
+
+                    {/* Parent Notified Status */}
+                    <td className="p-4 pr-6">
+                      {item.notified ? (
+                        <div className="text-teal-600 flex items-center gap-1.5 text-xs font-semibold">
+                          <FiCheckCircle className="w-5 h-5 shrink-0" />
+                          <span>Sent</span>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => handleNotifyParent(item)}
+                          className="text-red-500 hover:text-red-700 flex items-center gap-1.5 cursor-pointer transition-colors p-1 text-xs font-semibold"
+                          title="Click to notify parent via WhatsApp"
+                        >
+                          <FiAlertCircle className="w-5 h-5 shrink-0" />
+                          <span>Retry WhatsApp</span>
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -363,7 +433,7 @@ export default function AttendanceMonitor() {
           <div className="mt-6">
             <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
               <div 
-                className="bg-[#3b28cc] h-full rounded-full transition-all duration-550" 
+                className="bg-[#3b28cc] h-full rounded-full transition-all duration-500" 
                 style={{ width: `${percentagePresent}%` }}
               ></div>
             </div>
@@ -383,7 +453,7 @@ export default function AttendanceMonitor() {
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-800 text-sm">Sent</h4>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Automated</p>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Automated WhatsApp</p>
                 </div>
               </div>
               <span className="text-2xl font-extrabold text-teal-600">{attendanceData.filter(a => a.notified).length}</span>
@@ -431,7 +501,7 @@ export default function AttendanceMonitor() {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-slate-900">Scan Student QR Code</h3>
-                  <p className="text-slate-400 text-xs">Verify student and record attendance</p>
+                  <p className="text-slate-400 text-xs">Scan QR code to mark attendance automatically</p>
                 </div>
               </div>
 
@@ -611,4 +681,3 @@ export default function AttendanceMonitor() {
     </div>
   );
 }
-
