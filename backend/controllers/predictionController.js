@@ -47,12 +47,37 @@ const calculateFeatures = async (studentId, lessonId) => {
     const avg = (m1 + m2 + m3) / 3;
     const totalQuizzesAnalyzed = uniqueQuizIds.length + (hasFollowup && followupResults.length > 0 ? 1 : 0);
 
+    let weakCount = 0;
+    if (m1 < 72) weakCount++; // Using 72 as 18/25 equivalent roughly
+    if (m2 < 72) weakCount++;
+    if (m3 < 72) weakCount++;
+    
+    // Simple priority score calculation: base 10 per weak module + random or predefined factor
+    const priorityScore = weakCount * 10 + 5; 
+    
+    let improvement = 0;
+    if (avg > 0) {
+        improvement = ((followup - avg) / avg) * 100;
+    }
+    
+    let lessonPerf = 'Needs Improvement';
+    if (avg >= 80) lessonPerf = 'Excellent';
+    else if (avg >= 60) lessonPerf = 'Good';
+    
+    // Assign generic difficulty if not stored (assume Medium usually)
+    const quizDiff = 'Medium';
+
     return {
-        Module_1_Score: m1,
-        Module_2_Score: m2,
-        Module_3_Score: m3,
-        Avg_Module_Score: avg,
-        Followup_Quiz_Score: followup,
+        Module_1_Score: m1 / 4,
+        Module_2_Score: m2 / 4,
+        Module_3_Score: m3 / 4,
+        Avg_Module_Score: avg / 4,
+        Weak_Module_Count: weakCount,
+        Priority_Score: priorityScore,
+        Followup_Quiz_Score: followup / 4,
+        Improvement_Percentage: improvement,
+        Lesson_Performance: lessonPerf,
+        Quiz_Difficulty: quizDiff,
         quizzesAnalyzed: totalQuizzesAnalyzed
     };
 };
@@ -81,11 +106,16 @@ const generatePrediction = async (req, res, next) => {
         }
 
         const mlFeatures = {
-            Module_1_Score: features.Module_1_Score / 4,
-            Module_2_Score: features.Module_2_Score / 4,
-            Module_3_Score: features.Module_3_Score / 4,
-            Avg_Module_Score: features.Avg_Module_Score / 4,
-            Followup_Quiz_Score: features.Followup_Quiz_Score / 4,
+            Module_1_Score: features.Module_1_Score,
+            Module_2_Score: features.Module_2_Score,
+            Module_3_Score: features.Module_3_Score,
+            Avg_Module_Score: features.Avg_Module_Score,
+            Weak_Module_Count: features.Weak_Module_Count,
+            Priority_Score: features.Priority_Score,
+            Followup_Quiz_Score: features.Followup_Quiz_Score,
+            Improvement_Percentage: features.Improvement_Percentage,
+            Lesson_Performance: features.Lesson_Performance,
+            Quiz_Difficulty: features.Quiz_Difficulty,
             LessonID: lessonId ? lessonId.replace('Q', 'L') : ''
         };
 
