@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/student/Sidebar';
 import StudentTopBar from '../../components/dashboard/StudentTopBar';
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiAward, FiPlus, FiGrid, FiBell, FiTrash2, FiBookOpen } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiAward, FiPlus, FiGrid, FiBell, FiTrash2, FiBookOpen, FiPhone, FiPhoneCall, FiDownload } from 'react-icons/fi';
 import { TbMessageReport, TbSchool } from 'react-icons/tb';
 import { useAuth } from '../../context/AuthContext';
-import { updateProfile } from '../../services/authService';
+import { updateProfile, getMe } from '../../services/authService';
+import { isValidSriLankanPhone, formatSriLankanPhone } from '../../utils/phoneUtils';
 import propic from '../../assets/propic.png';
 
 export default function ProfileSettings() {
@@ -19,6 +20,8 @@ export default function ProfileSettings() {
     return '';
   });
   const [email, setEmail] = useState(user?.email || '');
+  const [studentMobile, setStudentMobile] = useState(user?.studentMobile || '');
+  const [parentMobile, setParentMobile] = useState(user?.parentMobile || '');
   const [password, setPassword] = useState(''); // New password
   const [confirmPassword, setConfirmPassword] = useState(''); // Confirm new password
   const [showPassword, setShowPassword] = useState(false);
@@ -26,6 +29,43 @@ export default function ProfileSettings() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
+  const [studentRecord, setStudentRecord] = useState(null);
+
+  // Fetch student QR Code data from /api/students
+  useEffect(() => {
+    async function fetchStudentData() {
+      try {
+        const res = await fetch('/api/students');
+        if (res.ok) {
+          const students = await res.json();
+          const match = students.find(
+            (s) =>
+              (s.email && user?.email && s.email.toLowerCase() === user.email.toLowerCase()) ||
+              (s.studentId && user?.username && s.studentId.toLowerCase() === user.username.toLowerCase())
+          );
+          if (match) {
+            setStudentRecord(match);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching student profile details:', err);
+      }
+    }
+    if (user) {
+      fetchStudentData();
+    }
+  }, [user]);
+
+  // Fetch current user details on mount to ensure studentMobile and parentMobile are up-to-date
+  useEffect(() => {
+    getMe().then((res) => {
+      if (res.ok && res.data) {
+        if (res.data.studentMobile !== undefined) setStudentMobile(res.data.studentMobile || '');
+        if (res.data.parentMobile !== undefined) setParentMobile(res.data.parentMobile || '');
+        setUser((prev) => ({ ...prev, ...res.data }));
+      }
+    });
+  }, []);
 
   // Subjects state
   const [subjects, setSubjects] = useState(['Computer Science', 'Machine Learning', 'Data Science']);
@@ -61,6 +101,16 @@ export default function ProfileSettings() {
     }
   };
 
+  const handleDownloadQR = () => {
+    if (!studentRecord?.qrCode) return;
+    const a = document.createElement('a');
+    a.href = studentRecord.qrCode;
+    a.download = `${studentRecord.studentId || 'student'}_attendance_qr.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const handleSaveChanges = async (e) => {
     e.preventDefault();
     setError('');
@@ -78,6 +128,16 @@ export default function ProfileSettings() {
       }
     }
 
+    // Validate student mobile if provided
+    if (studentMobile && studentMobile.trim() !== '') {
+      if (!isValidSriLankanPhone(studentMobile)) {
+        setError('Mobile number must be a valid 10-digit Sri Lankan phone number starting with 07 (e.g., 077 123 4567)');
+        return;
+      }
+    }
+
+    const formattedStudentMobile = studentMobile ? formatSriLankanPhone(studentMobile) : '';
+
     // Split full name into first and last name
     const parts = fullName.trim().split(/\s+/);
     const firstName = parts[0] || '';
@@ -88,6 +148,7 @@ export default function ProfileSettings() {
       lastName,
       email,
       profilePicture,
+      studentMobile: formattedStudentMobile,
     };
 
     // Only send password if user entered a new one
@@ -166,12 +227,32 @@ export default function ProfileSettings() {
                 <h2 className="text-xl font-bold text-slate-800 mb-1">{fullName}</h2>
                 <span className="text-indigo-600 font-semibold text-xs tracking-wider uppercase mb-4">Student</span>
 
-                <div className="bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-full px-4 py-1.5 flex items-center gap-1.5 transition-colors cursor-pointer">
+                <div className="bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-full px-4 py-1.5 flex items-center gap-1.5 transition-colors cursor-pointer mb-5">
                   <TbSchool className="text-slate-500 w-4.5 h-4.5" />
                   <span className="text-slate-600 text-xs font-semibold">Grade 10 Student</span>
                 </div>
-              </div>
 
+                {/* Attendance QR Code Card */}
+                {studentRecord?.qrCode && (
+                  <div className="w-full px-6 pt-5 border-t border-slate-100 flex flex-col items-center">
+                    <span className="text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-3">Attendance QR Code</span>
+                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center">
+                      <img src={studentRecord.qrCode} alt="Attendance QR Code" className="w-36 h-36 object-contain bg-white p-2 rounded-xl border border-slate-200/80" />
+                    </div>
+                    <span className="text-xs font-mono text-slate-600 font-extrabold mt-3 bg-indigo-50 text-indigo-700 border border-indigo-100 px-3 py-1 rounded-full">
+                      ID: {studentRecord.studentId}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleDownloadQR}
+                      className="mt-4 w-full py-2 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                    >
+                      <FiDownload className="w-3.5 h-3.5" />
+                      Download QR Code
+                    </button>
+                  </div>
+                )}
+              </div>
 
             </div>
 
@@ -219,6 +300,41 @@ export default function ProfileSettings() {
                           onChange={(e) => setEmail(e.target.value)}
                           className="border-none outline-none bg-transparent text-[14px] text-slate-800 w-full"
                           required
+                        />
+                      </div>
+                    </div>
+
+                    {/* Student Telephone / Mobile Number (Editable by Student) */}
+                    <div>
+                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-2">Student Mobile Number</label>
+                      <div className="flex items-center gap-2.5 bg-slate-50 rounded-xl p-[11px_16px] border border-slate-200 focus-within:bg-white focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-500/10">
+                        <FiPhone className="text-slate-400 shrink-0" />
+                        <input
+                          type="tel"
+                          value={studentMobile}
+                          onChange={(e) => setStudentMobile(e.target.value)}
+                          placeholder="07X XXX XXXX"
+                          className="border-none outline-none bg-transparent text-[14px] text-slate-800 w-full"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Parent Telephone / Mobile Number (Read-Only for Student, Editable by Teacher Only) */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="block text-slate-400 text-xs font-semibold uppercase">Parent Mobile Number</label>
+                        <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md flex items-center gap-1">
+                          <FiLock className="w-3 h-3 text-amber-600" /> Editable by Teacher Only
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2.5 bg-slate-100/80 rounded-xl p-[11px_16px] border border-slate-200 cursor-not-allowed">
+                        <FiPhoneCall className="text-slate-400 shrink-0" />
+                        <input
+                          type="text"
+                          value={parentMobile || 'Not Provided'}
+                          readOnly
+                          disabled
+                          className="border-none outline-none bg-transparent text-[14px] text-slate-500 w-full cursor-not-allowed font-medium"
                         />
                       </div>
                     </div>

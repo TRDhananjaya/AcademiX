@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
 import { FiUserPlus, FiEdit, FiSearch, FiSliders, FiUsers, FiCheckCircle, FiAlertTriangle, FiBookOpen } from 'react-icons/fi';
+import { isValidSriLankanPhone, formatSriLankanPhone } from '../../utils/phoneUtils';
 
 export default function StudentManagement() {
   const [activeNav, setActiveNav] = useState('students');
@@ -25,6 +26,7 @@ export default function StudentManagement() {
   });
 
   const [successStudentDetails, setSuccessStudentDetails] = useState(null);
+  const [updateSuccessMessage, setUpdateSuccessMessage] = useState('');
   const [isUsernameTaken, setIsUsernameTaken] = useState(false);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
 
@@ -90,6 +92,22 @@ export default function StudentManagement() {
     e.preventDefault();
     if (!newStudent.name.trim() || !newStudent.email.trim() || !newStudent.studentMobile.trim() || !newStudent.parentMobile.trim()) return;
 
+    if (newStudent.studentMobile && !isValidSriLankanPhone(newStudent.studentMobile)) {
+      alert('Student mobile number must be a valid 10-digit Sri Lankan phone number starting with 07 (e.g., 077 123 4567)');
+      return;
+    }
+
+    if (newStudent.parentMobile && !isValidSriLankanPhone(newStudent.parentMobile)) {
+      alert('Parent mobile number must be a valid 10-digit Sri Lankan phone number starting with 07 (e.g., 077 123 4567)');
+      return;
+    }
+
+    const studentPayload = {
+      ...newStudent,
+      studentMobile: formatSriLankanPhone(newStudent.studentMobile),
+      parentMobile: formatSriLankanPhone(newStudent.parentMobile)
+    };
+
     try {
       const url = newStudent._id ? `/api/students/${newStudent._id}` : '/api/students';
       const method = newStudent._id ? 'PUT' : 'POST';
@@ -99,19 +117,22 @@ export default function StudentManagement() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newStudent),
+        body: JSON.stringify(studentPayload),
       });
 
       if (response.ok) {
         const data = await response.json();
         if (newStudent._id) {
           setStudents(students.map(s => s._id === data._id ? data : s));
+          setUpdateSuccessMessage(`Student "${data.name}" details updated successfully!`);
+          setTimeout(() => setUpdateSuccessMessage(''), 5000);
         } else {
           setStudents([data, ...students]);
           setSuccessStudentDetails({
             name: data.name,
             email: data.email,
             studentId: data.studentId,
+            qrCode: data.qrCode,
             username: newStudent.username.trim() || data.studentId.toLowerCase(),
             password: newStudent.password.trim() || `${data.studentId.toLowerCase()}123`,
             studentMobile: data.studentMobile,
@@ -194,6 +215,22 @@ export default function StudentManagement() {
               Add Student
             </button>
           </div>
+
+          {/* Success Banner when editing student */}
+          {updateSuccessMessage && (
+            <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl text-sm font-semibold flex items-center justify-between shadow-sm animate-fade-in-up">
+              <div className="flex items-center gap-2.5">
+                <FiCheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>{updateSuccessMessage}</span>
+              </div>
+              <button
+                onClick={() => setUpdateSuccessMessage('')}
+                className="text-emerald-500 hover:text-emerald-800 text-xs font-bold uppercase tracking-wider cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
           {/* Stats Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -286,6 +323,7 @@ export default function StudentManagement() {
                     <th className="p-4 pl-6 text-xs font-bold text-slate-400 uppercase tracking-wider">Student Name</th>
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Email Address</th>
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Grade</th>
+                    <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Attendance QR Code</th>
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Enrollment Date</th>
                     <th className="p-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Status</th>
                     <th className="p-4 pr-6 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Actions</th>
@@ -309,6 +347,15 @@ export default function StudentManagement() {
 
                         {/* Grade */}
                         <td className="p-4 text-slate-700 text-sm font-medium">{student.grade || 'N/A'}</td>
+
+                        {/* QR Code */}
+                        <td className="p-4">
+                          {student.qrCode ? (
+                            <img src={student.qrCode} alt="Student QR" className="w-10 h-10 object-contain rounded border border-slate-200 bg-white p-0.5" />
+                          ) : (
+                            <span className="text-slate-400 text-xs">N/A</span>
+                          )}
+                        </td>
 
                         {/* Enrollment Date */}
                         <td className="p-4 text-slate-500 text-sm">{student.enrolled ? new Date(student.enrolled).toISOString().split('T')[0] : 'N/A'}</td>
@@ -442,10 +489,12 @@ export default function StudentManagement() {
 
                     {/* Student Mobile */}
                     <div>
-                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">Student Mobile Number</label>
+                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">
+                        Student Mobile Number <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="tel"
-                        placeholder="e.g. +1234567890"
+                        placeholder="07X XXX XXXX"
                         value={newStudent.studentMobile}
                         onChange={(e) => setNewStudent({ ...newStudent, studentMobile: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/10 font-sans"
@@ -455,10 +504,12 @@ export default function StudentManagement() {
 
                     {/* Parent Mobile */}
                     <div>
-                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">Parent Mobile Number</label>
+                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">
+                        Parent Mobile Number <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="tel"
-                        placeholder="e.g. +1987654321"
+                        placeholder="07X XXX XXXX"
                         value={newStudent.parentMobile}
                         onChange={(e) => setNewStudent({ ...newStudent, parentMobile: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/10 font-sans"
@@ -522,24 +573,46 @@ export default function StudentManagement() {
 
           {/* Success Student Registered Modal */}
           {successStudentDetails && (
-            <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-200 p-6 flex flex-col gap-5">
+            <div
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+              onClick={() => setSuccessStudentDetails(null)}
+            >
+              <div
+                className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-100 animate-in fade-in zoom-in-95 duration-200 p-6 flex flex-col gap-5 relative"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Top-Right Close Button */}
+                <button
+                  type="button"
+                  onClick={() => setSuccessStudentDetails(null)}
+                  className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 font-bold text-xl bg-slate-100 hover:bg-slate-200 rounded-full w-8 h-8 flex items-center justify-center transition-colors cursor-pointer"
+                  title="Close"
+                >
+                  ×
+                </button>
 
                 {/* Header/Icon */}
-                <div className="flex flex-col items-center gap-3 text-center">
-                  <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3 text-center pt-2">
+                  <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0">
                     <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                   <h3 className="text-xl font-extrabold text-slate-900">Student Registered Successfully</h3>
                   <p className="text-slate-400 text-xs leading-normal">
-                    Student has been added to AcademiX and their LMS portal account is ready.
+                    Student has been added to AcademiX and their attendance QR code is generated.
                   </p>
                 </div>
 
                 {/* Details Box */}
                 <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-sm space-y-3.5 font-sans">
+
+                  {successStudentDetails.qrCode && (
+                    <div className="flex flex-col items-center justify-center pb-3 border-b border-slate-200/60">
+                      <span className="text-slate-400 text-xs font-semibold uppercase mb-2">Attendance QR Code</span>
+                      <img src={successStudentDetails.qrCode} alt="Student QR Code" className="w-36 h-36 object-contain bg-white p-2 rounded-xl border border-slate-200 shadow-sm" />
+                    </div>
+                  )}
 
                   <div className="flex justify-between items-center pb-2.5 border-b border-slate-200/60">
                     <span className="text-slate-400 text-xs font-semibold uppercase">Full Name</span>
@@ -579,7 +652,7 @@ export default function StudentManagement() {
                 </div>
 
                 {/* Footer Buttons */}
-                <div className="flex items-center gap-3 w-full">
+                <div className="flex items-center gap-3 w-full shrink-0">
                   <button
                     type="button"
                     onClick={handleCopyCredentials}
