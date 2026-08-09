@@ -5,7 +5,7 @@
     "studentName": "Nimal Perera",
     "score": 17,
     "totalQuestions": 20,
-    "percentage": 85.0,
+    "percentage": 85,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -15,7 +15,7 @@
     "studentName": "Nimal Perera",
     "score": 18,
     "totalQuestions": 20,
-    "percentage": 92.0,
+    "percentage": 92,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -25,7 +25,7 @@
     "studentName": "Nimal Perera",
     "score": 17,
     "totalQuestions": 20,
-    "percentage": 86.0,
+    "percentage": 86,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -35,7 +35,7 @@
     "studentName": "Kasun Silva",
     "score": 16,
     "totalQuestions": 20,
-    "percentage": 82.0,
+    "percentage": 82,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -45,7 +45,7 @@
     "studentName": "Kasun Silva",
     "score": 18,
     "totalQuestions": 20,
-    "percentage": 91.0,
+    "percentage": 91,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -55,7 +55,7 @@
     "studentName": "Kasun Silva",
     "score": 17,
     "totalQuestions": 20,
-    "percentage": 86.0,
+    "percentage": 86,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -65,7 +65,7 @@
     "studentName": "Sahan Jayasuriya",
     "score": 18,
     "totalQuestions": 20,
-    "percentage": 92.0,
+    "percentage": 92,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -75,7 +75,7 @@
     "studentName": "Sahan Jayasuriya",
     "score": 19,
     "totalQuestions": 20,
-    "percentage": 97.0,
+    "percentage": 97,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -85,7 +85,7 @@
     "studentName": "Sahan Jayasuriya",
     "score": 18,
     "totalQuestions": 20,
-    "percentage": 91.0,
+    "percentage": 91,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -95,7 +95,7 @@
     "studentName": "Dinesh Fernando",
     "score": 18,
     "totalQuestions": 20,
-    "percentage": 92.0,
+    "percentage": 92,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -105,7 +105,7 @@
     "studentName": "Dinesh Fernando",
     "score": 16,
     "totalQuestions": 20,
-    "percentage": 82.0,
+    "percentage": 82,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -115,7 +115,7 @@
     "studentName": "Dinesh Fernando",
     "score": 18,
     "totalQuestions": 20,
-    "percentage": 90.0,
+    "percentage": 90,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -125,7 +125,7 @@
     "studentName": "Chamara Wijesinghe",
     "score": 17,
     "totalQuestions": 20,
-    "percentage": 84.0,
+    "percentage": 84,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -135,7 +135,7 @@
     "studentName": "Chamara Wijesinghe",
     "score": 20,
     "totalQuestions": 20,
-    "percentage": 100.0,
+    "percentage": 100,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -145,7 +145,7 @@
     "studentName": "Chamara Wijesinghe",
     "score": 16,
     "totalQuestions": 20,
-    "percentage": 81.0,
+    "percentage": 81,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -155,7 +155,7 @@
     "studentName": "Tharindu Gunawardena",
     "score": 20,
     "totalQuestions": 20,
-    "percentage": 100.0,
+    "percentage": 100,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -165,7 +165,7 @@
     "studentName": "Tharindu Gunawardena",
     "score": 20,
     "totalQuestions": 20,
-    "percentage": 99.0,
+    "percentage": 99,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -175,7 +175,7 @@
     "studentName": "Tharindu Gunawardena",
     "score": 20,
     "totalQuestions": 20,
-    "percentage": 100.0,
+    "percentage": 100,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -185,7 +185,7 @@
     "studentName": "Sachintha Ranasinghe",
     "score": 17,
     "totalQuestions": 20,
-    "percentage": 85.0,
+    "percentage": 85,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -195,7 +195,7 @@
     "studentName": "Sachintha Ranasinghe",
     "score": 17,
     "totalQuestions": 20,
-    "percentage": 85.0,
+    "percentage": 85,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -205,7 +205,7 @@
     "studentName": "Sachintha Ranasinghe",
     "score": 16,
     "totalQuestions": 20,
-    "percentage": 82.0,
+    "percentage": 82,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -215,7 +215,7 @@
     "studentName": "Nuwan Bandara",
     "score": 18,
     "totalQuestions": 20,
-    "percentage": 90.0,
+    "percentage": 90,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -225,7 +225,7 @@
     "studentName": "Nuwan Bandara",
     "score": 18,
     "totalQuestions": 20,
-    "percentage": 89.0,
+    "percentage": 89,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -235,7 +235,7 @@
     "studentName": "Nuwan Bandara",
     "score": 16,
     "totalQuestions": 20,
-    "percentage": 82.0,
+    "percentage": 82,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -245,7 +245,7 @@
     "studentName": "Kavindu Ekanayake",
     "score": 19,
     "totalQuestions": 20,
-    "percentage": 93.0,
+    "percentage": 93,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -255,7 +255,7 @@
     "studentName": "Kavindu Ekanayake",
     "score": 18,
     "totalQuestions": 20,
-    "percentage": 89.0,
+    "percentage": 89,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -265,7 +265,7 @@
     "studentName": "Kavindu Ekanayake",
     "score": 16,
     "totalQuestions": 20,
-    "percentage": 80.0,
+    "percentage": 80,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -275,7 +275,7 @@
     "studentName": "Supun Herath",
     "score": 18,
     "totalQuestions": 20,
-    "percentage": 89.0,
+    "percentage": 89,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -285,7 +285,7 @@
     "studentName": "Supun Herath",
     "score": 19,
     "totalQuestions": 20,
-    "percentage": 96.0,
+    "percentage": 96,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -295,7 +295,7 @@
     "studentName": "Supun Herath",
     "score": 19,
     "totalQuestions": 20,
-    "percentage": 97.0,
+    "percentage": 97,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -305,7 +305,7 @@
     "studentName": "Isuru Karunaratne",
     "score": 19,
     "totalQuestions": 20,
-    "percentage": 97.0,
+    "percentage": 97,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -315,7 +315,7 @@
     "studentName": "Isuru Karunaratne",
     "score": 18,
     "totalQuestions": 20,
-    "percentage": 90.0,
+    "percentage": 90,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -325,7 +325,7 @@
     "studentName": "Isuru Karunaratne",
     "score": 18,
     "totalQuestions": 20,
-    "percentage": 88.0,
+    "percentage": 88,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -335,7 +335,7 @@
     "studentName": "Malintha Samarasinghe",
     "score": 16,
     "totalQuestions": 20,
-    "percentage": 80.0,
+    "percentage": 80,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -345,7 +345,7 @@
     "studentName": "Malintha Samarasinghe",
     "score": 19,
     "totalQuestions": 20,
-    "percentage": 96.0,
+    "percentage": 96,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -355,7 +355,7 @@
     "studentName": "Malintha Samarasinghe",
     "score": 17,
     "totalQuestions": 20,
-    "percentage": 84.0,
+    "percentage": 84,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -365,7 +365,7 @@
     "studentName": "Gayan Madushanka",
     "score": 11,
     "totalQuestions": 20,
-    "percentage": 57.0,
+    "percentage": 57,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -375,7 +375,7 @@
     "studentName": "Gayan Madushanka",
     "score": 13,
     "totalQuestions": 20,
-    "percentage": 65.0,
+    "percentage": 65,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -385,7 +385,7 @@
     "studentName": "Gayan Madushanka",
     "score": 15,
     "totalQuestions": 20,
-    "percentage": 77.0,
+    "percentage": 77,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -395,7 +395,7 @@
     "studentName": "Pasindu Lakshan",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 59.0,
+    "percentage": 59,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -405,7 +405,7 @@
     "studentName": "Pasindu Lakshan",
     "score": 15,
     "totalQuestions": 20,
-    "percentage": 74.0,
+    "percentage": 74,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -415,7 +415,7 @@
     "studentName": "Pasindu Lakshan",
     "score": 15,
     "totalQuestions": 20,
-    "percentage": 75.0,
+    "percentage": 75,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -425,7 +425,7 @@
     "studentName": "Dilshan Peris",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 60.0,
+    "percentage": 60,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -435,7 +435,7 @@
     "studentName": "Dilshan Peris",
     "score": 11,
     "totalQuestions": 20,
-    "percentage": 56.0,
+    "percentage": 56,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -445,7 +445,7 @@
     "studentName": "Dilshan Peris",
     "score": 15,
     "totalQuestions": 20,
-    "percentage": 77.0,
+    "percentage": 77,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -455,68 +455,128 @@
     "studentName": "Janith Rodrigo",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 58.0,
-    "timeTaken": "15m 00s",
+    "percentage": 60,
+    "timeTaken": "15m 09s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.2",
     "studentId": "ST016",
     "studentName": "Janith Rodrigo",
-    "score": 11,
+    "score": 13,
     "totalQuestions": 20,
-    "percentage": 57.0,
-    "timeTaken": "15m 00s",
+    "percentage": 65,
+    "timeTaken": "12m 55s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.3",
     "studentId": "ST016",
     "studentName": "Janith Rodrigo",
-    "score": 11,
+    "score": 10,
     "totalQuestions": 20,
-    "percentage": 55.0,
-    "timeTaken": "15m 00s",
+    "percentage": 50,
+    "timeTaken": "15m 03s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST016",
+    "studentName": "Janith Rodrigo",
+    "score": 10,
+    "totalQuestions": 20,
+    "percentage": 50,
+    "timeTaken": "15m 29s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST016",
+    "studentName": "Janith Rodrigo",
+    "score": 9,
+    "totalQuestions": 20,
+    "percentage": 45,
+    "timeTaken": "10m 24s",
+    "status": "Fail"
+  },
+  {
+    "quizId": "Q2.3",
+    "studentId": "ST016",
+    "studentName": "Janith Rodrigo",
+    "score": 12,
+    "totalQuestions": 20,
+    "percentage": 60,
+    "timeTaken": "10m 27s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.1",
     "studentId": "ST017",
     "studentName": "Ravindu Senanayake",
-    "score": 12,
+    "score": 10,
     "totalQuestions": 20,
-    "percentage": 62.0,
-    "timeTaken": "15m 00s",
+    "percentage": 50,
+    "timeTaken": "17m 17s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.2",
     "studentId": "ST017",
     "studentName": "Ravindu Senanayake",
-    "score": 11,
+    "score": 14,
     "totalQuestions": 20,
-    "percentage": 57.0,
-    "timeTaken": "15m 00s",
+    "percentage": 70,
+    "timeTaken": "13m 51s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.3",
     "studentId": "ST017",
     "studentName": "Ravindu Senanayake",
+    "score": 10,
+    "totalQuestions": 20,
+    "percentage": 50,
+    "timeTaken": "14m 22s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST017",
+    "studentName": "Ravindu Senanayake",
+    "score": 13,
+    "totalQuestions": 20,
+    "percentage": 65,
+    "timeTaken": "11m 40s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST017",
+    "studentName": "Ravindu Senanayake",
+    "score": 13,
+    "totalQuestions": 20,
+    "percentage": 65,
+    "timeTaken": "12m 14s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.3",
+    "studentId": "ST017",
+    "studentName": "Ravindu Senanayake",
+    "score": 14,
+    "totalQuestions": 20,
+    "percentage": 70,
+    "timeTaken": "12m 17s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q1.1",
+    "studentId": "ST018",
+    "studentName": "Ashen Weerasinghe",
     "score": 16,
     "totalQuestions": 20,
-    "percentage": 78.0,
-    "timeTaken": "15m 00s",
-    "status": "Pass"
-  },
-  {
-    "quizId": "Q1.1",
-    "studentId": "ST018",
-    "studentName": "Ashen Weerasinghe",
-    "score": 14,
-    "totalQuestions": 20,
-    "percentage": 70.0,
-    "timeTaken": "15m 00s",
+    "percentage": 80,
+    "timeTaken": "15m 32s",
     "status": "Pass"
   },
   {
@@ -525,18 +585,48 @@
     "studentName": "Ashen Weerasinghe",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 72.0,
-    "timeTaken": "15m 00s",
+    "percentage": 70,
+    "timeTaken": "15m 34s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.3",
     "studentId": "ST018",
     "studentName": "Ashen Weerasinghe",
+    "score": 15,
+    "totalQuestions": 20,
+    "percentage": 75,
+    "timeTaken": "13m 51s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST018",
+    "studentName": "Ashen Weerasinghe",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 61.0,
-    "timeTaken": "15m 00s",
+    "percentage": 60,
+    "timeTaken": "15m 56s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST018",
+    "studentName": "Ashen Weerasinghe",
+    "score": 15,
+    "totalQuestions": 20,
+    "percentage": 75,
+    "timeTaken": "11m 50s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.3",
+    "studentId": "ST018",
+    "studentName": "Ashen Weerasinghe",
+    "score": 14,
+    "totalQuestions": 20,
+    "percentage": 70,
+    "timeTaken": "15m 14s",
     "status": "Pass"
   },
   {
@@ -545,68 +635,128 @@
     "studentName": "Charith Wickramasinghe",
     "score": 16,
     "totalQuestions": 20,
-    "percentage": 78.0,
-    "timeTaken": "15m 00s",
+    "percentage": 80,
+    "timeTaken": "12m 07s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.2",
     "studentId": "ST019",
     "studentName": "Charith Wickramasinghe",
-    "score": 12,
+    "score": 13,
     "totalQuestions": 20,
-    "percentage": 59.0,
-    "timeTaken": "15m 00s",
+    "percentage": 65,
+    "timeTaken": "13m 27s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.3",
     "studentId": "ST019",
     "studentName": "Charith Wickramasinghe",
-    "score": 12,
+    "score": 14,
     "totalQuestions": 20,
-    "percentage": 58.0,
-    "timeTaken": "15m 00s",
+    "percentage": 70,
+    "timeTaken": "15m 17s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST019",
+    "studentName": "Charith Wickramasinghe",
+    "score": 15,
+    "totalQuestions": 20,
+    "percentage": 75,
+    "timeTaken": "12m 51s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST019",
+    "studentName": "Charith Wickramasinghe",
+    "score": 15,
+    "totalQuestions": 20,
+    "percentage": 75,
+    "timeTaken": "17m 02s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.3",
+    "studentId": "ST019",
+    "studentName": "Charith Wickramasinghe",
+    "score": 14,
+    "totalQuestions": 20,
+    "percentage": 70,
+    "timeTaken": "12m 46s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.1",
+    "studentId": "ST020",
+    "studentName": "Lahiru Abeykoon",
+    "score": 15,
+    "totalQuestions": 20,
+    "percentage": 75,
+    "timeTaken": "10m 16s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q1.2",
+    "studentId": "ST020",
+    "studentName": "Lahiru Abeykoon",
+    "score": 13,
+    "totalQuestions": 20,
+    "percentage": 65,
+    "timeTaken": "14m 56s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q1.3",
+    "studentId": "ST020",
+    "studentName": "Lahiru Abeykoon",
+    "score": 13,
+    "totalQuestions": 20,
+    "percentage": 65,
+    "timeTaken": "12m 54s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST020",
+    "studentName": "Lahiru Abeykoon",
+    "score": 17,
+    "totalQuestions": 20,
+    "percentage": 85,
+    "timeTaken": "14m 25s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST020",
+    "studentName": "Lahiru Abeykoon",
+    "score": 16,
+    "totalQuestions": 20,
+    "percentage": 80,
+    "timeTaken": "13m 14s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.3",
     "studentId": "ST020",
     "studentName": "Lahiru Abeykoon",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 70.0,
-    "timeTaken": "15m 00s",
-    "status": "Pass"
-  },
-  {
-    "quizId": "Q1.2",
-    "studentId": "ST020",
-    "studentName": "Lahiru Abeykoon",
-    "score": 13,
-    "totalQuestions": 20,
-    "percentage": 65.0,
-    "timeTaken": "15m 00s",
-    "status": "Pass"
-  },
-  {
-    "quizId": "Q1.3",
-    "studentId": "ST020",
-    "studentName": "Lahiru Abeykoon",
-    "score": 15,
-    "totalQuestions": 20,
-    "percentage": 75.0,
-    "timeTaken": "15m 00s",
+    "percentage": 70,
+    "timeTaken": "16m 11s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.1",
     "studentId": "ST021",
     "studentName": "Thilina Rathnayake",
-    "score": 13,
+    "score": 15,
     "totalQuestions": 20,
-    "percentage": 64.0,
-    "timeTaken": "15m 00s",
+    "percentage": 75,
+    "timeTaken": "15m 31s",
     "status": "Pass"
   },
   {
@@ -615,18 +765,48 @@
     "studentName": "Thilina Rathnayake",
     "score": 13,
     "totalQuestions": 20,
-    "percentage": 66.0,
-    "timeTaken": "15m 00s",
+    "percentage": 65,
+    "timeTaken": "10m 34s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.3",
     "studentId": "ST021",
     "studentName": "Thilina Rathnayake",
+    "score": 13,
+    "totalQuestions": 20,
+    "percentage": 65,
+    "timeTaken": "14m 21s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST021",
+    "studentName": "Thilina Rathnayake",
+    "score": 13,
+    "totalQuestions": 20,
+    "percentage": 65,
+    "timeTaken": "13m 41s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST021",
+    "studentName": "Thilina Rathnayake",
     "score": 15,
     "totalQuestions": 20,
-    "percentage": 77.0,
-    "timeTaken": "15m 00s",
+    "percentage": 75,
+    "timeTaken": "10m 11s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.3",
+    "studentId": "ST021",
+    "studentName": "Thilina Rathnayake",
+    "score": 15,
+    "totalQuestions": 20,
+    "percentage": 75,
+    "timeTaken": "12m 11s",
     "status": "Pass"
   },
   {
@@ -635,168 +815,318 @@
     "studentName": "Yasiru Peiris",
     "score": 15,
     "totalQuestions": 20,
-    "percentage": 73.0,
-    "timeTaken": "15m 00s",
+    "percentage": 75,
+    "timeTaken": "10m 41s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.2",
     "studentId": "ST022",
     "studentName": "Yasiru Peiris",
-    "score": 12,
+    "score": 15,
     "totalQuestions": 20,
-    "percentage": 62.0,
-    "timeTaken": "15m 00s",
+    "percentage": 75,
+    "timeTaken": "17m 04s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.3",
     "studentId": "ST022",
     "studentName": "Yasiru Peiris",
+    "score": 19,
+    "totalQuestions": 20,
+    "percentage": 95,
+    "timeTaken": "14m 23s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST022",
+    "studentName": "Yasiru Peiris",
+    "score": 19,
+    "totalQuestions": 20,
+    "percentage": 95,
+    "timeTaken": "15m 34s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST022",
+    "studentName": "Yasiru Peiris",
+    "score": 18,
+    "totalQuestions": 20,
+    "percentage": 90,
+    "timeTaken": "10m 58s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.3",
+    "studentId": "ST022",
+    "studentName": "Yasiru Peiris",
+    "score": 15,
+    "totalQuestions": 20,
+    "percentage": 75,
+    "timeTaken": "16m 14s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q1.1",
+    "studentId": "ST023",
+    "studentName": "Pramuditha Jayawardena",
+    "score": 18,
+    "totalQuestions": 20,
+    "percentage": 90,
+    "timeTaken": "13m 36s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q1.2",
+    "studentId": "ST023",
+    "studentName": "Pramuditha Jayawardena",
+    "score": 18,
+    "totalQuestions": 20,
+    "percentage": 90,
+    "timeTaken": "11m 02s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q1.3",
+    "studentId": "ST023",
+    "studentName": "Pramuditha Jayawardena",
+    "score": 19,
+    "totalQuestions": 20,
+    "percentage": 95,
+    "timeTaken": "14m 24s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST023",
+    "studentName": "Pramuditha Jayawardena",
+    "score": 18,
+    "totalQuestions": 20,
+    "percentage": 90,
+    "timeTaken": "14m 52s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST023",
+    "studentName": "Pramuditha Jayawardena",
+    "score": 18,
+    "totalQuestions": 20,
+    "percentage": 90,
+    "timeTaken": "14m 03s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.3",
+    "studentId": "ST023",
+    "studentName": "Pramuditha Jayawardena",
+    "score": 18,
+    "totalQuestions": 20,
+    "percentage": 90,
+    "timeTaken": "13m 19s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q1.1",
+    "studentId": "ST024",
+    "studentName": "Dinuka Hettiarachchi",
     "score": 11,
     "totalQuestions": 20,
-    "percentage": 55.0,
-    "timeTaken": "15m 00s",
+    "percentage": 55,
+    "timeTaken": "11m 55s",
     "status": "Pass"
   },
   {
-    "quizId": "Q1.1",
-    "studentId": "ST023",
-    "studentName": "Pramuditha Jayawardena",
+    "quizId": "Q1.2",
+    "studentId": "ST024",
+    "studentName": "Dinuka Hettiarachchi",
+    "score": 10,
+    "totalQuestions": 20,
+    "percentage": 50,
+    "timeTaken": "10m 07s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q1.3",
+    "studentId": "ST024",
+    "studentName": "Dinuka Hettiarachchi",
+    "score": 10,
+    "totalQuestions": 20,
+    "percentage": 50,
+    "timeTaken": "15m 18s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST024",
+    "studentName": "Dinuka Hettiarachchi",
+    "score": 11,
+    "totalQuestions": 20,
+    "percentage": 55,
+    "timeTaken": "11m 53s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST024",
+    "studentName": "Dinuka Hettiarachchi",
+    "score": 9,
+    "totalQuestions": 20,
+    "percentage": 45,
+    "timeTaken": "13m 35s",
+    "status": "Fail"
+  },
+  {
+    "quizId": "Q2.3",
+    "studentId": "ST024",
+    "studentName": "Dinuka Hettiarachchi",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 62.0,
-    "timeTaken": "15m 00s",
-    "status": "Pass"
-  },
-  {
-    "quizId": "Q1.2",
-    "studentId": "ST023",
-    "studentName": "Pramuditha Jayawardena",
-    "score": 14,
-    "totalQuestions": 20,
-    "percentage": 72.0,
-    "timeTaken": "15m 00s",
-    "status": "Pass"
-  },
-  {
-    "quizId": "Q1.3",
-    "studentId": "ST023",
-    "studentName": "Pramuditha Jayawardena",
-    "score": 15,
-    "totalQuestions": 20,
-    "percentage": 77.0,
-    "timeTaken": "15m 00s",
-    "status": "Pass"
-  },
-  {
-    "quizId": "Q1.1",
-    "studentId": "ST024",
-    "studentName": "Dinuka Hettiarachchi",
-    "score": 14,
-    "totalQuestions": 20,
-    "percentage": 71.0,
-    "timeTaken": "15m 00s",
-    "status": "Pass"
-  },
-  {
-    "quizId": "Q1.2",
-    "studentId": "ST024",
-    "studentName": "Dinuka Hettiarachchi",
-    "score": 15,
-    "totalQuestions": 20,
-    "percentage": 77.0,
-    "timeTaken": "15m 00s",
-    "status": "Pass"
-  },
-  {
-    "quizId": "Q1.3",
-    "studentId": "ST024",
-    "studentName": "Dinuka Hettiarachchi",
-    "score": 14,
-    "totalQuestions": 20,
-    "percentage": 68.0,
-    "timeTaken": "15m 00s",
+    "percentage": 60,
+    "timeTaken": "17m 55s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.1",
     "studentId": "ST025",
     "studentName": "Akila Kumara",
-    "score": 15,
+    "score": 13,
     "totalQuestions": 20,
-    "percentage": 76.0,
-    "timeTaken": "15m 00s",
+    "percentage": 65,
+    "timeTaken": "12m 55s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.2",
+    "studentId": "ST025",
+    "studentName": "Akila Kumara",
+    "score": 13,
+    "totalQuestions": 20,
+    "percentage": 65,
+    "timeTaken": "15m 06s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q1.3",
+    "studentId": "ST025",
+    "studentName": "Akila Kumara",
+    "score": 10,
+    "totalQuestions": 20,
+    "percentage": 50,
+    "timeTaken": "12m 03s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST025",
+    "studentName": "Akila Kumara",
+    "score": 12,
+    "totalQuestions": 20,
+    "percentage": 60,
+    "timeTaken": "12m 23s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST025",
+    "studentName": "Akila Kumara",
+    "score": 12,
+    "totalQuestions": 20,
+    "percentage": 60,
+    "timeTaken": "12m 25s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.3",
     "studentId": "ST025",
     "studentName": "Akila Kumara",
     "score": 11,
     "totalQuestions": 20,
-    "percentage": 55.0,
-    "timeTaken": "15m 00s",
-    "status": "Pass"
-  },
-  {
-    "quizId": "Q1.3",
-    "studentId": "ST025",
-    "studentName": "Akila Kumara",
-    "score": 14,
-    "totalQuestions": 20,
-    "percentage": 69.0,
-    "timeTaken": "15m 00s",
+    "percentage": 55,
+    "timeTaken": "15m 31s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.1",
     "studentId": "ST026",
     "studentName": "Sandaru Pathirana",
-    "score": 13,
+    "score": 11,
     "totalQuestions": 20,
-    "percentage": 66.0,
-    "timeTaken": "15m 00s",
+    "percentage": 55,
+    "timeTaken": "11m 51s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.2",
     "studentId": "ST026",
     "studentName": "Sandaru Pathirana",
-    "score": 15,
+    "score": 10,
     "totalQuestions": 20,
-    "percentage": 77.0,
-    "timeTaken": "15m 00s",
+    "percentage": 50,
+    "timeTaken": "16m 45s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.3",
     "studentId": "ST026",
     "studentName": "Sandaru Pathirana",
-    "score": 12,
+    "score": 10,
     "totalQuestions": 20,
-    "percentage": 58.0,
-    "timeTaken": "15m 00s",
+    "percentage": 50,
+    "timeTaken": "15m 43s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST026",
+    "studentName": "Sandaru Pathirana",
+    "score": 10,
+    "totalQuestions": 20,
+    "percentage": 50,
+    "timeTaken": "12m 30s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST026",
+    "studentName": "Sandaru Pathirana",
+    "score": 11,
+    "totalQuestions": 20,
+    "percentage": 55,
+    "timeTaken": "11m 05s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.3",
+    "studentId": "ST026",
+    "studentName": "Sandaru Pathirana",
+    "score": 11,
+    "totalQuestions": 20,
+    "percentage": 55,
+    "timeTaken": "13m 24s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.1",
     "studentId": "ST027",
     "studentName": "Vihanga De Silva",
-    "score": 14,
+    "score": 15,
     "totalQuestions": 20,
-    "percentage": 71.0,
-    "timeTaken": "15m 00s",
+    "percentage": 75,
+    "timeTaken": "11m 10s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.2",
     "studentId": "ST027",
     "studentName": "Vihanga De Silva",
-    "score": 15,
+    "score": 11,
     "totalQuestions": 20,
-    "percentage": 77.0,
-    "timeTaken": "15m 00s",
+    "percentage": 55,
+    "timeTaken": "14m 24s",
     "status": "Pass"
   },
   {
@@ -805,8 +1135,38 @@
     "studentName": "Vihanga De Silva",
     "score": 13,
     "totalQuestions": 20,
-    "percentage": 67.0,
-    "timeTaken": "15m 00s",
+    "percentage": 65,
+    "timeTaken": "15m 08s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST027",
+    "studentName": "Vihanga De Silva",
+    "score": 11,
+    "totalQuestions": 20,
+    "percentage": 55,
+    "timeTaken": "14m 30s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST027",
+    "studentName": "Vihanga De Silva",
+    "score": 14,
+    "totalQuestions": 20,
+    "percentage": 70,
+    "timeTaken": "14m 17s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.3",
+    "studentId": "ST027",
+    "studentName": "Vihanga De Silva",
+    "score": 14,
+    "totalQuestions": 20,
+    "percentage": 70,
+    "timeTaken": "14m 01s",
     "status": "Pass"
   },
   {
@@ -815,88 +1175,178 @@
     "studentName": "Nethmina Gunasekara",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 59.0,
-    "timeTaken": "15m 00s",
+    "percentage": 60,
+    "timeTaken": "13m 41s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.2",
     "studentId": "ST028",
     "studentName": "Nethmina Gunasekara",
-    "score": 11,
+    "score": 14,
     "totalQuestions": 20,
-    "percentage": 56.0,
-    "timeTaken": "15m 00s",
+    "percentage": 70,
+    "timeTaken": "12m 39s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.3",
     "studentId": "ST028",
     "studentName": "Nethmina Gunasekara",
+    "score": 15,
+    "totalQuestions": 20,
+    "percentage": 75,
+    "timeTaken": "17m 51s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST028",
+    "studentName": "Nethmina Gunasekara",
     "score": 13,
     "totalQuestions": 20,
-    "percentage": 65.0,
-    "timeTaken": "15m 00s",
+    "percentage": 65,
+    "timeTaken": "15m 30s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST028",
+    "studentName": "Nethmina Gunasekara",
+    "score": 12,
+    "totalQuestions": 20,
+    "percentage": 60,
+    "timeTaken": "16m 23s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.3",
+    "studentId": "ST028",
+    "studentName": "Nethmina Gunasekara",
+    "score": 13,
+    "totalQuestions": 20,
+    "percentage": 65,
+    "timeTaken": "11m 20s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.1",
-    "studentId": "ST029",
-    "studentName": "Pabasara Jayathilake",
-    "score": 14,
-    "totalQuestions": 20,
-    "percentage": 71.0,
-    "timeTaken": "15m 00s",
-    "status": "Pass"
-  },
-  {
-    "quizId": "Q1.2",
     "studentId": "ST029",
     "studentName": "Pabasara Jayathilake",
     "score": 16,
     "totalQuestions": 20,
-    "percentage": 78.0,
-    "timeTaken": "15m 00s",
+    "percentage": 80,
+    "timeTaken": "17m 22s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q1.2",
+    "studentId": "ST029",
+    "studentName": "Pabasara Jayathilake",
+    "score": 17,
+    "totalQuestions": 20,
+    "percentage": 85,
+    "timeTaken": "13m 03s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.3",
     "studentId": "ST029",
     "studentName": "Pabasara Jayathilake",
-    "score": 15,
-    "totalQuestions": 20,
-    "percentage": 73.0,
-    "timeTaken": "15m 00s",
-    "status": "Pass"
-  },
-  {
-    "quizId": "Q1.1",
-    "studentId": "ST030",
-    "studentName": "Shehan Kulatunga",
     "score": 13,
     "totalQuestions": 20,
-    "percentage": 67.0,
-    "timeTaken": "15m 00s",
+    "percentage": 65,
+    "timeTaken": "11m 19s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST029",
+    "studentName": "Pabasara Jayathilake",
+    "score": 14,
+    "totalQuestions": 20,
+    "percentage": 70,
+    "timeTaken": "17m 10s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST029",
+    "studentName": "Pabasara Jayathilake",
+    "score": 16,
+    "totalQuestions": 20,
+    "percentage": 80,
+    "timeTaken": "14m 05s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.3",
+    "studentId": "ST029",
+    "studentName": "Pabasara Jayathilake",
+    "score": 16,
+    "totalQuestions": 20,
+    "percentage": 80,
+    "timeTaken": "14m 02s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q1.1",
+    "studentId": "ST030",
+    "studentName": "Shehan Kulatunga",
+    "score": 16,
+    "totalQuestions": 20,
+    "percentage": 80,
+    "timeTaken": "15m 46s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.2",
     "studentId": "ST030",
     "studentName": "Shehan Kulatunga",
-    "score": 12,
+    "score": 19,
     "totalQuestions": 20,
-    "percentage": 62.0,
-    "timeTaken": "15m 00s",
+    "percentage": 95,
+    "timeTaken": "14m 00s",
     "status": "Pass"
   },
   {
     "quizId": "Q1.3",
     "studentId": "ST030",
     "studentName": "Shehan Kulatunga",
-    "score": 11,
+    "score": 18,
     "totalQuestions": 20,
-    "percentage": 56.0,
-    "timeTaken": "15m 00s",
+    "percentage": 90,
+    "timeTaken": "15m 13s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.1",
+    "studentId": "ST030",
+    "studentName": "Shehan Kulatunga",
+    "score": 16,
+    "totalQuestions": 20,
+    "percentage": 80,
+    "timeTaken": "11m 41s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.2",
+    "studentId": "ST030",
+    "studentName": "Shehan Kulatunga",
+    "score": 18,
+    "totalQuestions": 20,
+    "percentage": 90,
+    "timeTaken": "15m 46s",
+    "status": "Pass"
+  },
+  {
+    "quizId": "Q2.3",
+    "studentId": "ST030",
+    "studentName": "Shehan Kulatunga",
+    "score": 19,
+    "totalQuestions": 20,
+    "percentage": 95,
+    "timeTaken": "11m 44s",
     "status": "Pass"
   },
   {
@@ -905,7 +1355,7 @@
     "studentName": "Anjana Dissanayake",
     "score": 11,
     "totalQuestions": 20,
-    "percentage": 55.0,
+    "percentage": 55,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -915,7 +1365,7 @@
     "studentName": "Anjana Dissanayake",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 58.0,
+    "percentage": 58,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -925,7 +1375,7 @@
     "studentName": "Anjana Dissanayake",
     "score": 15,
     "totalQuestions": 20,
-    "percentage": 77.0,
+    "percentage": 77,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -935,7 +1385,7 @@
     "studentName": "Kanishka Mendis",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 68.0,
+    "percentage": 68,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -945,7 +1395,7 @@
     "studentName": "Kanishka Mendis",
     "score": 15,
     "totalQuestions": 20,
-    "percentage": 73.0,
+    "percentage": 73,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -955,7 +1405,7 @@
     "studentName": "Kanishka Mendis",
     "score": 13,
     "totalQuestions": 20,
-    "percentage": 64.0,
+    "percentage": 64,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -965,7 +1415,7 @@
     "studentName": "Nipun Chathuranga",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 62.0,
+    "percentage": 62,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -975,7 +1425,7 @@
     "studentName": "Nipun Chathuranga",
     "score": 13,
     "totalQuestions": 20,
-    "percentage": 67.0,
+    "percentage": 67,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -985,7 +1435,7 @@
     "studentName": "Nipun Chathuranga",
     "score": 13,
     "totalQuestions": 20,
-    "percentage": 66.0,
+    "percentage": 66,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -995,7 +1445,7 @@
     "studentName": "Ruchira Fernando",
     "score": 13,
     "totalQuestions": 20,
-    "percentage": 65.0,
+    "percentage": 65,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1005,7 +1455,7 @@
     "studentName": "Ruchira Fernando",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 68.0,
+    "percentage": 68,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1015,7 +1465,7 @@
     "studentName": "Ruchira Fernando",
     "score": 16,
     "totalQuestions": 20,
-    "percentage": 78.0,
+    "percentage": 78,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1025,7 +1475,7 @@
     "studentName": "Harshana Perera",
     "score": 16,
     "totalQuestions": 20,
-    "percentage": 79.0,
+    "percentage": 79,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1035,7 +1485,7 @@
     "studentName": "Harshana Perera",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 58.0,
+    "percentage": 58,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1045,7 +1495,7 @@
     "studentName": "Harshana Perera",
     "score": 15,
     "totalQuestions": 20,
-    "percentage": 77.0,
+    "percentage": 77,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1055,7 +1505,7 @@
     "studentName": "Tharuka Nadeeshan",
     "score": 13,
     "totalQuestions": 20,
-    "percentage": 63.0,
+    "percentage": 63,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1065,7 +1515,7 @@
     "studentName": "Tharuka Nadeeshan",
     "score": 15,
     "totalQuestions": 20,
-    "percentage": 77.0,
+    "percentage": 77,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1075,7 +1525,7 @@
     "studentName": "Tharuka Nadeeshan",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 60.0,
+    "percentage": 60,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1085,7 +1535,7 @@
     "studentName": "Bhanuka Dilshan",
     "score": 13,
     "totalQuestions": 20,
-    "percentage": 65.0,
+    "percentage": 65,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1095,7 +1545,7 @@
     "studentName": "Bhanuka Dilshan",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 70.0,
+    "percentage": 70,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1105,7 +1555,7 @@
     "studentName": "Bhanuka Dilshan",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 70.0,
+    "percentage": 70,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1115,7 +1565,7 @@
     "studentName": "Udara Sampath",
     "score": 11,
     "totalQuestions": 20,
-    "percentage": 55.0,
+    "percentage": 55,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1125,7 +1575,7 @@
     "studentName": "Udara Sampath",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 62.0,
+    "percentage": 62,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1135,7 +1585,7 @@
     "studentName": "Udara Sampath",
     "score": 16,
     "totalQuestions": 20,
-    "percentage": 79.0,
+    "percentage": 79,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1145,7 +1595,7 @@
     "studentName": "Lasith Maduranga",
     "score": 11,
     "totalQuestions": 20,
-    "percentage": 57.0,
+    "percentage": 57,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1155,7 +1605,7 @@
     "studentName": "Lasith Maduranga",
     "score": 13,
     "totalQuestions": 20,
-    "percentage": 67.0,
+    "percentage": 67,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1165,7 +1615,7 @@
     "studentName": "Lasith Maduranga",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 70.0,
+    "percentage": 70,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1175,7 +1625,7 @@
     "studentName": "Vishwa Amarasinghe",
     "score": 15,
     "totalQuestions": 20,
-    "percentage": 75.0,
+    "percentage": 75,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1185,7 +1635,7 @@
     "studentName": "Vishwa Amarasinghe",
     "score": 15,
     "totalQuestions": 20,
-    "percentage": 77.0,
+    "percentage": 77,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1195,7 +1645,7 @@
     "studentName": "Vishwa Amarasinghe",
     "score": 13,
     "totalQuestions": 20,
-    "percentage": 63.0,
+    "percentage": 63,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1205,7 +1655,7 @@
     "studentName": "Amanda Perera",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 70.0,
+    "percentage": 70,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1215,7 +1665,7 @@
     "studentName": "Amanda Perera",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 72.0,
+    "percentage": 72,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1225,7 +1675,7 @@
     "studentName": "Amanda Perera",
     "score": 16,
     "totalQuestions": 20,
-    "percentage": 79.0,
+    "percentage": 79,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1235,7 +1685,7 @@
     "studentName": "Nethmi Fernando",
     "score": 11,
     "totalQuestions": 20,
-    "percentage": 56.0,
+    "percentage": 56,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1245,7 +1695,7 @@
     "studentName": "Nethmi Fernando",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 71.0,
+    "percentage": 71,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1255,7 +1705,7 @@
     "studentName": "Nethmi Fernando",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 69.0,
+    "percentage": 69,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1265,7 +1715,7 @@
     "studentName": "Kavindi Silva",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 62.0,
+    "percentage": 62,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1275,7 +1725,7 @@
     "studentName": "Kavindi Silva",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 62.0,
+    "percentage": 62,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1285,7 +1735,7 @@
     "studentName": "Kavindi Silva",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 70.0,
+    "percentage": 70,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1295,7 +1745,7 @@
     "studentName": "Sachini Jayawardena",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 72.0,
+    "percentage": 72,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1305,7 +1755,7 @@
     "studentName": "Sachini Jayawardena",
     "score": 13,
     "totalQuestions": 20,
-    "percentage": 65.0,
+    "percentage": 65,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1315,7 +1765,7 @@
     "studentName": "Sachini Jayawardena",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 58.0,
+    "percentage": 58,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1325,7 +1775,7 @@
     "studentName": "Yasasmi Peris",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 59.0,
+    "percentage": 59,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1335,7 +1785,7 @@
     "studentName": "Yasasmi Peris",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 72.0,
+    "percentage": 72,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1345,7 +1795,7 @@
     "studentName": "Yasasmi Peris",
     "score": 15,
     "totalQuestions": 20,
-    "percentage": 76.0,
+    "percentage": 76,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1355,7 +1805,7 @@
     "studentName": "Tharushi Senanayake",
     "score": 14,
     "totalQuestions": 20,
-    "percentage": 69.0,
+    "percentage": 69,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1365,7 +1815,7 @@
     "studentName": "Tharushi Senanayake",
     "score": 15,
     "totalQuestions": 20,
-    "percentage": 77.0,
+    "percentage": 77,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1375,7 +1825,7 @@
     "studentName": "Tharushi Senanayake",
     "score": 11,
     "totalQuestions": 20,
-    "percentage": 55.0,
+    "percentage": 55,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1385,7 +1835,7 @@
     "studentName": "Dinithi Wickramasinghe",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 59.0,
+    "percentage": 59,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1395,7 +1845,7 @@
     "studentName": "Dinithi Wickramasinghe",
     "score": 12,
     "totalQuestions": 20,
-    "percentage": 58.0,
+    "percentage": 58,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1405,7 +1855,7 @@
     "studentName": "Dinithi Wickramasinghe",
     "score": 11,
     "totalQuestions": 20,
-    "percentage": 56.0,
+    "percentage": 56,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1415,7 +1865,7 @@
     "studentName": "Piumi Herath",
     "score": 11,
     "totalQuestions": 20,
-    "percentage": 53.0,
+    "percentage": 53,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1425,7 +1875,7 @@
     "studentName": "Piumi Herath",
     "score": 5,
     "totalQuestions": 20,
-    "percentage": 27.0,
+    "percentage": 27,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1435,7 +1885,7 @@
     "studentName": "Piumi Herath",
     "score": 9,
     "totalQuestions": 20,
-    "percentage": 44.0,
+    "percentage": 44,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1445,7 +1895,7 @@
     "studentName": "Ayesha Ranasinghe",
     "score": 10,
     "totalQuestions": 20,
-    "percentage": 52.0,
+    "percentage": 52,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1455,7 +1905,7 @@
     "studentName": "Ayesha Ranasinghe",
     "score": 10,
     "totalQuestions": 20,
-    "percentage": 51.0,
+    "percentage": 51,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1465,7 +1915,7 @@
     "studentName": "Ayesha Ranasinghe",
     "score": 11,
     "totalQuestions": 20,
-    "percentage": 53.0,
+    "percentage": 53,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1475,7 +1925,7 @@
     "studentName": "Hashini Ekanayake",
     "score": 8,
     "totalQuestions": 20,
-    "percentage": 42.0,
+    "percentage": 42,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1485,7 +1935,7 @@
     "studentName": "Hashini Ekanayake",
     "score": 9,
     "totalQuestions": 20,
-    "percentage": 44.0,
+    "percentage": 44,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1495,7 +1945,7 @@
     "studentName": "Hashini Ekanayake",
     "score": 10,
     "totalQuestions": 20,
-    "percentage": 49.0,
+    "percentage": 49,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1505,7 +1955,7 @@
     "studentName": "Imesha Bandara",
     "score": 8,
     "totalQuestions": 20,
-    "percentage": 42.0,
+    "percentage": 42,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1515,7 +1965,7 @@
     "studentName": "Imesha Bandara",
     "score": 8,
     "totalQuestions": 20,
-    "percentage": 42.0,
+    "percentage": 42,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1525,7 +1975,7 @@
     "studentName": "Imesha Bandara",
     "score": 7,
     "totalQuestions": 20,
-    "percentage": 34.0,
+    "percentage": 34,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1535,7 +1985,7 @@
     "studentName": "Nadeesha Gunawardena",
     "score": 10,
     "totalQuestions": 20,
-    "percentage": 50.0,
+    "percentage": 50,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1545,7 +1995,7 @@
     "studentName": "Nadeesha Gunawardena",
     "score": 6,
     "totalQuestions": 20,
-    "percentage": 31.0,
+    "percentage": 31,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1555,7 +2005,7 @@
     "studentName": "Nadeesha Gunawardena",
     "score": 7,
     "totalQuestions": 20,
-    "percentage": 34.0,
+    "percentage": 34,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1565,7 +2015,7 @@
     "studentName": "Shashini Karunaratne",
     "score": 9,
     "totalQuestions": 20,
-    "percentage": 44.0,
+    "percentage": 44,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1575,7 +2025,7 @@
     "studentName": "Shashini Karunaratne",
     "score": 10,
     "totalQuestions": 20,
-    "percentage": 48.0,
+    "percentage": 48,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1585,7 +2035,7 @@
     "studentName": "Shashini Karunaratne",
     "score": 10,
     "totalQuestions": 20,
-    "percentage": 52.0,
+    "percentage": 52,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1595,7 +2045,7 @@
     "studentName": "Upeksha Samarasinghe",
     "score": 10,
     "totalQuestions": 20,
-    "percentage": 48.0,
+    "percentage": 48,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1605,7 +2055,7 @@
     "studentName": "Upeksha Samarasinghe",
     "score": 8,
     "totalQuestions": 20,
-    "percentage": 41.0,
+    "percentage": 41,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1615,7 +2065,7 @@
     "studentName": "Upeksha Samarasinghe",
     "score": 8,
     "totalQuestions": 20,
-    "percentage": 38.0,
+    "percentage": 38,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1625,7 +2075,7 @@
     "studentName": "Dilki Peiris",
     "score": 7,
     "totalQuestions": 20,
-    "percentage": 37.0,
+    "percentage": 37,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1635,7 +2085,7 @@
     "studentName": "Dilki Peiris",
     "score": 6,
     "totalQuestions": 20,
-    "percentage": 32.0,
+    "percentage": 32,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1645,7 +2095,7 @@
     "studentName": "Dilki Peiris",
     "score": 9,
     "totalQuestions": 20,
-    "percentage": 43.0,
+    "percentage": 43,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1655,7 +2105,7 @@
     "studentName": "Rashmi Rodrigo",
     "score": 7,
     "totalQuestions": 20,
-    "percentage": 35.0,
+    "percentage": 35,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1665,7 +2115,7 @@
     "studentName": "Rashmi Rodrigo",
     "score": 11,
     "totalQuestions": 20,
-    "percentage": 54.0,
+    "percentage": 54,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1675,7 +2125,7 @@
     "studentName": "Rashmi Rodrigo",
     "score": 6,
     "totalQuestions": 20,
-    "percentage": 30.0,
+    "percentage": 30,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1685,7 +2135,7 @@
     "studentName": "Nethara Weerasinghe",
     "score": 10,
     "totalQuestions": 20,
-    "percentage": 49.0,
+    "percentage": 49,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1695,7 +2145,7 @@
     "studentName": "Nethara Weerasinghe",
     "score": 10,
     "totalQuestions": 20,
-    "percentage": 49.0,
+    "percentage": 49,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1705,7 +2155,7 @@
     "studentName": "Nethara Weerasinghe",
     "score": 8,
     "totalQuestions": 20,
-    "percentage": 38.0,
+    "percentage": 38,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1715,7 +2165,7 @@
     "studentName": "Chamodi Abeykoon",
     "score": 7,
     "totalQuestions": 20,
-    "percentage": 37.0,
+    "percentage": 37,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1725,7 +2175,7 @@
     "studentName": "Chamodi Abeykoon",
     "score": 11,
     "totalQuestions": 20,
-    "percentage": 53.0,
+    "percentage": 53,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1735,7 +2185,7 @@
     "studentName": "Chamodi Abeykoon",
     "score": 5,
     "totalQuestions": 20,
-    "percentage": 27.0,
+    "percentage": 27,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1745,7 +2195,7 @@
     "studentName": "Keshani Rathnayake",
     "score": 5,
     "totalQuestions": 20,
-    "percentage": 26.0,
+    "percentage": 26,
     "timeTaken": "15m 00s",
     "status": "Fail"
   },
@@ -1755,7 +2205,7 @@
     "studentName": "Keshani Rathnayake",
     "score": 10,
     "totalQuestions": 20,
-    "percentage": 51.0,
+    "percentage": 51,
     "timeTaken": "15m 00s",
     "status": "Pass"
   },
@@ -1765,7 +2215,7 @@
     "studentName": "Keshani Rathnayake",
     "score": 10,
     "totalQuestions": 20,
-    "percentage": 50.0,
+    "percentage": 50,
     "timeTaken": "15m 00s",
     "status": "Pass"
   }
