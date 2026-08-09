@@ -1,3 +1,5 @@
+# pyrefly: ignore [missing-import]
+
 import os
 import logging
 from services.llm_service import call_gemini
@@ -71,58 +73,310 @@ def build_prompt(overall_score: float, modules_data: List[ModuleData]) -> str:
     scores_str = "\n".join(module_scores)
 
     prompt = f"""
-You are an experienced Grade 10 ICT teacher.
-A student completed a set of quizzes for a lesson.
+You are an expert Grade 10 ICT teacher, personalized learning coach, and educational diagnostician.
 
-Overall Score: {overall_score}%
+Your job is to create a UNIQUE personalized study plan for this student.
+
+This is NOT a general ICT summary.
+
+You must analyze:
+- Student performance
+- Incorrect questions
+- Learning gaps
+- Retrieved official learning materials
+
+The goal is to teach the student:
+"What mistake did I make?"
+"Why was it wrong?"
+"What should I learn?"
+"How can I avoid this mistake again?"
+
+
+==================================================
+STUDENT PERFORMANCE DATA
+==================================================
+
+Overall Score:
+{overall_score}%
+
+
 Module Scores:
 {scores_str}
 
-Incorrect Questions (Weak Topics):
+
+Incorrect Questions:
 {incorrect_str}
 
-Below is the official learning material retrieved from the RAG database for these modules:
 
-========================
+==================================================
+OFFICIAL LEARNING MATERIAL
+==================================================
+
+Use ONLY the following retrieved learning materials.
+
+All explanations, notes, definitions, examples, and revision points MUST come from this content.
+
+Do not add outside ICT information.
+
+Retrieved Content:
+
 {all_context}
-========================
 
-IMPORTANT INSTRUCTIONS:
-Do NOT say "No learning material was provided" or "Learning material could not be found".
-Do NOT generate generic textbook notes. Generate study notes ONLY by summarizing and extracting from the retrieved context above.
-If the context is empty, simply use the student's weak concepts and general knowledge to build a helpful guide.
 
-Your task is to create a PERSONALIZED STUDY PLAN.
-The study plan MUST contain EXACTLY these 9 sections in this order. Use Markdown formatting.
+==================================================
+IMPORTANT RULES
+==================================================
 
-1. Performance Summary
-Explain the student's overall performance.
+1. Create a plan ONLY for this student.
 
-2. Strong Concepts
-Identify what the student did well (based on the score and topics).
+2. Incorrect questions are the highest priority.
 
-3. Weak Concepts (Ranked)
-Analyze the Incorrect Questions provided above and rank the weak concepts from weakest to strongest.
+3. Every recommendation must be connected to:
+   - a wrong question
+   - a weak concept
+   - retrieved learning material
 
-4. Personalized Study Notes
-Generate study notes from the retrieved RAG content. Summarize the content, explain concepts in simple language, highlight important definitions, include key points, and include examples from the learning materials. Prioritize concepts the student answered incorrectly. Do NOT add external generic information.
+4. Do not create generic textbook notes.
 
-5. Key Definitions
-List key definitions found in the retrieved material, focusing on weak topics.
+5. Do not explain concepts the student already understands unless needed for comparison.
 
-6. Important Revision Points
-Provide bullet points for crucial revision facts.
+6. If the same concept appears in multiple wrong questions:
+   mark it as a HIGH PRIORITY weakness.
 
-7. Personalized Practice Quiz
-Generate a practice quiz of 10 to 15 questions focusing on the weak topics identified. Avoid repeating the exact incorrect questions if possible; instead, test the underlying concepts. Use multiple difficulty levels. Provide the answers and explanations at the end of this section.
+7. Focus more on mistakes than marks.
 
-8. Study Schedule
-Recommend a dynamic study time duration (e.g. 1 hour, 2 hours, 3 hours) and schedule based on the quiz score, number of mistakes, and weak concepts. Allocate more study time to weaker topics.
+8. Never mention:
+   - AI
+   - RAG
+   - prompts
+   - retrieved content
+   - language models
 
-9. Final Motivation
-End with an encouraging and motivational message.
+
+==================================================
+STUDENT LEARNING PROFILE
+==================================================
+
+Analyze the student's learning pattern.
+
+Identify:
+
+- Strong areas
+- Weak areas
+- Repeated mistakes
+- Confusing concepts
+- Priority topics
+
+Explain the student's current understanding level based on mistakes.
+
+
+==================================================
+1. PERSONAL PERFORMANCE ANALYSIS
+==================================================
+
+Create a detailed analysis.
+
+Include:
+
+- Overall performance
+- Learning strengths
+- Main difficulties
+- Common mistake patterns
+- Improvement opportunities
+
+
+==================================================
+2. WRONG QUESTION ANALYSIS
+(MOST IMPORTANT SECTION)
+==================================================
+
+Analyze every important incorrect question.
+
+For each question provide:
+
+
+Question:
+(Student's incorrect question)
+
+
+Concept Tested:
+(The ICT concept)
+
+
+Why This Was Wrong:
+(Explain the misunderstanding)
+
+
+Correct Understanding:
+(Explain the correct concept using learning material)
+
+
+Correct Answer:
+(Provide the correct answer)
+
+
+Exam Strategy:
+(How to identify and answer similar questions)
+
+
+Priority:
+(Critical / High / Medium / Low)
+
+
+Repeat for all major mistakes.
+
+
+==================================================
+3. WEAK CONCEPT PRIORITY MAP
+==================================================
+
+Group related mistakes into concepts.
+
+Rank from highest priority to lowest.
+
+
+For each concept include:
+
+- Concept name
+- Related wrong questions
+- Why it is weak
+- Required study effort
+
+
+==================================================
+4. PERSONALIZED STUDY NOTES
+==================================================
+
+Create notes ONLY for weak concepts.
+
+For each weak concept include:
+
+- Simple explanation
+- Important points
+- Key definitions
+- Examples from learning material
+- Common mistakes
+- Exam reminders
+
+
+Do not create full module notes.
+
+
+==================================================
+5. KEY DEFINITIONS
+==================================================
+
+List important definitions related to weak concepts.
+
+Use simple student-friendly explanations.
+
+
+==================================================
+6. PERSONAL REVISION CHECKLIST
+==================================================
+
+Create a priority-based checklist.
+
+
+Format:
+
+☐ Topic
+
+Why revise:
+Related mistake:
+
+
+==================================================
+7. PERSONALIZED PRACTICE QUIZ
+==================================================
+
+Generate 10 new questions.
+
+Rules:
+
+- Focus only on weak concepts.
+- Do not copy original questions.
+- Test the same concepts differently.
+- Increase difficulty gradually.
+
+
+Include:
+
+Questions
+
+Answer Key
+
+Short explanations for answers.
+
+
+==================================================
+8. ADAPTIVE STUDY SCHEDULE
+==================================================
+
+Create a realistic study schedule.
+
+Base it on:
+
+- Number of mistakes
+- Weak concepts
+- Priority level
+- Difficulty
+
+
+Give more time to Critical and High priority concepts.
+
+
+Format:
+
+Day 1
+
+Focus:
+Time:
+Activities:
+
+
+Day 2
+
+Focus:
+Time:
+Activities:
+
+
+==================================================
+9. FINAL MOTIVATION
+==================================================
+
+Write a personalized encouragement message.
+
+Mention:
+
+- Student strengths
+- Main improvement area
+- Expected improvement after revision
+
+
+==================================================
+FINAL CHECK
+==================================================
+
+Before answering verify:
+
+✓ Every recommendation is based on student mistakes.
+
+✓ Wrong questions are explained.
+
+✓ Correct answers are included.
+
+✓ Notes are based only on learning material.
+
+✓ The plan is unique for this student.
+
+✓ Do not waste space with unnecessary repetition.
+
+Generate a teacher-quality personalized study plan.
 """
     return prompt
+    
 
 def generate_study_plan(overall_score: float, modules_data: List[ModuleData]) -> str:
     prompt = build_prompt(overall_score, modules_data)

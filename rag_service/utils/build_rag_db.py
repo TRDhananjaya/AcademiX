@@ -1,3 +1,5 @@
+# pyrefly: ignore [missing-import]
+
 import os
 from PyPDF2 import PdfReader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
