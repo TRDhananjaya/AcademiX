@@ -34,6 +34,23 @@ const loginUser = async (req, res) => {
 		// Generate token and respond
 		const token = generateToken(user._id, user.role);
 
+		let studentMobile = '';
+		let parentMobile = '';
+		if (user.role === 'student') {
+			const Student = require('../models/Student');
+			const student = await Student.findOne({
+				$or: [
+					{ userId: user._id },
+					{ studentId: user.username.toUpperCase() },
+					{ email: user.email }
+				]
+			});
+			if (student) {
+				studentMobile = student.studentMobile || '';
+				parentMobile = student.parentMobile || '';
+			}
+		}
+
 		res.json({
 			_id: user._id,
 			username: user.username,
@@ -42,6 +59,8 @@ const loginUser = async (req, res) => {
 			firstName: user.firstName,
 			lastName: user.lastName,
 			profilePicture: user.profilePicture,
+			studentMobile,
+			parentMobile,
 			token,
 		});
 	} catch (error) {
@@ -64,6 +83,23 @@ const getMe = async (req, res) => {
 			return res.status(404).json({ message: 'User not found' });
 		}
 
+		let studentMobile = '';
+		let parentMobile = '';
+		if (user.role === 'student') {
+			const Student = require('../models/Student');
+			const student = await Student.findOne({
+				$or: [
+					{ userId: user._id },
+					{ studentId: user.username.toUpperCase() },
+					{ email: user.email }
+				]
+			});
+			if (student) {
+				studentMobile = student.studentMobile || '';
+				parentMobile = student.parentMobile || '';
+			}
+		}
+
 		res.json({
 			_id: user._id,
 			username: user.username,
@@ -72,6 +108,8 @@ const getMe = async (req, res) => {
 			firstName: user.firstName,
 			lastName: user.lastName,
 			profilePicture: user.profilePicture,
+			studentMobile,
+			parentMobile,
 		});
 	} catch (error) {
 		console.error('GetMe error:', error);
@@ -111,6 +149,32 @@ const registerUser = async (req, res) => {
 		});
 
 		if (user) {
+			if (user.role === 'student') {
+				try {
+					const Student = require('../models/Student');
+					const nameParts = [user.firstName, user.lastName].filter(Boolean);
+					const fullName = nameParts.join(' ').trim() || user.username;
+					
+					const existingStudent = await Student.findOne({
+						$or: [{ email: user.email.toLowerCase() }, { studentId: user.username.toUpperCase() }]
+					});
+
+					if (!existingStudent) {
+						await Student.create({
+							studentId: user.username.toUpperCase(),
+							name: fullName,
+							email: user.email.toLowerCase(),
+							studentMobile: 'N/A',
+							parentMobile: 'N/A',
+							grade: 'Grade 10',
+							status: 'Active'
+						});
+					}
+				} catch (studentErr) {
+					console.error('Error creating Student record on registration:', studentErr);
+				}
+			}
+
 			res.status(201).json({
 				_id: user._id,
 				username: user.username,
@@ -170,6 +234,43 @@ const updateProfile = async (req, res) => {
 
 		await user.save();
 
+		let studentMobile = '';
+		let parentMobile = '';
+
+		if (user.role === 'student') {
+			const Student = require('../models/Student');
+			let student = await Student.findOne({
+				$or: [
+					{ userId: user._id },
+					{ studentId: user.username.toUpperCase() },
+					{ email: user.email }
+				]
+			});
+
+			if (student) {
+				// Students CAN update their own studentMobile
+				if (req.body.studentMobile !== undefined) {
+					student.studentMobile = req.body.studentMobile;
+				}
+
+				// Students CANNOT update parentMobile (ignored if sent)
+
+				if (req.body.firstName !== undefined || req.body.lastName !== undefined) {
+					student.name = `${user.firstName} ${user.lastName}`.trim() || user.username;
+				}
+				if (req.body.email !== undefined) {
+					student.email = user.email;
+				}
+				if (!student.userId) {
+					student.userId = user._id;
+				}
+
+				await student.save();
+				studentMobile = student.studentMobile || '';
+				parentMobile = student.parentMobile || '';
+			}
+		}
+
 		res.json({
 			_id: user._id,
 			username: user.username,
@@ -178,6 +279,8 @@ const updateProfile = async (req, res) => {
 			firstName: user.firstName,
 			lastName: user.lastName,
 			profilePicture: user.profilePicture,
+			studentMobile,
+			parentMobile,
 		});
 	} catch (error) {
 		console.error('UpdateProfile error:', error);

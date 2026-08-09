@@ -150,12 +150,12 @@ const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
 
     // Create notification for the student
     let linkedUser = null;
-    const studentUser = await Student.findOne({ studentId });
-    if (studentUser) {
-      linkedUser = await User.findOne({ email: studentUser.email });
+    const studentRecord = await Student.findOne({ studentId }).populate('userId');
+    if (studentRecord && studentRecord.userId) {
+      linkedUser = studentRecord.userId;
     } else {
-      // Fallback: the frontend often sends user.username as studentId
-      linkedUser = await User.findOne({ username: studentId });
+      // Fallback for legacy records: try matching by username
+      linkedUser = await User.findOne({ username: studentId.toLowerCase() });
     }
 
     if (linkedUser) {

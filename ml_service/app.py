@@ -18,23 +18,40 @@ def health():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-
     data = request.json
-
     sample_dict = {f: 0 for f in model_features}
 
-    for f in ['Module_1_Score', 'Module_2_Score', 'Module_3_Score', 'Avg_Module_Score', 'Followup_Quiz_Score']:
+    # Match numeric features
+    numeric_features = [
+        'Module_1_Score', 'Module_2_Score', 'Module_3_Score',
+        'Avg_Module_Score', 'Weak_Module_Count', 'Priority_Score',
+        'Followup_Quiz_Score', 'Improvement_Percentage'
+    ]
+    
+    for f in numeric_features:
         if f in data:
             sample_dict[f] = data[f]
 
+    # Handle Categorical variables
     lesson_id = data.get('LessonID')
     if lesson_id:
-        lesson_col = f"LessonID_{lesson_id}"
+        lesson_col = f"Lesson_ID_{lesson_id}"
         if lesson_col in sample_dict:
             sample_dict[lesson_col] = 1
+            
+    lesson_perf = data.get('Lesson_Performance')
+    if lesson_perf:
+        perf_col = f"Lesson_Performance_{lesson_perf}"
+        if perf_col in sample_dict:
+            sample_dict[perf_col] = 1
+            
+    quiz_diff = data.get('Quiz_Difficulty')
+    if quiz_diff:
+        diff_col = f"Quiz_Difficulty_{quiz_diff}"
+        if diff_col in sample_dict:
+            sample_dict[diff_col] = 1
 
     sample = pd.DataFrame([sample_dict])[model_features]
-
     prediction = model.predict(sample)
 
     return jsonify({

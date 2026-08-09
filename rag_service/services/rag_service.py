@@ -382,3 +382,85 @@ def generate_study_plan(overall_score: float, modules_data: List[ModuleData]) ->
     prompt = build_prompt(overall_score, modules_data)
     logging.info("Constructed prompt for study plan. Sending to Gemini...")
     return call_gemini(prompt)
+
+def generate_adaptive_followup_quiz(modules_data: List[ModuleData]) -> str:
+    all_context = ""
+    weak_modules = [m for m in modules_data if m.score < 75] # Assuming <75 is weak
+    
+    # Calculate priority based on score (lower score = higher priority)
+    total_priority = 0
+    priorities = []
+    
+    for mod in weak_modules:
+        priority = 100 - mod.score if mod.score < 100 else 1
+        priorities.append({'module_id': mod.module_id, 'priority': priority})
+        total_priority += priority
+        
+        context = retrieve_module_context(mod.module_id)
+        if context:
+            all_context += f"\n--- Context for Module {mod.module_id} ---\n{context}\n"
+
+    # If no weak modules, fall back to all modules
+    if not weak_modules:
+        for mod in modules_data:
+            priorities.append({'module_id': mod.module_id, 'priority': 1})
+            total_priority += 1
+            context = retrieve_module_context(mod.module_id)
+            if context:
+                all_context += f"\n--- Context for Module {mod.module_id} ---\n{context}\n"
+                
+    # Allocate exactly 20 questions based on priority
+    allocation = {}
+    remaining_questions = 20
+    for p in priorities:
+        # Proportion of total priority
+        count = int(round((p['priority'] / total_priority) * 20))
+        allocation[p['module_id']] = count
+        remaining_questions -= count
+        
+    # Adjust rounding errors
+    if priorities and remaining_questions != 0:
+        # Add or remove remaining from the highest priority module
+        priorities.sort(key=lambda x: x['priority'], reverse=True)
+        highest = priorities[0]['module_id']
+        allocation[highest] += remaining_questions
+        
+    allocation_str = "\n".join([f"Module {k}: {v} questions" for k, v in allocation.items() if v > 0])
+
+    prompt = f"""
+You are an expert Grade 10 ICT teacher and examiner.
+
+Your task is to generate EXACTLY 20 Multiple Choice Questions (MCQs) for an adaptive follow-up quiz.
+You MUST generate these questions ONLY from the provided retrieved context below. Never invent or include information outside of this context.
+
+==================================================
+QUESTION ALLOCATION (Total 20 Questions)
+==================================================
+{allocation_str}
+
+==================================================
+RETRIEVED CONTEXT
+==================================================
+{all_context}
+
+==================================================
+OUTPUT FORMAT
+==================================================
+You MUST return ONLY a valid JSON array containing exactly 20 objects. 
+Do not include any markdown formatting like ```json or any introductory text. 
+
+Each object must follow this exact schema:
+{{
+  "question": "The question text here?",
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "correctAnswer": 0, // The index of the correct option (0, 1, 2, or 3)
+  "difficulty": "Medium", // "Easy", "Medium", or "Hard"
+  "lesson": "Information and Communication Technology",
+  "module": "The module ID (e.g., 1.1)",
+  "explanation": "Brief explanation based on the retrieved context."
+}}
+
+If the context is empty, generate generic questions for the specified modules based on standard Grade 10 ICT curriculum, but STILL return EXACTLY 20 questions in the valid JSON format.
+"""
+    logging.info(f"Constructed prompt for adaptive quiz. Allocation: {allocation_str}. Sending to Gemini...")
+    return call_gemini(prompt)

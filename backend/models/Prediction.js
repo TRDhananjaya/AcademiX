@@ -15,7 +15,12 @@ const predictionSchema = new mongoose.Schema({
     Module_2_Score: { type: Number, required: true },
     Module_3_Score: { type: Number, required: true },
     Avg_Module_Score: { type: Number, required: true },
-    Followup_Quiz_Score: { type: Number, required: true }
+    Weak_Module_Count: { type: Number, required: true },
+    Priority_Score: { type: Number, required: true },
+    Followup_Quiz_Score: { type: Number, required: true },
+    Improvement_Percentage: { type: Number, required: true },
+    Lesson_Performance: { type: String, required: true },
+    Quiz_Difficulty: { type: String, required: true }
   },
   predictedScore: {
     type: Number,
