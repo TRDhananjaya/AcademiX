@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 const QRCode = require('qrcode');
 
 const studentSchema = new mongoose.Schema({
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        unique: true,
+        sparse: true
+    },
     studentId: {
         type: String,
         unique: true
@@ -23,13 +29,13 @@ const studentSchema = new mongoose.Schema({
     },
     studentMobile: {
         type: String,
-        required: true,
-        trim: true
+        trim: true,
+        default: ''
     },
     parentMobile: {
         type: String,
-        required: true,
-        trim: true
+        trim: true,
+        default: ''
     },
     grade: {
         type: String,
@@ -82,6 +88,28 @@ studentSchema.pre('save', async function() {
     if (!this.color) {
         const colors = ['bg-indigo-500', 'bg-teal-500', 'bg-purple-500', 'bg-pink-500', 'bg-amber-500', 'bg-emerald-500', 'bg-red-500', 'bg-slate-500'];
         this.color = colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    // Standardize Sri Lankan phone numbers to single standard format: 07X XXX XXXX
+    const formatLKPhone = (phone) => {
+        if (!phone || typeof phone !== 'string') return phone;
+        let digits = phone.trim().replace(/\D/g, '');
+        if (digits.startsWith('94') && digits.length === 11) {
+            digits = '0' + digits.substring(2);
+        } else if (!digits.startsWith('0') && digits.length === 9) {
+            digits = '0' + digits;
+        }
+        if (/^07\d{8}$/.test(digits)) {
+            return `${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6)}`;
+        }
+        return phone.trim();
+    };
+
+    if (this.studentMobile) {
+        this.studentMobile = formatLKPhone(this.studentMobile);
+    }
+    if (this.parentMobile) {
+        this.parentMobile = formatLKPhone(this.parentMobile);
     }
 
     if (this.studentId && (!this.qrCode || this.isModified('studentId') || this.isModified('email'))) {

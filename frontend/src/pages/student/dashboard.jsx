@@ -14,6 +14,7 @@ export default function StudentDashboard() {
   const [analytics, setAnalytics] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [streak, setStreak] = useState(0);
+  const [selectedLesson, setSelectedLesson] = useState('latest');
 
   // Helper to calculate learning streak from quiz submission history
   const calculateStreak = (history) => {
@@ -126,12 +127,33 @@ export default function StudentDashboard() {
     );
   }
 
-  // Map Data for Course Progress Card
-  const overallAvg = analytics?.summary?.overallAverage || 0;
+  // Dynamic calculation for the marks display section based on selected filter
+  let displayScore = 0;
+  let displayLabel = 'No Quizzes Taken';
+
+  if (analytics?.history && analytics.history.length > 0) {
+    if (selectedLesson === 'latest') {
+      // Display marks from the student's most recently completed quiz
+      displayScore = analytics.history[0].percentage || 0;
+      displayLabel = analytics.history[0].lessonName || 'Unknown Lesson';
+    } else {
+      // Find all quizzes associated with the selected lesson and get their average
+      const lessonTrend = analytics.trendData?.find(item => item.lesson === selectedLesson);
+      if (lessonTrend) {
+        displayScore = lessonTrend.percentage || 0;
+        displayLabel = selectedLesson;
+      }
+    }
+  }
+
   const progressData = [
-    { name: 'Completed', value: overallAvg },
-    { name: 'Remaining', value: Math.max(0, 100 - overallAvg) }
+    { name: 'Completed', value: displayScore },
+    { name: 'Remaining', value: Math.max(0, 100 - displayScore) }
   ];
+
+  const uniqueLessons = analytics?.trendData 
+    ? analytics.trendData.map(item => item.lesson).filter(lesson => lesson && lesson !== 'Unknown Lesson')
+    : [];
 
   // Map Streak Info
   const streakTarget = streak < 7 ? 7 : (streak < 14 ? 14 : 30);
@@ -206,9 +228,23 @@ export default function StudentDashboard() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center">
               <div className="w-full flex justify-between items-center mb-2">
                 <h3 className="text-slate-800 font-semibold text-[15px]">Course Progress</h3>
-                <div className="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                </div>
+                
+                {analytics?.history && analytics.history.length > 0 ? (
+                  <select
+                    value={selectedLesson}
+                    onChange={(e) => setSelectedLesson(e.target.value)}
+                    className="text-[13px] bg-slate-50 border border-slate-200 text-slate-600 rounded-lg py-1 px-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium max-w-[130px] truncate cursor-pointer"
+                  >
+                    <option value="latest">Latest Quiz</option>
+                    {uniqueLessons.map((lesson, idx) => (
+                      <option key={idx} value={lesson}>{lesson}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                  </div>
+                )}
               </div>
               
               <div className="relative w-36 h-36 mt-2 mb-3">
@@ -231,11 +267,11 @@ export default function StudentDashboard() {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-3xl font-bold text-slate-900">{overallAvg.toFixed(0)}%</span>
+                  <span className="text-3xl font-bold text-slate-900">{displayScore.toFixed(0)}%</span>
                 </div>
               </div>
-              <p className="text-sm font-medium text-slate-500">
-                {analytics?.history?.[0]?.lessonName || 'No Quizzes Taken'}
+              <p className="text-sm font-medium text-slate-500 text-center line-clamp-2 px-2">
+                {displayLabel}
               </p>
             </div>
 

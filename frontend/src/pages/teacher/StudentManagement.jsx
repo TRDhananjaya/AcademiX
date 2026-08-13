@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
 import { FiUserPlus, FiEdit, FiSearch, FiSliders, FiUsers, FiCheckCircle, FiAlertTriangle, FiBookOpen } from 'react-icons/fi';
+import { isValidSriLankanPhone, formatSriLankanPhone } from '../../utils/phoneUtils';
 
 export default function StudentManagement() {
   const [activeNav, setActiveNav] = useState('students');
@@ -25,6 +26,7 @@ export default function StudentManagement() {
   });
 
   const [successStudentDetails, setSuccessStudentDetails] = useState(null);
+  const [updateSuccessMessage, setUpdateSuccessMessage] = useState('');
   const [isUsernameTaken, setIsUsernameTaken] = useState(false);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
 
@@ -90,6 +92,22 @@ export default function StudentManagement() {
     e.preventDefault();
     if (!newStudent.name.trim() || !newStudent.email.trim() || !newStudent.studentMobile.trim() || !newStudent.parentMobile.trim()) return;
 
+    if (newStudent.studentMobile && !isValidSriLankanPhone(newStudent.studentMobile)) {
+      alert('Student mobile number must be a valid 10-digit Sri Lankan phone number starting with 07 (e.g., 077 123 4567)');
+      return;
+    }
+
+    if (newStudent.parentMobile && !isValidSriLankanPhone(newStudent.parentMobile)) {
+      alert('Parent mobile number must be a valid 10-digit Sri Lankan phone number starting with 07 (e.g., 077 123 4567)');
+      return;
+    }
+
+    const studentPayload = {
+      ...newStudent,
+      studentMobile: formatSriLankanPhone(newStudent.studentMobile),
+      parentMobile: formatSriLankanPhone(newStudent.parentMobile)
+    };
+
     try {
       const url = newStudent._id ? `/api/students/${newStudent._id}` : '/api/students';
       const method = newStudent._id ? 'PUT' : 'POST';
@@ -99,13 +117,15 @@ export default function StudentManagement() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newStudent),
+        body: JSON.stringify(studentPayload),
       });
 
       if (response.ok) {
         const data = await response.json();
         if (newStudent._id) {
           setStudents(students.map(s => s._id === data._id ? data : s));
+          setUpdateSuccessMessage(`Student "${data.name}" details updated successfully!`);
+          setTimeout(() => setUpdateSuccessMessage(''), 5000);
         } else {
           setStudents([data, ...students]);
           setSuccessStudentDetails({
@@ -195,6 +215,22 @@ export default function StudentManagement() {
               Add Student
             </button>
           </div>
+
+          {/* Success Banner when editing student */}
+          {updateSuccessMessage && (
+            <div className="mb-6 p-4 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl text-sm font-semibold flex items-center justify-between shadow-sm animate-fade-in-up">
+              <div className="flex items-center gap-2.5">
+                <FiCheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>{updateSuccessMessage}</span>
+              </div>
+              <button
+                onClick={() => setUpdateSuccessMessage('')}
+                className="text-emerald-500 hover:text-emerald-800 text-xs font-bold uppercase tracking-wider cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
           {/* Stats Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -351,7 +387,7 @@ export default function StudentManagement() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="7" className="p-12 text-center text-slate-400 font-medium text-sm">
+                      <td colSpan="6" className="p-12 text-center text-slate-400 font-medium text-sm">
                         No students found matching filters or search queries.
                       </td>
                     </tr>
@@ -453,10 +489,12 @@ export default function StudentManagement() {
 
                     {/* Student Mobile */}
                     <div>
-                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">Student Mobile Number</label>
+                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">
+                        Student Mobile Number <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="tel"
-                        placeholder="e.g. +1234567890"
+                        placeholder="07X XXX XXXX"
                         value={newStudent.studentMobile}
                         onChange={(e) => setNewStudent({ ...newStudent, studentMobile: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/10 font-sans"
@@ -466,10 +504,12 @@ export default function StudentManagement() {
 
                     {/* Parent Mobile */}
                     <div>
-                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">Parent Mobile Number</label>
+                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">
+                        Parent Mobile Number <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="tel"
-                        placeholder="e.g. +1987654321"
+                        placeholder="07X XXX XXXX"
                         value={newStudent.parentMobile}
                         onChange={(e) => setNewStudent({ ...newStudent, parentMobile: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/10 font-sans"

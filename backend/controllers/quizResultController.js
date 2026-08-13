@@ -74,8 +74,9 @@ const submitQuiz = async (req, res) => {
           const quizCodes = lessonQuizzes.map(q => q.quizCode);
           
           // Find all results for this student on these quizzes
+          const targetStudentId = (studentId || '').trim();
           const studentResults = await QuizResult.find({
-            studentId,
+            studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') },
             quizId: { $in: quizCodes }
           });
 
@@ -86,12 +87,12 @@ const submitQuiz = async (req, res) => {
           if (completedQuizCodes.length === quizCodes.length) {
             // Verify no pending notification or generated study plan already exists
             const existingPlan = await StudyPlan.findOne({
-              studentId,
+              studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') },
               lessonId: currentModule.lessonId
             });
 
             const existingNotification = await Notification.findOne({
-              relatedStudentId: studentId,
+              relatedStudentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') },
               relatedLessonId: currentModule.lessonId,
               notificationType: 'StudyPlanApproval',
               status: { $in: ['Pending', 'Approved'] }
@@ -181,7 +182,10 @@ const getResultsByQuiz = async (req, res) => {
 // @access  Public (for now)
 const getResultsByStudent = async (req, res) => {
   try {
-    const results = await QuizResult.find({ studentId: req.params.studentId }).sort({ submittedAt: -1 });
+    const targetStudentId = (req.params.studentId || '').trim();
+    const results = await QuizResult.find({
+      studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') }
+    }).sort({ submittedAt: -1 });
     res.status(200).json(results);
   } catch (error) {
     console.error('Error fetching student results:', error);

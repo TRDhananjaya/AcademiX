@@ -15,9 +15,16 @@ const getStudyPlans = async (req, res) => {
       if (req.user.username) {
         studentIdsToQuery.push(req.user.username);
       }
-      const student = await Student.findOne({ email: req.user.email });
+      // Use userId reference for reliable lookup
+      const student = await Student.findOne({ userId: req.user._id });
       if (student && student.studentId) {
         studentIdsToQuery.push(student.studentId);
+      } else {
+        // Fallback for legacy records without userId
+        const studentByEmail = await Student.findOne({ email: req.user.email });
+        if (studentByEmail && studentByEmail.studentId) {
+          studentIdsToQuery.push(studentByEmail.studentId);
+        }
       }
     }
     

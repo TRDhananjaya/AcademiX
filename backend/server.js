@@ -20,6 +20,7 @@ const studyPlanRoutes = require('./routes/studyPlanRoutes');
 const communityRoutes = require('./routes/communityRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const commonMessageRoutes = require('./routes/commonMessageRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.use('/api/quizzes', authMiddleware, quizRoutes);
 app.use('/api/quiz-results', authMiddleware, quizResultRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/api/students', authMiddleware, studentRoutes);
+app.use('/api/attendance', authMiddleware, attendanceRoutes);
 app.use('/api/ml', authMiddleware, predictionRoutes);
 app.use('/api/analytics', authMiddleware, analyticsRoutes);
 app.use('/api/reports', authMiddleware, reportRoutes);
