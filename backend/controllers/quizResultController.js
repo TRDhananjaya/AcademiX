@@ -248,24 +248,19 @@ const exportQuizResultsExcel = async (req, res) => {
     
     const FollowupQuiz = mongoose.models.FollowupQuiz || require('../models/FollowUpQuiz');
     const followupQuizzes = await FollowupQuiz.find();
-    const followupQuizMap = {}; // _id -> moduleId (lessonId)
-    for (const fq of followupQuizzes) {
-      followupQuizMap[fq._id.toString()] = fq.moduleId;
-    }
     
-    const studentFollowupMap = {};
+    const studentFollowupResultMap = {};
     for (const r of allFollowupResults) {
       const sId = r.studentId ? r.studentId.toLowerCase() : '';
-      if (!studentFollowupMap[sId]) studentFollowupMap[sId] = {};
-      
-      let lessonId = null;
-      if (r.quizId && followupQuizMap[r.quizId.toString()]) {
-        lessonId = followupQuizMap[r.quizId.toString()];
-      }
-      
-      if (lessonId) {
-        studentFollowupMap[sId][lessonId] = r.percentage !== undefined ? r.percentage : r.score;
-      }
+      studentFollowupResultMap[sId] = r.percentage !== undefined ? r.percentage : r.score;
+    }
+
+    const moduleToCodeMap = {};
+    for (const m of modules) {
+        const match = m.title.match(/Module\s+(\d+)\.(\d+)/i);
+        if (match) {
+            moduleToCodeMap[m._id.toString()] = `MODULE_${match[1]}_${match[2]}`;
+        }
     }
 
     const excelData = [];
@@ -283,21 +278,24 @@ const exportQuizResultsExcel = async (req, res) => {
         let scores = [];
         
         if (lessonModules.length > 0) {
-          const q1 = quizzes.find(q => q.moduleId === lessonModules[0]._id.toString());
+          const modStrId = moduleToCodeMap[lessonModules[0]._id.toString()];
+          const q1 = quizzes.find(q => q.moduleId === lessonModules[0]._id.toString() || q.moduleId === modStrId);
           if (q1 && studentQuizMap[sId] && studentQuizMap[sId][q1.quizCode] !== undefined) {
             quiz1Score = studentQuizMap[sId][q1.quizCode];
             scores.push(quiz1Score);
           }
         }
         if (lessonModules.length > 1) {
-          const q2 = quizzes.find(q => q.moduleId === lessonModules[1]._id.toString());
+          const modStrId = moduleToCodeMap[lessonModules[1]._id.toString()];
+          const q2 = quizzes.find(q => q.moduleId === lessonModules[1]._id.toString() || q.moduleId === modStrId);
           if (q2 && studentQuizMap[sId] && studentQuizMap[sId][q2.quizCode] !== undefined) {
             quiz2Score = studentQuizMap[sId][q2.quizCode];
             scores.push(quiz2Score);
           }
         }
         if (lessonModules.length > 2) {
-          const q3 = quizzes.find(q => q.moduleId === lessonModules[2]._id.toString());
+          const modStrId = moduleToCodeMap[lessonModules[2]._id.toString()];
+          const q3 = quizzes.find(q => q.moduleId === lessonModules[2]._id.toString() || q.moduleId === modStrId);
           if (q3 && studentQuizMap[sId] && studentQuizMap[sId][q3.quizCode] !== undefined) {
             quiz3Score = studentQuizMap[sId][q3.quizCode];
             scores.push(quiz3Score);
@@ -306,17 +304,21 @@ const exportQuizResultsExcel = async (req, res) => {
         
         // Calculate Average
         let avgScore = null;
-        // In existing logic, the average is only calculated when the lesson is fully complete to trigger the study plan workflow
-        // But for follow-up quizzes, it averages the attempted modules.
-        // We will calculate the average of attempted quizzes.
         if (scores.length > 0) {
           avgScore = parseFloat((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(2));
         }
         
         // Followup score
         let followupScore = null;
-        if (studentFollowupMap[sId] && studentFollowupMap[sId][lesson._id.toString()] !== undefined) {
-          followupScore = studentFollowupMap[sId][lesson._id.toString()];
+        const studentFq = followupQuizzes.find(fq => 
+            fq.moduleId === lesson._id.toString() && 
+            fq.quizCode && fq.quizCode.toLowerCase().includes(sId)
+        );
+        
+        if (studentFq && studentFollowupResultMap[sId] !== undefined) {
+           followupScore = studentFollowupResultMap[sId];
+        } else if (scores.length > 0 && studentFollowupResultMap[sId] !== undefined) {
+           followupScore = studentFollowupResultMap[sId];
         }
         
         if (quiz1Score !== null || quiz2Score !== null || quiz3Score !== null || followupScore !== null) {
@@ -331,6 +333,7 @@ const exportQuizResultsExcel = async (req, res) => {
             'Avg_Quiz_Score': avgScore !== null ? avgScore : '',
             'Followup_Quiz_Score': followupScore !== null ? followupScore : ''
           });
+          if (followupScore !== null) delete studentFollowupResultMap[sId]; // Prevent duplicate mapping
         }
       }
     }
@@ -342,7 +345,13 @@ const exportQuizResultsExcel = async (req, res) => {
     
     const wb = xlsx.utils.book_new();
     // Use json_to_sheet directly to convert the array of objects
-    const ws = xlsx.utils.json_to_sheet(excelData);
+    const ws = xlsx.utils.json_to_sheet(excelData, {
+      header: [
+        'Student_ID', 'Student_Name', 'Lesson_ID', 'Lesson_Name',
+        'Quiz_1_Score', 'Quiz_2_Score', 'Quiz_3_Score', 
+        'Avg_Quiz_Score', 'Followup_Quiz_Score'
+      ]
+    });
     xlsx.utils.book_append_sheet(wb, ws, "Quiz Results");
     
     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
