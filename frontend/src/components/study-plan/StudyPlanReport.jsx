@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CoverPage from './pages/CoverPage';
 import PerformancePage from './pages/PerformancePage';
 import WrongQuestionAnalysisPage from './pages/WrongQuestionAnalysisPage';
@@ -9,6 +9,7 @@ import RevisionChecklistPage from './pages/RevisionChecklistPage';
 import InteractiveQuizPage from './pages/InteractiveQuizPage';
 import StudySchedulePage from './pages/StudySchedulePage';
 import MotivationPage from './pages/MotivationPage';
+import FollowUpQuizModal from './FollowUpQuizModal';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 const extractSection = (text, startNumber, endNumber) => {
@@ -37,6 +38,13 @@ const extractScoreFromText = (text) => {
 
 const StudyPlanReport = ({ planData, user }) => {
   const [currentPage, setCurrentPage] = useState(0);
+  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [followUpQuizData, setFollowUpQuizData] = useState(null);
+  const [followUpCompleted, setFollowUpCompleted] = useState(false);
+  const [followUpResult, setFollowUpResult] = useState(null);
+  const [moduleBreakdown, setModuleBreakdown] = useState([]);
+  const [isLoadingFollowUp, setIsLoadingFollowUp] = useState(false);
+
   const markdown = planData.generatedStudyPlan || '';
   
   // Extract Sections
@@ -52,6 +60,48 @@ const StudyPlanReport = ({ planData, user }) => {
 
   const score = extractScoreFromText(markdown);
   const lessonTitle = planData.lessonId?.title || 'Unknown Lesson';
+  const lessonId = planData.lessonId?._id || planData.lessonId || '';
+  const studentId = user?.username || 'STU-0001';
+  const studentName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Student';
+
+  useEffect(() => {
+    if (!lessonId) return;
+    fetchFollowUpQuizData();
+  }, [lessonId]);
+
+  const fetchFollowUpQuizData = async () => {
+    try {
+      setIsLoadingFollowUp(true);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/followup/lesson/${lessonId}?studentId=${encodeURIComponent(studentId)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setFollowUpQuizData(data.quiz);
+        setFollowUpCompleted(data.completed);
+        setFollowUpResult(data.pastResult);
+        if (data.moduleBreakdown) {
+          setModuleBreakdown(data.moduleBreakdown);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching follow-up quiz data:', err);
+    } finally {
+      setIsLoadingFollowUp(false);
+    }
+  };
+
+  const handleStartFollowUpQuiz = () => {
+    setShowQuizModal(true);
+  };
+
+  const handleQuizCompleted = (result) => {
+    setFollowUpCompleted(true);
+    setFollowUpResult(result);
+  };
 
   // Book pages mapping
   const pages = [
@@ -64,7 +114,21 @@ const StudyPlanReport = ({ planData, user }) => {
     { component: <RevisionChecklistPage revisionText={revisionPoints} />, title: "Revision Checklist" },
     { component: <InteractiveQuizPage quizText={practiceQuiz} />, title: "Practice Quiz" },
     { component: <StudySchedulePage scheduleText={studySchedule} />, title: "Study Schedule" },
-    { component: <MotivationPage motivationText={finalMotivation} user={user} />, title: "Motivation" }
+    { 
+      component: (
+        <MotivationPage 
+          motivationText={finalMotivation} 
+          user={user} 
+          followUpQuizData={followUpQuizData}
+          followUpCompleted={followUpCompleted}
+          followUpResult={followUpResult}
+          moduleBreakdown={moduleBreakdown}
+          onStartFollowUpQuiz={handleStartFollowUpQuiz}
+          isLoadingFollowUp={isLoadingFollowUp}
+        />
+      ), 
+      title: "Motivation & Follow-Up Quiz" 
+    }
   ];
 
   const handleNext = () => {
@@ -109,7 +173,7 @@ const StudyPlanReport = ({ planData, user }) => {
           <button 
             onClick={handlePrev}
             disabled={currentPage === 0}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all border-none cursor-pointer ${
               currentPage === 0 
                 ? 'opacity-0 cursor-default' 
                 : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-600'
@@ -126,7 +190,7 @@ const StudyPlanReport = ({ planData, user }) => {
           <button 
             onClick={handleNext}
             disabled={currentPage === pages.length - 1}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all ${
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all border-none cursor-pointer ${
               currentPage === pages.length - 1 
                 ? 'opacity-0 cursor-default' 
                 : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200'
@@ -139,6 +203,18 @@ const StudyPlanReport = ({ planData, user }) => {
 
       </div>
       
+      {/* Follow-Up Quiz Runner Modal */}
+      {showQuizModal && (
+        <FollowUpQuizModal
+          quizData={followUpQuizData}
+          studentId={studentId}
+          studentName={studentName}
+          lessonId={lessonId}
+          onClose={() => setShowQuizModal(false)}
+          onQuizCompleted={handleQuizCompleted}
+        />
+      )}
+
       {/* CSS for simple fade in */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes fadeIn {
@@ -154,4 +230,3 @@ const StudyPlanReport = ({ planData, user }) => {
 };
 
 export default StudyPlanReport;
-
