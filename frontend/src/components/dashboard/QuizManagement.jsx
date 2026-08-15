@@ -5,6 +5,7 @@ export default function QuizManagement() {
   const [quizzes, setQuizzes] = useState([]);
   const [results, setResults] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
 
   // State variables for report view have been delegated to QuizReportContent page.
 
@@ -81,6 +82,30 @@ export default function QuizManagement() {
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
+  const handleDownloadExcel = async () => {
+    try {
+      setIsExporting(true);
+      const response = await fetch('/api/quiz-results/export-excel');
+      if (!response.ok) {
+        throw new Error('Failed to generate Excel file');
+      }
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Quiz_Results.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error downloading Excel:', err);
+      alert('Failed to download Quiz Results Excel file.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div className="max-w-[1100px] mx-auto font-sans">
       {/* Header */}
@@ -89,18 +114,36 @@ export default function QuizManagement() {
           <h1 className="text-[28px] font-extrabold text-slate-800 m-0 mb-2">Quiz Management</h1>
           <p className="text-[15px] text-slate-500 m-0">Manage and monitor all assessment activities across the ICT department.</p>
         </div>
-        <button 
-          className="inline-flex items-center gap-2 bg-indigo-900 text-white px-5 py-3 rounded-lg border-none font-semibold text-[14.5px] cursor-pointer transition-opacity hover:opacity-90"
-          onClick={() => {
-            window.history.pushState({}, '', '/create-quiz');
-            window.dispatchEvent(new PopStateEvent('popstate'));
-          }}
-        >
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 4V16M4 10H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          Create New Quiz
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button 
+            className="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white px-5 py-3 rounded-lg border-none font-semibold text-[14.5px] cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-50"
+            onClick={handleDownloadExcel}
+            disabled={isExporting}
+          >
+            {isExporting ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            )}
+            {isExporting ? 'Generating...' : 'Download Quiz Results Excel'}
+          </button>
+          <button 
+            className="inline-flex items-center gap-2 bg-indigo-900 text-white px-5 py-3 rounded-lg border-none font-semibold text-[14.5px] cursor-pointer transition-opacity hover:opacity-90"
+            onClick={() => {
+              window.history.pushState({}, '', '/create-quiz');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 4V16M4 10H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Create New Quiz
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
