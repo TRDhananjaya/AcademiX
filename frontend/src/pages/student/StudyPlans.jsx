@@ -9,7 +9,7 @@ export default function StudyPlans() {
   const [activeNav, setActiveNav] = useState('study-plans');
   const [studyPlans, setStudyPlans] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedLessonId, setSelectedLessonId] = useState('all');
+  const [selectedLessonId, setSelectedLessonId] = useState('');
 
   useEffect(() => {
     fetchStudyPlans();
@@ -26,6 +26,16 @@ export default function StudyPlans() {
       if (response.ok) {
         const data = await response.json();
         setStudyPlans(data);
+        const uniqueLessons = Array.from(
+          new Map(
+            data
+              .filter(plan => plan.lessonId && plan.lessonId._id)
+              .map(plan => [plan.lessonId._id, plan.lessonId])
+          ).values()
+        );
+        if (uniqueLessons.length > 0) {
+          setSelectedLessonId(uniqueLessons[0]._id);
+        }
       }
     } catch (error) {
       console.error('Error fetching study plans:', error);
@@ -35,9 +45,9 @@ export default function StudyPlans() {
     }
   };
 
-  const filteredPlans = selectedLessonId === 'all'
-    ? studyPlans
-    : studyPlans.filter(plan => plan.lessonId && plan.lessonId._id === selectedLessonId);
+  const filteredPlans = selectedLessonId
+    ? studyPlans.filter(plan => plan.lessonId && plan.lessonId._id === selectedLessonId)
+    : studyPlans;
 
   return (
     <div className="flex min-h-screen font-sans bg-[#fcfdff]" id="study-plans-layout">
@@ -101,7 +111,6 @@ export default function StudyPlans() {
                     onChange={(e) => setSelectedLessonId(e.target.value)}
                     className="w-full appearance-none bg-white border border-slate-200 text-slate-700 py-2.5 pl-4 pr-10 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all font-medium cursor-pointer"
                   >
-                    <option value="all">All Lessons</option>
                     {Array.from(
                       new Map(
                         studyPlans
@@ -145,7 +154,7 @@ export default function StudyPlans() {
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
                   </div>
                   <h2 className="mb-2 text-xl font-bold text-slate-800">No Study Plans found for this lesson.</h2>
-                  <p className="text-[15px] max-w-md mx-auto">Try selecting a different lesson or "All Lessons".</p>
+                  <p className="text-[15px] max-w-md mx-auto">Try selecting a different lesson.</p>
                 </div>
               )
             ) : (
