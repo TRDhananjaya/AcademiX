@@ -21,6 +21,7 @@ const communityRoutes = require('./routes/communityRoutes');
 const messageRoutes = require('./routes/messageRoutes');
 const commonMessageRoutes = require('./routes/commonMessageRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
+const followUpRoutes = require('./routes/followUpRoutes');
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use('/api/modules', authMiddleware, moduleRoutes);
 app.use('/api/resources', authMiddleware, resourceRoutes);
 app.use('/api/notifications', authMiddleware, notificationRoutes);
 app.use('/api/study-plans', authMiddleware, studyPlanRoutes);
+app.use('/api/followup', authMiddleware, followUpRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/common-messages', commonMessageRoutes);
