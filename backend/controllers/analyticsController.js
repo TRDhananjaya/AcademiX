@@ -230,8 +230,9 @@ const getIndividualStudentAnalytics = async (req, res, next) => {
         }
 
         // 1. Fetch Main Quizzes
+        const targetStudentId = studentId.trim();
         const mainQuizzes = await QuizResult.aggregate([
-            { $match: { studentId } },
+            { $match: { studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') } } },
             { $lookup: {
                 from: 'quizzes',
                 localField: 'quizId',
@@ -258,7 +259,7 @@ const getIndividualStudentAnalytics = async (req, res, next) => {
 
         // 2. Fetch Follow-up Quizzes
         const followupQuizzes = await FollowupResult.aggregate([
-            { $match: { studentId } },
+            { $match: { studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') } } },
             { $lookup: {
                 from: 'followup_quizzes',
                 localField: 'quizId',

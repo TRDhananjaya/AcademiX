@@ -41,8 +41,9 @@ const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
     });
     const quizCodes = lessonQuizzes.map(q => q.quizCode);
     
+    const targetStudentId = (studentId || '').trim();
     const studentResults = await QuizResult.find({
-      studentId,
+      studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') },
       quizId: { $in: quizCodes }
     });
 
