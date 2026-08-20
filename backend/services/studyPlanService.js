@@ -168,7 +168,7 @@ const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
         notificationType: 'StudyPlanGenerated',
         relatedLessonId: lessonId,
         relatedStudentId: studentId,
-        status: 'Unread' // Fixed from 'N/A' which might be invalid
+        status: 'Pending' // Fixed from 'N/A' which might be invalid
       });
       await studentNotification.save();
       console.log(`[StudyPlanService] Notification sent to student ${studentId}`);

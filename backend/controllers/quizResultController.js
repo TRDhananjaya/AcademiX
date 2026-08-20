@@ -106,8 +106,10 @@ const submitQuiz = async (req, res) => {
               const { generateStudyPlanAsync } = require('../services/studyPlanService');
               
               // Trigger the AI study plan generation in the background!
-              // We do not await this, so the quiz submission HTTP request completes immediately.
-              generateStudyPlanAsync(studentId, studentName, currentModule.lessonId)
+              console.log(`[RAG Trigger] student=${studentId} lesson=${lesson._id}`);
+              console.log(`[RAG Trigger] reason=lesson-completed`);
+              console.log(`[RAG Trigger] sending request to Gemini`);
+              generateStudyPlanAsync(studentId, studentName, lesson._id.toString())
                 .catch(err => console.error('Background study plan generation failed:', err));
             }
           }
