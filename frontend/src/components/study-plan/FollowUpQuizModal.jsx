@@ -78,10 +78,12 @@ export default function FollowUpQuizModal({ quizData, studentId, studentName, le
     const answersDetails = questions.map((q, idx) => {
       const selected = selectedAnswers[idx];
       return {
+        questionId: q._id || q.id || `Q_${idx}`,
         questionText: q.text,
         selectedOption: selected !== undefined ? selected : -1,
         correctOption: q.correctOption,
-        isCorrect: selected === q.correctOption
+        isCorrect: selected === q.correctOption,
+        moduleId: quizData?.moduleId || ''
       };
     });
 

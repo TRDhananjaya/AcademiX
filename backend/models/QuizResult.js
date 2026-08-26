@@ -16,7 +16,8 @@ const quizResultSchema = new mongoose.Schema({
     questionText: { type: String },
     selectedOption: { type: Number },
     correctOption: { type: Number },
-    isCorrect: { type: Boolean }
+    isCorrect: { type: Boolean },
+    moduleId: { type: String }
   }]
 });
 

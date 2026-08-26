@@ -70,9 +70,10 @@ export default function TakeQuiz() {
       return {
         questionId: questionId,
         questionText: q.text,
-        selectedOption: selectedAnswers[questionId],
+        selectedOption: selectedAnswers[questionId] !== undefined ? selectedAnswers[questionId] : -1,
         correctOption: q.correctOption,
-        isCorrect: isCorrect
+        isCorrect: isCorrect,
+        moduleId: currentQuiz.moduleId
       };
     });
 

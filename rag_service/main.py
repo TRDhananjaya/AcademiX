@@ -19,6 +19,11 @@ async def generate_plan_endpoint(req: StudyPlanRequest):
             studyPlan=study_plan_text
         )
     except Exception as e:
+        from services.llm_service import QuotaExhaustedError
+        if isinstance(e, QuotaExhaustedError):
+            logging.error(f"[RAG] 429 Quota Exhausted: {e}")
+            raise HTTPException(status_code=429, detail="Gemini API quota exhausted.")
+            
         logging.error(f"Error generating study plan: {e}")
         # Note: If gemini call fails, we return a 500 server error instead of a generic response
         raise HTTPException(status_code=500, detail=str(e))

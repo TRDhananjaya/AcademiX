@@ -41,8 +41,9 @@ const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
     });
     const quizCodes = lessonQuizzes.map(q => q.quizCode);
     
+    const targetStudentId = (studentId || '').trim();
     const studentResults = await QuizResult.find({
-      studentId,
+      studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') },
       quizId: { $in: quizCodes }
     });
 
@@ -167,7 +168,7 @@ const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
         notificationType: 'StudyPlanGenerated',
         relatedLessonId: lessonId,
         relatedStudentId: studentId,
-        status: 'Unread' // Fixed from 'N/A' which might be invalid
+        status: 'Pending' // Fixed from 'N/A' which might be invalid
       });
       await studentNotification.save();
       console.log(`[StudyPlanService] Notification sent to student ${studentId}`);
