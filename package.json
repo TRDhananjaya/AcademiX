@@ -3,8 +3,8 @@
     "dev": "concurrently \"npm run frontend\" \"npm run backend\" \"npm run ml\" \"npm run rag\"",
     "frontend": "cd frontend && npm run dev",
     "backend": "cd backend && npm run dev",
-    "ml": "cd ml_service && .\\.venv\\Scripts\\python app.py",
-    "rag": "cd rag_service && .\\.venv\\Scripts\\uvicorn main:app --host 0.0.0.0 --port 8000"
+    "ml": "cd ml_service && .\\.venv\\Scripts\\python.exe python app.py",
+    "rag": "cd rag_service && .\\.venv\\Scripts\\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000"
   },
   "devDependencies": {
     "concurrently": "^10.0.3"
