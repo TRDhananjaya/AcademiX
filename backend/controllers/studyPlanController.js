@@ -1,6 +1,7 @@
 const StudyPlan = require('../models/StudyPlan');
 const Student = require('../models/Student');
 const User = require('../models/User');
+const QuizResult = require('../models/QuizResult');
 const puppeteer = require('puppeteer');
 const { generatePdfTemplate } = require('../utils/pdfTemplate');
 
@@ -51,7 +52,34 @@ const getStudyPlans = async (req, res) => {
     });
     const uniqueStudyPlans = Array.from(uniquePlansMap.values());
 
-    res.status(200).json(uniqueStudyPlans);
+    // Enrich with calculated diagnosticScore from QuizResult
+    const quizResults = await QuizResult.find({
+      studentId: { $in: studentIdsToQuery.map(s => new RegExp(`^${s.trim()}$`, 'i')) }
+    });
+
+    const enrichedPlans = uniqueStudyPlans.map(plan => {
+      const planObj = plan.toObject ? plan.toObject() : { ...plan };
+      const lessonIdStr = plan.lessonId?._id?.toString() || plan.lessonId?.toString() || '';
+      
+      const lessonPrefix = lessonIdStr.includes('6a33c6b4d67ba7d81f63916b') ? 'Q1.' : 
+                           lessonIdStr.includes('6a3671282181b4065bba4afc') ? 'Q2.' : 'Q3.';
+      
+      const relevantResults = quizResults.filter(r => 
+        (r.quizId && r.quizId.toUpperCase().startsWith(lessonPrefix)) ||
+        (r.lessonId && r.lessonId.toString() === lessonIdStr)
+      );
+
+      if (relevantResults.length > 0) {
+        const totalPts = relevantResults.reduce((acc, r) => acc + (typeof r.score === 'number' ? r.score : (r.correctAnswers || 0)), 0);
+        const totalMax = relevantResults.reduce((acc, r) => acc + (r.totalQuestions || 20), 0);
+        if (totalMax > 0) {
+          planObj.diagnosticScore = Math.round((totalPts / totalMax) * 100);
+        }
+      }
+      return planObj;
+    });
+
+    res.status(200).json(enrichedPlans);
   } catch (error) {
     console.error('Error fetching study plans:', error);
     res.status(500).json({ message: 'Server error while fetching study plans' });

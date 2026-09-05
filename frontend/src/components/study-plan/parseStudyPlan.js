@@ -8,13 +8,16 @@ export function extractScore(markdown) {
   if (!markdown) return null;
 
   const patterns = [
-    /Overall\s+Score:\s*([\d.]+)/i,
+    /(?:Diagnostic\s+Assessment\s+Score|Overall\s+Score|Quiz\s+Score|Assessment\s+Score|Your\s+Score|Final\s+Score|Diagnostic\s+Score)\s*:\*{0,2}\s*([\d.]+)/i,
+    /\*{0,2}(?:Diagnostic\s+Assessment\s+Score|Overall\s+Score|Quiz\s+Score|Assessment\s+Score|Score)\*{0,2}[:\s]+\*{0,2}\s*([\d.]+)/i,
+    /score\s*:\*{0,2}\s*([\d.]+)/i,
     /overall\s+score\s+of\s*([\d.]+)/i,
     /score\s+of\s*([\d.]+)/i,
     /Your\s+score:\s*([\d.]+)/i,
     /achieved\s+an?\s+.*?\s+score\s+of\s*([\d.]+)/i,
-    /(\d{1,3}(?:\.\d+)?)\s*%\s*(?:overall|indicates|tells|score)/i,
-    /score:\s*(\d{1,3}(?:\.\d+)?)/i
+    /(\d{1,3}(?:\.\d+)?)\s*%\s*(?:overall|indicates|tells|score|demonstrating)/i,
+    /score[^\n]*?(\d{1,3}(?:\.\d+)?)\s*%/i,
+    /(\d{1,3}(?:\.\d+)?)\s*%/
   ];
 
   for (const regex of patterns) {

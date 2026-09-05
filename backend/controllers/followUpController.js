@@ -235,8 +235,16 @@ const submitFollowUpQuiz = async (req, res) => {
     const percentage = Math.round((score / Math.max(1, totalQuestions)) * 100);
     const status = percentage >= 50 ? 'Pass' : 'Fail';
 
-    const result = new FollowupResult({
-      quizId: quizId || `FQ_${lessonId}_${studentId}`,
+    const query = {
+      studentId: new RegExp(`^${studentId.trim()}$`, 'i'),
+      $or: [
+        { lessonId: lessonId || '' },
+        { quizId: quizId || `FQ_${lessonId}_${studentId.trim()}` }
+      ]
+    };
+
+    const updateData = {
+      quizId: quizId || `FQ_${lessonId}_${studentId.trim()}`,
       lessonId: lessonId || '',
       studentId: studentId.trim(),
       studentName: studentName || 'Student',
@@ -245,12 +253,17 @@ const submitFollowUpQuiz = async (req, res) => {
       percentage,
       timeTaken: timeTaken || '0m 00s',
       status,
-      answersDetails: answersDetails || []
+      answersDetails: answersDetails || [],
+      submittedAt: new Date()
+    };
+
+    const savedResult = await FollowupResult.findOneAndUpdate(query, updateData, {
+      upsert: true,
+      new: true,
+      setDefaultsOnInsert: true
     });
 
-    const savedResult = await result.save();
-
-    res.status(201).json({
+    res.status(200).json({
       message: 'Follow-up quiz submitted successfully',
       result: savedResult
     });

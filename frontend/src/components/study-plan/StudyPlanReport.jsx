@@ -30,8 +30,10 @@ const StudyPlanReport = ({ planData, user }) => {
   const studentName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Student';
 
   // Use robust semantic parser
-  const parsedData = parseStudyPlan(markdown);
-  const score = parsedData.score || 0;
+  const parsedData = parseStudyPlan(markdown, planData?.diagnosticScore);
+  const score = (parsedData.score !== null && parsedData.score !== undefined && parsedData.score > 0)
+    ? parsedData.score
+    : (planData?.diagnosticScore ?? 0);
 
   useEffect(() => {
     if (!lessonId) return;
