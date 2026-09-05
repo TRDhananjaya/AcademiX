@@ -41,7 +41,17 @@ const getStudyPlans = async (req, res) => {
       .populate('lessonId', 'title description')
       .sort({ createdAt: -1 });
 
-    res.status(200).json(studyPlans);
+    // Deduplicate so each lesson only returns the latest study plan
+    const uniquePlansMap = new Map();
+    studyPlans.forEach(plan => {
+      const lessonKey = plan.lessonId?._id?.toString() || plan.lessonId?.toString() || plan._id.toString();
+      if (!uniquePlansMap.has(lessonKey)) {
+        uniquePlansMap.set(lessonKey, plan);
+      }
+    });
+    const uniqueStudyPlans = Array.from(uniquePlansMap.values());
+
+    res.status(200).json(uniqueStudyPlans);
   } catch (error) {
     console.error('Error fetching study plans:', error);
     res.status(500).json({ message: 'Server error while fetching study plans' });

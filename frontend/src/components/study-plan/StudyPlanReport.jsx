@@ -12,29 +12,7 @@ import MotivationPage from './pages/MotivationPage';
 import FollowUpQuizModal from './FollowUpQuizModal';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
-const extractSection = (text, startNumber, endNumber) => {
-  if (!text) return '';
-  const startRegex = new RegExp(`(?:^|\\n)#*\\s*${startNumber}\\.\\s+.*?\\n`, 'i');
-  const startMatch = text.match(startRegex);
-  
-  if (!startMatch) return '';
-  const startIndex = startMatch.index + startMatch[0].length;
-
-  if (endNumber) {
-    const endRegex = new RegExp(`(?:^|\\n)#*\\s*${endNumber}\\.\\s+`, 'i');
-    const endMatch = text.substring(startIndex).match(endRegex);
-    if (endMatch) {
-      return text.substring(startIndex, startIndex + endMatch.index).trim();
-    }
-  }
-  
-  return text.substring(startIndex).trim();
-};
-
-const extractScoreFromText = (text) => {
-  const match = text.match(/Overall Score:\s*([\d.]+)/i);
-  return match ? match[1] : '0';
-};
+import { parseStudyPlan } from './parseStudyPlan';
 
 const StudyPlanReport = ({ planData, user }) => {
   const [currentPage, setCurrentPage] = useState(0);
@@ -45,24 +23,15 @@ const StudyPlanReport = ({ planData, user }) => {
   const [moduleBreakdown, setModuleBreakdown] = useState([]);
   const [isLoadingFollowUp, setIsLoadingFollowUp] = useState(false);
 
-  const markdown = planData.generatedStudyPlan || '';
-  
-  // Extract Sections
-  const performanceSummary = extractSection(markdown, 1, 2);
-  const strongConcepts = extractSection(markdown, 2, 3);
-  const weakConcepts = extractSection(markdown, 3, 4);
-  const studyNotes = extractSection(markdown, 4, 5);
-  const keyDefinitions = extractSection(markdown, 5, 6);
-  const revisionPoints = extractSection(markdown, 6, 7);
-  const practiceQuiz = extractSection(markdown, 7, 8);
-  const studySchedule = extractSection(markdown, 8, 9);
-  const finalMotivation = extractSection(markdown, 9, 10);
-
-  const score = extractScoreFromText(markdown);
-  const lessonTitle = planData.lessonId?.title || 'Unknown Lesson';
-  const lessonId = planData.lessonId?._id || planData.lessonId || '';
-  const studentId = user?.username || 'STU-0001';
+  const markdown = planData?.generatedStudyPlan || '';
+  const lessonTitle = planData?.lessonId?.title || 'Unknown Lesson';
+  const lessonId = planData?.lessonId?._id || planData?.lessonId || '';
+  const studentId = user?.username || planData?.studentId || 'student';
   const studentName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Student';
+
+  // Use robust semantic parser
+  const parsedData = parseStudyPlan(markdown);
+  const score = parsedData.score || 0;
 
   useEffect(() => {
     if (!lessonId) return;
@@ -103,22 +72,69 @@ const StudyPlanReport = ({ planData, user }) => {
     setFollowUpResult(result);
   };
 
-  // Book pages mapping
+  // Front cover + 5 Clear, Distinct Chapters
   const pages = [
-    { component: <CoverPage user={user} lessonTitle={lessonTitle} score={score} dateGenerated={planData.createdAt} />, title: "Cover" },
-    { component: <PerformancePage score={score} summaryText={performanceSummary} />, title: "Performance" },
-    { component: <WrongQuestionAnalysisPage />, title: "My Mistakes" },
-    { component: <WeakConceptPriorityPage weakText={weakConcepts} strongText={strongConcepts} />, title: "Weak Concepts" },
-    { component: <StudyNotesPage notesText={studyNotes} />, title: "Study Notes" },
-    { component: <DefinitionsPage definitionsText={keyDefinitions} />, title: "Key Definitions" },
-    { component: <RevisionChecklistPage revisionText={revisionPoints} />, title: "Revision Checklist" },
-    { component: <InteractiveQuizPage quizText={practiceQuiz} />, title: "Practice Quiz" },
-    { component: <StudySchedulePage scheduleText={studySchedule} />, title: "Study Schedule" },
+    {
+      component: (
+        <CoverPage
+          user={user}
+          lessonTitle={lessonTitle}
+          score={score}
+          dateGenerated={planData?.createdAt}
+          onStart={() => setCurrentPage(1)}
+        />
+      ),
+      title: "Cover Overview",
+      isCover: true
+    },
     { 
       component: (
-        <MotivationPage 
-          motivationText={finalMotivation} 
-          user={user} 
+        <PerformancePage 
+          score={score} 
+          summaryText={parsedData.performanceAnalysisText || parsedData.profileText} 
+          weakText={parsedData.weakConceptsText}
+          lessonTitle={lessonTitle}
+          user={user}
+        />
+      ), 
+      title: "Learning Profile" 
+    },
+    { 
+      component: (
+        <WrongQuestionAnalysisPage 
+          questions={parsedData.mistakeQuestions} 
+          rawMistakesText={parsedData.mistakesText} 
+        />
+      ), 
+      title: "My Mistakes" 
+    },
+    { 
+      component: (
+        <StudyNotesPage 
+          notesText={parsedData.studyNotesText} 
+          definitionsText={parsedData.definitionsText}
+          definitions={parsedData.definitions}
+        />
+      ), 
+      title: "Study Notes & Definitions" 
+    },
+    { 
+      component: (
+        <RevisionChecklistPage 
+          revisionText={parsedData.checklistText} 
+          checklistItems={parsedData.checklistItems} 
+          scheduleText={parsedData.scheduleText}
+          studentId={studentId} 
+          lessonId={lessonId} 
+        />
+      ), 
+      title: "Revision Tasks & Schedule" 
+    },
+    {
+      component: (
+        <MotivationPage
+          motivationText={parsedData.motivationText}
+          user={user}
           followUpQuizData={followUpQuizData}
           followUpCompleted={followUpCompleted}
           followUpResult={followUpResult}
@@ -126,8 +142,8 @@ const StudyPlanReport = ({ planData, user }) => {
           onStartFollowUpQuiz={handleStartFollowUpQuiz}
           isLoadingFollowUp={isLoadingFollowUp}
         />
-      ), 
-      title: "Motivation & Follow-Up Quiz" 
+      ),
+      title: "Follow-Up Assessment"
     }
   ];
 
@@ -139,70 +155,83 @@ const StudyPlanReport = ({ planData, user }) => {
     if (currentPage > 0) setCurrentPage(currentPage - 1);
   };
 
-  const progressPercentage = ((currentPage + 1) / pages.length) * 100;
+  const totalChapters = 5;
+  const progressPercentage = currentPage === 0 ? 0 : (currentPage / totalChapters) * 100;
 
   return (
     <div className="w-full max-w-4xl mx-auto mb-20 relative font-sans">
-      
+
       {/* Book Header / Progress */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-extrabold text-slate-800 tracking-tight">Personalized Study Book</h2>
-        <div className="text-sm font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
-          Page {currentPage + 1} of {pages.length}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <div>
+          <h2 className="text-xl font-bold text-slate-800 tracking-tight">Personalized Study Book</h2>
+          <span className="text-xs text-slate-400 font-normal">Step-by-step diagnostic revision guide</span>
+        </div>
+        
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <span className="text-xs font-medium text-slate-600 bg-slate-100/90 border border-slate-200/80 px-3 py-1 rounded-full">
+            {currentPage === 0
+              ? 'Study Book Cover · Overview'
+              : `Chapter ${currentPage} of ${totalChapters} · ${pages[currentPage]?.title || ''}`}
+          </span>
         </div>
       </div>
-      
+
       {/* Progress Bar */}
-      <div className="w-full bg-slate-100 h-1.5 rounded-full mb-8 overflow-hidden">
-        <div 
-          className="bg-indigo-600 h-full transition-all duration-500 ease-out"
+      <div className="w-full bg-slate-100 h-1.5 rounded-full mb-6 overflow-hidden">
+        <div
+          className="bg-indigo-600 h-full transition-all duration-300 ease-out"
           style={{ width: `${progressPercentage}%` }}
         />
       </div>
 
       {/* Page Container */}
-      <div className="bg-white rounded-[2rem] p-6 sm:p-12 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] min-h-[600px] flex flex-col relative overflow-hidden transition-all duration-300 border border-slate-100">
-        
+      <div className="bg-white rounded-3xl p-6 sm:p-10 shadow-[0_10px_30px_-10px_rgba(0,0,0,0.04)] min-h-[540px] flex flex-col relative overflow-hidden transition-all duration-300 border border-slate-200/80">
+
         {/* Page Content with simple fade-in keyframe animation class */}
         <div className="flex-1 animate-fade-in relative z-10" key={currentPage}>
-          {pages[currentPage].component}
+          {pages[currentPage]?.component}
         </div>
 
         {/* Page Footer Navigation */}
-        <div className="mt-12 pt-6 border-t border-slate-100 flex items-center justify-between z-10">
-          <button 
+        <div className="mt-10 pt-5 border-t border-slate-100 flex items-center justify-between z-10">
+          <button
             onClick={handlePrev}
             disabled={currentPage === 0}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all border-none cursor-pointer ${
-              currentPage === 0 
-                ? 'opacity-0 cursor-default' 
-                : 'text-slate-600 hover:bg-slate-100 hover:text-indigo-600'
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all border border-slate-200 cursor-pointer ${
+              currentPage === 0
+                ? 'opacity-0 cursor-default pointer-events-none'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 bg-white'
             }`}
           >
-            <FaChevronLeft />
-            Previous
+            <FaChevronLeft className="text-xs" />
+            Previous: {currentPage === 1 ? 'Cover Overview' : (currentPage > 1 ? pages[currentPage - 1]?.title : '')}
           </button>
-          
-          <div className="hidden sm:block text-slate-300 font-bold text-xs uppercase tracking-widest">
-            {pages[currentPage].title}
+
+          <div className="hidden md:block text-slate-400 font-medium text-xs tracking-wider">
+            {currentPage === 0 ? 'Study Book Cover' : `Chapter ${currentPage} of ${totalChapters} · ${pages[currentPage]?.title || ''}`}
           </div>
 
-          <button 
+          <button
             onClick={handleNext}
             disabled={currentPage === pages.length - 1}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all border-none cursor-pointer ${
-              currentPage === pages.length - 1 
-                ? 'opacity-0 cursor-default' 
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-lg shadow-indigo-200'
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all border-none cursor-pointer ${
+              currentPage === pages.length - 1
+                ? 'opacity-0 cursor-default pointer-events-none'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-200'
             }`}
           >
-            Next Page
-            <FaChevronRight />
+            {currentPage === 0
+              ? 'Open Chapter 1: Learning Profile'
+              : currentPage < pages.length - 1
+                ? `Next: ${pages[currentPage + 1]?.title || 'Next'}`
+                : 'Completed'}
+            <FaChevronRight className="text-xs" />
           </button>
         </div>
 
       </div>
-      
+
       {/* Follow-Up Quiz Runner Modal */}
       {showQuizModal && (
         <FollowUpQuizModal
@@ -216,7 +245,8 @@ const StudyPlanReport = ({ planData, user }) => {
       )}
 
       {/* CSS for simple fade in */}
-      <style dangerouslySetInnerHTML={{__html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes fadeIn {
           from { opacity: 0; transform: translateY(10px); }
           to { opacity: 1; transform: translateY(0); }

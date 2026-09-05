@@ -108,8 +108,8 @@ export default function StudyPlans() {
   };
 
   const filteredPlans = selectedLessonId
-    ? studyPlans.filter(plan => plan.lessonId && plan.lessonId._id === selectedLessonId)
-    : studyPlans;
+    ? studyPlans.filter(plan => plan.lessonId && (plan.lessonId._id === selectedLessonId || plan.lessonId === selectedLessonId)).slice(0, 1)
+    : (studyPlans.length > 0 ? [studyPlans[0]] : []);
 
   return (
     <div className="flex min-h-screen font-sans bg-[#fcfdff]" id="study-plans-layout">

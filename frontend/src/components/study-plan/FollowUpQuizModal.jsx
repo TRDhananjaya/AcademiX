@@ -299,7 +299,7 @@ export default function FollowUpQuizModal({ quizData, studentId, studentName, le
 
                 {/* Option Buttons */}
                 <div className="space-y-4">
-                  {currentQuestion?.options.map((option, idx) => {
+                  {currentQuestion?.options?.map((option, idx) => {
                     const isSelected = selectedAnswers[currentIndex] === idx;
                     return (
                       <button

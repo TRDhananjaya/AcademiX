@@ -13,22 +13,31 @@ const MotivationPage = ({
   isLoadingFollowUp
 }) => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-full text-center px-4 animate-fade-in py-4">
+    <div className="flex flex-col items-center justify-center min-h-full text-center px-4 animate-fade-in py-4 space-y-4">
       
-      <div className="w-24 h-24 mb-6 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-[2rem] rotate-3 shadow-xl flex items-center justify-center shrink-0">
-         <span className="text-5xl -rotate-3 block">🚀</span>
+      <div className="pb-2 border-b border-slate-100 w-full text-center">
+        <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider block mb-1">
+          Chapter 5 of 5 · Mastery Verification
+        </span>
+        <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">
+          Adaptive Follow-Up Assessment
+        </h2>
+      </div>
+
+      <div className="w-16 h-16 my-2 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-3xl shadow-xs">
+        🚀
       </div>
       
-      <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-800 tracking-tight mb-3">
+      <h3 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
         You've Got This, {user?.name?.split(' ')[0] || user?.firstName || 'Student'}!
-      </h1>
+      </h3>
       
-      <div className="text-slate-500 max-w-lg mx-auto mb-8 text-base leading-relaxed bg-slate-50 p-5 rounded-2xl border border-slate-100">
+      <div className="text-slate-600 max-w-lg mx-auto text-sm leading-relaxed bg-slate-50/70 p-4 rounded-xl border border-slate-200/60 font-normal">
         {motivationText ? (
            <ReactMarkdown>{motivationText}</ReactMarkdown>
         ) : (
           <p>
-            "Every expert was once a beginner. Keep following this plan, stay consistent, and you will see amazing results. Your learning journey is just beginning."
+            "Every expert was once a beginner. Consistent practice and addressing specific misconceptions will turn your weak topics into your greatest strengths."
           </p>
         )}
       </div>
