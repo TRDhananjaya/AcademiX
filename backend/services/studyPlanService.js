@@ -136,18 +136,22 @@ const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
       return;
     }
 
-    // Save the generated study plan
-    const newStudyPlan = new StudyPlan({
-      studentId,
-      lessonId,
-      generatedStudyPlan: studyPlanData.studyPlan,
-      // We don't have a specific req.user._id since this is automated
-      // Let's set it to null or a system ID, or we can omit it if it's optional.
-      status: 'Active'
-    });
-    
-    await newStudyPlan.save();
-    console.log(`[StudyPlanService] Saved generated study plan for student ${studentId}`);
+    // Save or update the study plan to prevent duplicates
+    const studyPlan = await StudyPlan.findOneAndUpdate(
+      {
+        studentId: { $regex: new RegExp(`^${studentId.trim()}$`, 'i') },
+        lessonId
+      },
+      {
+        studentId: studentId.trim(),
+        lessonId,
+        generatedStudyPlan: studyPlanData.studyPlan,
+        status: 'Active',
+        createdAt: new Date()
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    console.log(`[StudyPlanService] Saved/Updated study plan ${studyPlan._id} for student ${studentId}`);
 
     // Create notification for the student
     let linkedUser = null;
