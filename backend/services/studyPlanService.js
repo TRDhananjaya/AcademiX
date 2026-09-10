@@ -17,6 +17,19 @@ const User = require('../models/User');
  */
 const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
   try {
+    const targetStudentId = (studentId || '').trim();
+
+    // 1. PREVENT FUTURE DUPLICATE GENERATION
+    const existingPlan = await StudyPlan.findOne({
+      studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') },
+      lessonId: lessonId
+    });
+
+    if (existingPlan) {
+      console.log(`[StudyPlanService] Study plan already exists for student ${targetStudentId} and lesson ${lessonId}. Skipping generation.`);
+      return existingPlan;
+    }
+
     const lesson = await Lesson.findById(lessonId);
     if (!lesson) {
       console.error(`[StudyPlanService] Lesson ${lessonId} not found`);
@@ -41,7 +54,6 @@ const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
     });
     const quizCodes = lessonQuizzes.map(q => q.quizCode);
     
-    const targetStudentId = (studentId || '').trim();
     const studentResults = await QuizResult.find({
       studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') },
       quizId: { $in: quizCodes }
@@ -136,31 +148,36 @@ const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
       return;
     }
 
-    // Save or update the study plan to prevent duplicates
-    const studyPlan = await StudyPlan.findOneAndUpdate(
-      {
-        studentId: { $regex: new RegExp(`^${studentId.trim()}$`, 'i') },
-        lessonId
-      },
-      {
-        studentId: studentId.trim(),
-        lessonId,
+    // Save the study plan securely to prevent duplicates
+    let studyPlan;
+    try {
+      studyPlan = new StudyPlan({
+        studentId: targetStudentId,
+        lessonId: lessonId,
         generatedStudyPlan: studyPlanData.studyPlan,
-        status: 'Active',
-        createdAt: new Date()
-      },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
-    );
-    console.log(`[StudyPlanService] Saved/Updated study plan ${studyPlan._id} for student ${studentId}`);
+        status: 'Active'
+      });
+      await studyPlan.save();
+      console.log(`[StudyPlanService] Saved study plan ${studyPlan._id} for student ${targetStudentId}`);
+    } catch (dbError) {
+      if (dbError.code === 11000) {
+        console.warn(`[StudyPlanService] Race condition prevented. Study plan already saved for student ${targetStudentId} and lesson ${lessonId}.`);
+        return await StudyPlan.findOne({
+          studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') },
+          lessonId: lessonId
+        });
+      }
+      throw dbError;
+    }
 
     // Create notification for the student
     let linkedUser = null;
-    const studentRecord = await Student.findOne({ studentId }).populate('userId');
+    const studentRecord = await Student.findOne({ studentId: targetStudentId }).populate('userId');
     if (studentRecord && studentRecord.userId) {
       linkedUser = studentRecord.userId;
     } else {
       // Fallback for legacy records: try matching by username
-      linkedUser = await User.findOne({ username: studentId.toLowerCase() });
+      linkedUser = await User.findOne({ username: targetStudentId.toLowerCase() });
     }
 
     if (linkedUser) {
