@@ -52,20 +52,16 @@ const sendAttendanceWhatsApp = async (parentMobile, studentName, arrivalTime) =>
       return true; // Simulation success
     }
 
-    // Call Meta WhatsApp Cloud API using template message to guarantee immediate phone app delivery
+    // Call Meta WhatsApp Cloud API to send the custom attendance alert
     try {
-      // 1. Send Meta approved template message (Guaranteed delivery on WhatsApp)
       const response = await axios.post(
         `https://graph.facebook.com/${version}/${phoneNumberId}/messages`,
         {
           messaging_product: 'whatsapp',
           to: formattedPhone,
-          type: 'template',
-          template: {
-            name: 'hello_world',
-            language: {
-              code: 'en_US'
-            }
+          type: 'text',
+          text: {
+            body: messageText
           }
         },
         {
@@ -76,31 +72,7 @@ const sendAttendanceWhatsApp = async (parentMobile, studentName, arrivalTime) =>
         }
       );
 
-      console.log(`[WhatsApp Service] Template attendance notification delivered to +${formattedPhone}. ID:`, response.data?.messages?.[0]?.id || 'OK');
-
-      // 2. Also attempt custom text alert payload
-      try {
-        await axios.post(
-          `https://graph.facebook.com/${version}/${phoneNumberId}/messages`,
-          {
-            messaging_product: 'whatsapp',
-            to: formattedPhone,
-            type: 'text',
-            text: {
-              body: messageText
-            }
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-      } catch (textErr) {
-        // Text mode requires recipient to message +15556761122 first
-      }
-
+      console.log(`[WhatsApp Service] Attendance notification delivered to +${formattedPhone}. ID:`, response.data?.messages?.[0]?.id || 'OK');
       return true;
     } catch (apiError) {
       const errorMsg = apiError.response?.data?.error?.message || apiError.message;
@@ -119,7 +91,7 @@ const sendAttendanceWhatsApp = async (parentMobile, studentName, arrivalTime) =>
       console.log(`MESSAGE:\n${messageText}`);
       console.log(`======================================================\n`);
 
-      return true;
+      return false;
     }
   } catch (error) {
     console.error(`[WhatsApp Service Error] Failed processing notification for ${studentName}:`, error.message);
