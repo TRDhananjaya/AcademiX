@@ -36,9 +36,20 @@ const sendAttendanceWhatsApp = async (parentMobile, studentName, arrivalTime) =>
     const phoneNumberId = process.env.PHONE_NUMBER_ID;
     const version = process.env.WHATSAPP_VERSION || 'v23.0';
 
+    const TIMEZONE = process.env.TIMEZONE || 'Asia/Colombo';
     const formattedPhone = formatWhatsAppPhone(parentMobile);
-    const timeStr = arrivalTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const todayStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const timeStr = arrivalTime || new Date().toLocaleTimeString('en-US', {
+      timeZone: TIMEZONE,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+    const todayStr = new Date().toLocaleDateString('en-GB', {
+      timeZone: TIMEZONE,
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
 
     const messageText = `🏫 *AcademiX Institute - Attendance Alert*\n\nDear Parent,\n\nThis is to inform you that your child *${studentName}* has successfully checked in today.\n\n📅 *Date:* ${todayStr}\n⏰ *Time:* ${timeStr}\n✅ *Status:* Present\n\nThank you,\n*AcademiX Administration*`;
 

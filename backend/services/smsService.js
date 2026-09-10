@@ -53,8 +53,14 @@ const sendAttendanceSMS = async (parentMobile, studentName, classTime) => {
       return false;
     }
 
+    const TIMEZONE = process.env.TIMEZONE || 'Asia/Colombo';
     const formattedPhone = formatE164Phone(parentMobile);
-    const timeStr = classTime || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const timeStr = classTime || new Date().toLocaleTimeString('en-US', {
+      timeZone: TIMEZONE,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
     const messageText = `AcademiX Notice: Dear Parent, your child ${studentName} has arrived at class today at ${timeStr}.`;
 
     if (!client) {
