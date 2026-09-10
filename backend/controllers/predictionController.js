@@ -3,25 +3,39 @@ const Student = require('../models/Student');
 const QuizResult = require('../models/QuizResult');
 const FollowupResult = require('../models/FollowupResult');
 
+const lessonMaxMarks = {
+    1: 50, 2: 50, 3: 20, 4: 35, 5: 45, 6: 20, 7: 25, 8: 35, 9: 20
+};
+
+// Helper function to extract lesson number from string (e.g., '6a33c6b4d67ba7d81f63916b' or 'L1')
+// Since AcademiX uses MongoDB object IDs for lessons but Q1.1 for quizzes, let's extract the lesson number from the Qx.y format or fallback.
+const getLessonNumber = (lessonId) => {
+    if (!lessonId) return 1;
+    const match = lessonId.match(/^[QL](\d+)/i);
+    if (match) return parseInt(match[1]);
+    return 1; // Default fallback
+};
+
 // Helper function to calculate features
 const calculateFeatures = async (studentId, lessonId) => {
-    // Fetch quizzes matching lesson - case-insensitive lookup
     const targetStudentId = studentId ? studentId.toLowerCase() : '';
-    const matchStage = lessonId 
-        ? { quizId: { $regex: `^${lessonId}` }, studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') } } 
-        : { studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') } };
     
-    // Sort by submittedAt descending to get the latest attempt first
+    // In AcademiX, quizId is usually like Q1.1, Q1.2... so we match the prefix.
+    const prefix = lessonId ? (lessonId.startsWith('Q') ? lessonId.split('.')[0] : `Q${getLessonNumber(lessonId)}`) : 'Q1';
+    
+    const matchStage = { 
+        quizId: { $regex: `^${prefix}\\.`, $options: 'i' }, 
+        studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') } 
+    };
+    
     const quizResults = await QuizResult.find(matchStage).sort({ submittedAt: -1 });
 
-    // Fetch followups - case-insensitive
     const followupResults = await FollowupResult.find({
         studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') }
     }).sort({ submittedAt: -1 });
 
-    let m1 = 70, m2 = 75, m3 = 80, followup = 85;
-
-    // Group by unique quizId taking the latest score
+    let q1 = 0, q2 = 0, q3 = 0, followup = 0;
+    
     const latestQuizzes = {};
     for (const result of quizResults) {
         if (!latestQuizzes[result.quizId]) {
@@ -29,11 +43,11 @@ const calculateFeatures = async (studentId, lessonId) => {
         }
     }
 
-    const uniqueQuizIds = Object.keys(latestQuizzes).sort(); // Order Q1.1, Q1.2, Q1.3
+    const uniqueQuizIds = Object.keys(latestQuizzes).sort(); 
     
-    if (uniqueQuizIds.length > 0) m1 = latestQuizzes[uniqueQuizIds[0]];
-    if (uniqueQuizIds.length > 1) m2 = latestQuizzes[uniqueQuizIds[1]];
-    if (uniqueQuizIds.length > 2) m3 = latestQuizzes[uniqueQuizIds[2]];
+    if (uniqueQuizIds.length > 0) q1 = latestQuizzes[uniqueQuizIds[0]];
+    if (uniqueQuizIds.length > 1) q2 = latestQuizzes[uniqueQuizIds[1]];
+    if (uniqueQuizIds.length > 2) q3 = latestQuizzes[uniqueQuizIds[2]];
 
     let hasFollowup = false;
     if (followupResults.length > 0) {
@@ -44,40 +58,15 @@ const calculateFeatures = async (studentId, lessonId) => {
         hasFollowup = true;
     }
 
-    const avg = (m1 + m2 + m3) / 3;
-    const totalQuizzesAnalyzed = uniqueQuizIds.length + (hasFollowup && followupResults.length > 0 ? 1 : 0);
-
-    let weakCount = 0;
-    if (m1 < 72) weakCount++; // Using 72 as 18/25 equivalent roughly
-    if (m2 < 72) weakCount++;
-    if (m3 < 72) weakCount++;
-    
-    // Simple priority score calculation: base 10 per weak module + random or predefined factor
-    const priorityScore = weakCount * 10 + 5; 
-    
-    let improvement = 0;
-    if (avg > 0) {
-        improvement = ((followup - avg) / avg) * 100;
-    }
-    
-    let lessonPerf = 'Needs Improvement';
-    if (avg >= 80) lessonPerf = 'Excellent';
-    else if (avg >= 60) lessonPerf = 'Good';
-    
-    // Assign generic difficulty if not stored (assume Medium usually)
-    const quizDiff = 'Medium';
+    const avg = uniqueQuizIds.length > 0 ? (q1 + q2 + q3) / Math.min(3, uniqueQuizIds.length) : 0;
+    const totalQuizzesAnalyzed = uniqueQuizIds.length + (hasFollowup ? 1 : 0);
 
     return {
-        Module_1_Score: m1 / 4,
-        Module_2_Score: m2 / 4,
-        Module_3_Score: m3 / 4,
-        Avg_Module_Score: avg / 4,
-        Weak_Module_Count: weakCount,
-        Priority_Score: priorityScore,
-        Followup_Quiz_Score: followup / 4,
-        Improvement_Percentage: improvement,
-        Lesson_Performance: lessonPerf,
-        Quiz_Difficulty: quizDiff,
+        Quiz_1_Score: q1,
+        Quiz_2_Score: q2,
+        Quiz_3_Score: q3,
+        Quiz_Average: avg,
+        Followup_Quiz_Score: followup,
         quizzesAnalyzed: totalQuizzesAnalyzed
     };
 };
@@ -88,7 +77,6 @@ const calculateFeatures = async (studentId, lessonId) => {
 const generatePrediction = async (req, res, next) => {
     try {
         const { studentId, lessonId } = req.body;
-        // Case-insensitive lookup on student record
         const student = await Student.findOne({ 
             studentId: { $regex: new RegExp(`^${studentId}$`, 'i') } 
         });
@@ -100,27 +88,23 @@ const generatePrediction = async (req, res, next) => {
         const featuresData = await calculateFeatures(studentId, lessonId);
         const { quizzesAnalyzed, ...features } = featuresData;
 
-        // Call ML Service using Node.js built-in fetch
-        if (quizzesAnalyzed === 0) {
-            return res.status(400).json({ error: "Not enough data available to generate prediction." });
+        // Strict validation: Need all 3 quizzes + 1 followup
+        if (quizzesAnalyzed < 4) {
+            return res.status(400).json({ error: "INSUFFICIENT_DATA", message: "Student must complete all 3 module quizzes and the follow-up quiz for this lesson to generate a prediction." });
         }
 
         const mlFeatures = {
-            Module_1_Score: features.Module_1_Score,
-            Module_2_Score: features.Module_2_Score,
-            Module_3_Score: features.Module_3_Score,
-            Avg_Module_Score: features.Avg_Module_Score,
-            Weak_Module_Count: features.Weak_Module_Count,
-            Priority_Score: features.Priority_Score,
-            Followup_Quiz_Score: features.Followup_Quiz_Score,
-            Improvement_Percentage: features.Improvement_Percentage,
-            Lesson_Performance: features.Lesson_Performance,
-            Quiz_Difficulty: features.Quiz_Difficulty,
-            LessonID: lessonId ? lessonId.replace('Q', 'L') : ''
+            Quiz_1_Score: features.Quiz_1_Score,
+            Quiz_2_Score: features.Quiz_2_Score,
+            Quiz_3_Score: features.Quiz_3_Score,
+            Quiz_Average: features.Quiz_Average,
+            Followup_Quiz_Score: features.Followup_Quiz_Score
         };
 
-        let predictedScore = 75; // Heuristic fallback score (out of 100)
-        let predictedMarks = 18.75; // out of 25
+        const lessonNum = getLessonNumber(lessonId);
+        const lessonMaxMark = lessonMaxMarks[lessonNum] || 50;
+
+        let predictedPercentage = 0;
         let mlSuccess = false;
 
         try {
@@ -129,50 +113,41 @@ const generatePrediction = async (req, res, next) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(mlFeatures),
-                signal: AbortSignal.timeout(1500) // 1.5 seconds timeout
+                signal: AbortSignal.timeout(2000) 
             });
 
             if (mlResponse.ok) {
                 const mlData = await mlResponse.json();
-                predictedMarks = parseFloat(mlData.predicted_score.toFixed(1));
-                predictedScore = (predictedMarks / 25) * 100;
+                predictedPercentage = parseFloat(mlData.predicted_score);
                 mlSuccess = true;
             } else {
-                console.warn(`ML Service returned status ${mlResponse.status}. Using fallback prediction.`);
+                console.warn(`ML Service returned status ${mlResponse.status}.`);
             }
         } catch (mlErr) {
-            console.warn('ML Service offline or timed out. Using fallback heuristic prediction:', mlErr.message);
+            console.warn('ML Service offline or timed out.', mlErr.message);
         }
 
-        // Fallback heuristic scoring
         if (!mlSuccess) {
-            const avg = features.Avg_Module_Score || 70;
-            const followup = features.Followup_Quiz_Score || 75;
-            predictedScore = Math.min(100, Math.max(0, parseFloat((avg * 0.75 + followup * 0.25).toFixed(1))));
-            predictedMarks = parseFloat(((predictedScore / 100) * 25).toFixed(1));
+            return res.status(503).json({ message: "ML Service is currently unavailable." });
         }
+
+        const predictedMarks = parseFloat(((predictedPercentage / 100) * lessonMaxMark).toFixed(1));
 
         const prediction = await Prediction.create({
             studentId: student._id,
             lessonId: lessonId || 'General',
             features: features,
-            predictedScore: predictedScore
+            predictedScore: predictedPercentage
         });
-
-        const improvementPercentage = features.Avg_Module_Score > 0
-            ? ((features.Followup_Quiz_Score - features.Avg_Module_Score) / features.Avg_Module_Score) * 100
-            : 0;
 
         res.status(201).json({
             studentName: student.name || 'Unknown',
             lesson: lessonId || 'General',
+            predictedPercentage: parseFloat(predictedPercentage.toFixed(1)),
             predictedMarks: predictedMarks,
-            totalMarks: 25,
+            totalMarks: lessonMaxMark,
             prediction,
-            quizzesAnalyzed,
-            averageQuizMarks: features.Avg_Module_Score,
-            followupScore: features.Followup_Quiz_Score,
-            improvementPercentage: improvementPercentage
+            quizzesAnalyzed
         });
     } catch (error) {
         console.error('Prediction error:', error);
