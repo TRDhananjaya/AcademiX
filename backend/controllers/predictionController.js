@@ -71,6 +71,68 @@ const calculateFeatures = async (studentId, lessonId) => {
     };
 };
 
+// Shared helper for prediction calculation
+const getStudentLessonPrediction = async (student, lessonId) => {
+    const lessonNum = getLessonNumber(lessonId);
+    const lessonMaxMark = lessonMaxMarks[lessonNum] || 50;
+
+    const featuresData = await calculateFeatures(student.studentId, lessonId);
+    const { quizzesAnalyzed, ...features } = featuresData;
+
+    const studentResult = {
+        studentId: student.studentId,
+        studentName: student.name || 'Unknown',
+        quiz1Score: features.Quiz_1_Score,
+        quiz2Score: features.Quiz_2_Score,
+        quiz3Score: features.Quiz_3_Score,
+        quizAverage: features.Quiz_Average,
+        followupScore: features.Followup_Quiz_Score,
+        predictedPercentage: null,
+        predictedLessonMark: null,
+        lessonMaxMark: lessonMaxMark,
+        predictionStatus: "AVAILABLE",
+        features,
+        quizzesAnalyzed,
+        lesson: lessonId
+    };
+
+    if (quizzesAnalyzed < 4) {
+        studentResult.predictionStatus = "INSUFFICIENT_DATA";
+        return studentResult;
+    }
+
+    const mlFeatures = {
+        Quiz_1_Score: features.Quiz_1_Score,
+        Quiz_2_Score: features.Quiz_2_Score,
+        Quiz_3_Score: features.Quiz_3_Score,
+        Quiz_Average: features.Quiz_Average,
+        Followup_Quiz_Score: features.Followup_Quiz_Score
+    };
+
+    try {
+        const mlUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001/predict';
+        const mlResponse = await fetch(mlUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(mlFeatures),
+            signal: AbortSignal.timeout(2000) 
+        });
+
+        if (mlResponse.ok) {
+            const mlData = await mlResponse.json();
+            const predictedPercentage = parseFloat(mlData.predicted_score);
+            studentResult.predictedPercentage = parseFloat(predictedPercentage.toFixed(1));
+            studentResult.predictedLessonMark = parseFloat(((predictedPercentage / 100) * lessonMaxMark).toFixed(1));
+        } else {
+            studentResult.predictionStatus = "ML_SERVICE_UNAVAILABLE";
+        }
+    } catch (mlErr) {
+        studentResult.predictionStatus = "ML_SERVICE_UNAVAILABLE";
+    }
+
+    return studentResult;
+};
+
 // @desc    Generate a prediction for a student using ML service
 // @route   POST /api/predictions/predict
 // @access  Public
@@ -85,69 +147,18 @@ const generatePrediction = async (req, res, next) => {
             return res.status(404).json({ message: 'Student not found' });
         }
 
-        const featuresData = await calculateFeatures(studentId, lessonId);
-        const { quizzesAnalyzed, ...features } = featuresData;
+        const predictionResult = await getStudentLessonPrediction(student, lessonId);
 
-        // Strict validation: Need all 3 quizzes + 1 followup
-        if (quizzesAnalyzed < 4) {
-            return res.status(400).json({ error: "INSUFFICIENT_DATA", message: "Student must complete all 3 module quizzes and the follow-up quiz for this lesson to generate a prediction." });
-        }
-
-        const mlFeatures = {
-            Quiz_1_Score: features.Quiz_1_Score,
-            Quiz_2_Score: features.Quiz_2_Score,
-            Quiz_3_Score: features.Quiz_3_Score,
-            Quiz_Average: features.Quiz_Average,
-            Followup_Quiz_Score: features.Followup_Quiz_Score
-        };
-
-        const lessonNum = getLessonNumber(lessonId);
-        const lessonMaxMark = lessonMaxMarks[lessonNum] || 50;
-
-        let predictedPercentage = 0;
-        let mlSuccess = false;
-
-        try {
-            const mlUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001/predict';
-            const mlResponse = await fetch(mlUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(mlFeatures),
-                signal: AbortSignal.timeout(2000) 
-            });
-
-            if (mlResponse.ok) {
-                const mlData = await mlResponse.json();
-                predictedPercentage = parseFloat(mlData.predicted_score);
-                mlSuccess = true;
-            } else {
-                console.warn(`ML Service returned status ${mlResponse.status}.`);
-            }
-        } catch (mlErr) {
-            console.warn('ML Service offline or timed out.', mlErr.message);
-        }
-
-        if (!mlSuccess) {
-            return res.status(503).json({ message: "ML Service is currently unavailable." });
-        }
-
-        const predictedMarks = parseFloat(((predictedPercentage / 100) * lessonMaxMark).toFixed(1));
-
-        const prediction = await Prediction.create({
-            studentId: student._id,
-            lessonId: lessonId || 'General',
-            features: features,
-            predictedScore: predictedPercentage
-        });
-
-        res.status(201).json({
-            studentName: student.name || 'Unknown',
-            lesson: lessonId || 'General',
-            predictedPercentage: parseFloat(predictedPercentage.toFixed(1)),
-            predictedMarks: predictedMarks,
-            totalMarks: lessonMaxMark,
-            prediction,
-            quizzesAnalyzed
+        // Map to the format expected by the detail page component
+        res.status(200).json({
+            studentName: predictionResult.studentName,
+            lesson: predictionResult.lesson,
+            predictedPercentage: predictionResult.predictedPercentage,
+            predictedMarks: predictionResult.predictedLessonMark,
+            totalMarks: predictionResult.lessonMaxMark,
+            predictionStatus: predictionResult.predictionStatus,
+            features: predictionResult.features,
+            quizzesAnalyzed: predictionResult.quizzesAnalyzed
         });
     } catch (error) {
         console.error('Prediction error:', error);
@@ -155,6 +166,38 @@ const generatePrediction = async (req, res, next) => {
     }
 };
 
+// @desc    Generate predictions for all students in a lesson
+// @route   GET /api/predictions/lesson/:lessonId
+// @access  Public
+const getLessonPredictions = async (req, res, next) => {
+    try {
+        const { lessonId } = req.params;
+        const students = await Student.find({});
+        const lessonNum = getLessonNumber(lessonId);
+        const lessonMaxMark = lessonMaxMarks[lessonNum] || 50;
+        
+        const results = [];
+        for (const student of students) {
+            const studentResult = await getStudentLessonPrediction(student, lessonId);
+            results.push(studentResult);
+        }
+        
+        res.status(200).json({
+            lesson: {
+                lessonId: lessonId,
+                lessonName: `Lesson ${lessonNum}`,
+                maxMark: lessonMaxMark
+            },
+            students: results
+        });
+        
+    } catch (error) {
+        console.error('Lesson prediction error:', error);
+        res.status(500).json({ message: 'Failed to generate lesson predictions', error: error.message });
+    }
+};
+
 module.exports = {
-    generatePrediction
+    generatePrediction,
+    getLessonPredictions
 };

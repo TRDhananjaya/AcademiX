@@ -15,6 +15,7 @@ import { useAuth } from './context/AuthContext';
 
 import Analytics from './pages/teacher/Analytics';
 import ExamPrediction from './pages/teacher/ExamPrediction';
+import ExamPredictionStudentDetail from './pages/teacher/ExamPredictionStudentDetail';
 
 import CommunityHub from './pages/student/CommunityHub';
 import StudentNotifications from './pages/student/Notification';
@@ -137,6 +138,12 @@ function App() {
     case 'exam-prediction':
       return <ExamPrediction />;
     default:
+      if (currentPage.startsWith('exam-prediction/')) {
+        const parts = currentPage.split('/');
+        if (parts.length === 3) {
+          return <ExamPredictionStudentDetail lessonId={parts[1]} studentId={parts[2]} />;
+        }
+      }
       return <Home />;
   }
 }
