@@ -18,6 +18,23 @@ export default function ExamPrediction() {
   
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
+  
+  const [allStudents, setAllStudents] = useState([]);
+
+  useEffect(() => {
+    async function fetchStudents() {
+      try {
+        const res = await fetch('/api/analytics/students');
+        if (res.ok) {
+          const data = await res.json();
+          setAllStudents(data.students || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch students', err);
+      }
+    }
+    fetchStudents();
+  }, []);
 
   useEffect(() => {
     async function fetchLessons() {
@@ -76,7 +93,7 @@ export default function ExamPrediction() {
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
   const handleRowClick = (studentId) => {
-    navigate(`/exam-prediction/${selectedLesson}/${studentId}`);
+    navigate(`/exam-prediction/student/${studentId}?lessonId=${selectedLesson}`);
   };
 
   return (
@@ -113,14 +130,17 @@ export default function ExamPrediction() {
             
             <div className="flex-1">
               <label className="block text-sm font-bold text-slate-700 mb-2">Filter Student</label>
-              <input 
-                type="text"
-                placeholder="Search student name or ID..."
-                value={studentSearch}
-                onChange={(e) => setStudentSearch(e.target.value)}
-                disabled={!classPredictions}
+              <select 
+                onChange={(e) => {
+                  if (e.target.value) navigate(`/exam-prediction/student/${e.target.value}`);
+                }}
                 className="w-full border border-slate-200 text-slate-700 rounded-lg px-4 py-2.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
+              >
+                <option value="">-- Jump to a student... --</option>
+                {allStudents.map(s => (
+                  <option key={s.id} value={s.id}>{s.id} - {s.name}</option>
+                ))}
+              </select>
             </div>
           </div>
 

@@ -2,6 +2,7 @@ const Prediction = require('../models/Prediction');
 const Student = require('../models/Student');
 const QuizResult = require('../models/QuizResult');
 const FollowupResult = require('../models/FollowupResult');
+const Lesson = require('../models/Lesson');
 
 const lessonMaxMarks = {
     1: 50, 2: 50, 3: 20, 4: 35, 5: 45, 6: 20, 7: 25, 8: 35, 9: 20
@@ -11,7 +12,11 @@ const lessonMaxMarks = {
 // Since AcademiX uses MongoDB object IDs for lessons but Q1.1 for quizzes, let's extract the lesson number from the Qx.y format or fallback.
 const getLessonNumber = (lessonId) => {
     if (!lessonId) return 1;
-    const match = lessonId.match(/^[QL](\d+)/i);
+    
+    const strId = lessonId.toString();
+    if (/^\d+$/.test(strId)) return parseInt(strId);
+    
+    const match = strId.match(/^[QL](\d+)/i);
     if (match) return parseInt(match[1]);
     return 1; // Default fallback
 };
@@ -30,36 +35,62 @@ const calculateFeatures = async (studentId, lessonId) => {
     
     const quizResults = await QuizResult.find(matchStage).sort({ submittedAt: -1 });
 
+    const lessonNum = getLessonNumber(lessonId);
+    let realLessonId = null;
+    try {
+        const lessonDoc = await Lesson.findOne({ lessonNumber: lessonNum });
+        if (lessonDoc) realLessonId = lessonDoc._id.toString();
+    } catch (e) {
+        console.error("Error finding lesson doc:", e);
+    }
+
     const followupResults = await FollowupResult.find({
-        studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') }
+        studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') },
+        $or: [
+            { lessonId: lessonNum.toString() },
+            { lessonId: `Lesson ${lessonNum}` },
+            { quizId: { $regex: `^${prefix}`, $options: 'i' } },
+            ...(realLessonId ? [{ lessonId: realLessonId }] : [])
+        ]
     }).sort({ submittedAt: -1 });
 
     let q1 = 0, q2 = 0, q3 = 0, followup = 0;
     
     const latestQuizzes = {};
     for (const result of quizResults) {
-        if (!latestQuizzes[result.quizId]) {
-            latestQuizzes[result.quizId] = result.percentage || (result.score / 20) * 100;
+        if (!result.quizId) continue;
+        const id = result.quizId.toUpperCase();
+        if (!latestQuizzes[id]) {
+            latestQuizzes[id] = result.percentage || (result.score / 20) * 100;
         }
     }
 
-    const uniqueQuizIds = Object.keys(latestQuizzes).sort(); 
+    const expectedQ1 = `${prefix.toUpperCase()}.1`;
+    const expectedQ2 = `${prefix.toUpperCase()}.2`;
+    const expectedQ3 = `${prefix.toUpperCase()}.3`;
+
+    const hasQuiz1 = latestQuizzes[expectedQ1] !== undefined;
+    const hasQuiz2 = latestQuizzes[expectedQ2] !== undefined;
+    const hasQuiz3 = latestQuizzes[expectedQ3] !== undefined;
     
-    if (uniqueQuizIds.length > 0) q1 = latestQuizzes[uniqueQuizIds[0]];
-    if (uniqueQuizIds.length > 1) q2 = latestQuizzes[uniqueQuizIds[1]];
-    if (uniqueQuizIds.length > 2) q3 = latestQuizzes[uniqueQuizIds[2]];
+    if (hasQuiz1) q1 = latestQuizzes[expectedQ1];
+    if (hasQuiz2) q2 = latestQuizzes[expectedQ2];
+    if (hasQuiz3) q3 = latestQuizzes[expectedQ3];
 
     let hasFollowup = false;
     if (followupResults.length > 0) {
         followup = followupResults[0]?.percentage || followup;
         hasFollowup = true;
-    } else if (uniqueQuizIds.length > 3) {
-        followup = latestQuizzes[uniqueQuizIds[3]];
-        hasFollowup = true;
     }
 
-    const avg = uniqueQuizIds.length > 0 ? (q1 + q2 + q3) / Math.min(3, uniqueQuizIds.length) : 0;
-    const totalQuizzesAnalyzed = uniqueQuizIds.length + (hasFollowup ? 1 : 0);
+    const missingData = [];
+    if (!hasQuiz1) missingData.push(`Quiz ${expectedQ1.replace('Q', '')}`);
+    if (!hasQuiz2) missingData.push(`Quiz ${expectedQ2.replace('Q', '')}`);
+    if (!hasQuiz3) missingData.push(`Quiz ${expectedQ3.replace('Q', '')}`);
+    if (!hasFollowup) missingData.push(`Follow-up Quiz`);
+
+    const completedQuizzes = [hasQuiz1, hasQuiz2, hasQuiz3].filter(Boolean).length;
+    const avg = completedQuizzes > 0 ? (q1 + q2 + q3) / completedQuizzes : 0;
 
     return {
         Quiz_1_Score: q1,
@@ -67,7 +98,7 @@ const calculateFeatures = async (studentId, lessonId) => {
         Quiz_3_Score: q3,
         Quiz_Average: avg,
         Followup_Quiz_Score: followup,
-        quizzesAnalyzed: totalQuizzesAnalyzed
+        missingData
     };
 };
 
@@ -77,7 +108,7 @@ const getStudentLessonPrediction = async (student, lessonId) => {
     const lessonMaxMark = lessonMaxMarks[lessonNum] || 50;
 
     const featuresData = await calculateFeatures(student.studentId, lessonId);
-    const { quizzesAnalyzed, ...features } = featuresData;
+    const { missingData, ...features } = featuresData;
 
     const studentResult = {
         studentId: student.studentId,
@@ -92,11 +123,11 @@ const getStudentLessonPrediction = async (student, lessonId) => {
         lessonMaxMark: lessonMaxMark,
         predictionStatus: "AVAILABLE",
         features,
-        quizzesAnalyzed,
+        missingData,
         lesson: lessonId
     };
 
-    if (quizzesAnalyzed < 4) {
+    if (missingData.length > 0) {
         studentResult.predictionStatus = "INSUFFICIENT_DATA";
         return studentResult;
     }
@@ -197,7 +228,92 @@ const getLessonPredictions = async (req, res, next) => {
     }
 };
 
+// @desc    Get all lesson predictions for a specific student
+// @route   GET /api/predictions/student/:studentId
+// @access  Public
+const getStudentAllLessonsPrediction = async (req, res, next) => {
+    try {
+        const { studentId } = req.params;
+        const student = await Student.findOne({ 
+            studentId: { $regex: new RegExp(`^${studentId}$`, 'i') } 
+        });
+
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        // Find all unique quizzes the student has attempted to determine available lessons
+        const quizResults = await QuizResult.find({ 
+            studentId: { $regex: new RegExp(`^${studentId}$`, 'i') } 
+        });
+
+        // Extract lesson numbers (e.g. from "Q1.1" -> "1")
+        const lessonNumbers = [...new Set(quizResults.map(r => {
+            const match = r.quizId.match(/^[QL](\d+)/i);
+            return match ? match[1] : '1';
+        }))].sort();
+
+        const lessonsData = [];
+        let totalPredictedPct = 0;
+        let predictionCount = 0;
+        let highestPredicted = null;
+        let lowestPredicted = null;
+
+        for (const lessonNum of lessonNumbers) {
+            const lessonResult = await getStudentLessonPrediction(student, lessonNum.toString());
+            
+            // Format for the response array
+            lessonsData.push({
+                lessonId: lessonNum.toString(),
+                lessonName: `Lesson ${lessonNum}`,
+                maxMark: lessonResult.lessonMaxMark,
+                features: lessonResult.features,
+                predictionStatus: lessonResult.predictionStatus,
+                predictedPercentage: lessonResult.predictedPercentage,
+                predictedLessonMark: lessonResult.predictedLessonMark,
+                quizzesAnalyzed: lessonResult.quizzesAnalyzed
+            });
+
+            if (lessonResult.predictionStatus === "AVAILABLE" && lessonResult.predictedPercentage !== null) {
+                totalPredictedPct += lessonResult.predictedPercentage;
+                predictionCount++;
+                
+                if (highestPredicted === null || lessonResult.predictedPercentage > highestPredicted) {
+                    highestPredicted = lessonResult.predictedPercentage;
+                }
+                if (lowestPredicted === null || lessonResult.predictedPercentage < lowestPredicted) {
+                    lowestPredicted = lessonResult.predictedPercentage;
+                }
+            }
+        }
+
+        const averagePredictedPercentage = predictionCount > 0 
+            ? parseFloat((totalPredictedPct / predictionCount).toFixed(1)) 
+            : 0;
+
+        res.status(200).json({
+            student: {
+                studentId: student.studentId,
+                studentName: student.name || 'Unknown',
+                grade: student.grade || 'Unknown'
+            },
+            summary: {
+                availableLessons: lessonNumbers.length,
+                lessonsWithPredictions: predictionCount,
+                averagePredictedPercentage,
+                highestPredictedPercentage: highestPredicted !== null ? highestPredicted : 0,
+                lowestPredictedPercentage: lowestPredicted !== null ? lowestPredicted : 0
+            },
+            lessons: lessonsData
+        });
+    } catch (error) {
+        console.error('Student all lessons prediction error:', error);
+        res.status(500).json({ message: 'Failed to generate student predictions', error: error.message });
+    }
+};
+
 module.exports = {
     generatePrediction,
-    getLessonPredictions
+    getLessonPredictions,
+    getStudentAllLessonsPrediction
 };

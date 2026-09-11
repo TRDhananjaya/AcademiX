@@ -138,10 +138,10 @@ function App() {
     case 'exam-prediction':
       return <ExamPrediction />;
     default:
-      if (currentPage.startsWith('exam-prediction/')) {
+      if (currentPage.startsWith('exam-prediction/student/')) {
         const parts = currentPage.split('/');
         if (parts.length === 3) {
-          return <ExamPredictionStudentDetail lessonId={parts[1]} studentId={parts[2]} />;
+          return <ExamPredictionStudentDetail studentId={parts[2]} />;
         }
       }
       return <Home />;
