@@ -4,7 +4,11 @@ import os
 import time
 import logging
 from langchain_google_genai import ChatGoogleGenerativeAI
-from google.api_core.exceptions import ResourceExhausted
+try:
+    from google.api_core.exceptions import ResourceExhausted
+except ImportError:
+    class ResourceExhausted(Exception):
+        pass
 
 class QuotaExhaustedError(Exception):
     """Exception raised when the Gemini API quota is exhausted."""

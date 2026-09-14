@@ -2,12 +2,21 @@ const Attendance = require('../models/Attendance');
 const Student = require('../models/Student');
 const { sendAttendanceWhatsApp } = require('../services/whatsappService');
 
+const TIMEZONE = process.env.TIMEZONE || 'Asia/Colombo';
+
 /**
- * Helper to get normalized date (midnight 00:00:00) for consistent daily attendance querying
+ * Helper to get normalized date (midnight 00:00:00) for consistent daily attendance querying in local timezone
  */
 const getTodayMidnight = () => {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const colomboDateStr = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(new Date());
+
+  const [year, month, day] = colomboDateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
 };
 
 // @desc    Mark student attendance & send WhatsApp to parent
@@ -50,7 +59,12 @@ const markAttendance = async (req, res, next) => {
     }
 
     const todayDate = getTodayMidnight();
-    const timeArrived = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const timeArrived = new Date().toLocaleTimeString('en-US', {
+      timeZone: TIMEZONE,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
 
     // 2. Check if attendance already marked for today
     let existingAttendance = await Attendance.findOne({
