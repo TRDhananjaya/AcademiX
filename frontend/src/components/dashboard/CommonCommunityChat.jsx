@@ -120,7 +120,7 @@ export default function CommonCommunityChat() {
 
         <div className="hidden sm:flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          Connected as {currentUserName} ({currentUserRole === 'teacher' ? 'Faculty' : 'Student'})
+          Connected as {currentUserName}
         </div>
       </div>
 

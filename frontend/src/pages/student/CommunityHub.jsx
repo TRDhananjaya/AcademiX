@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/student/Sidebar';
 import StudentTopBar from '../../components/dashboard/StudentTopBar';
 import CommonCommunityChat from '../../components/dashboard/CommonCommunityChat';
-import communityBannerImg from '../../assets/community_banner.png';
 import { useAuth } from '../../context/AuthContext';
 import propic from '../../assets/propic.png';
 import { FiEdit, FiFilter, FiTrendingUp, FiShield, FiMoreHorizontal, FiMessageSquare, FiShare2, FiBookmark, FiX, FiFlag, FiSend, FiMessageCircle } from 'react-icons/fi';
@@ -375,22 +374,7 @@ export default function CommunityHub() {
 
               </div>
 
-              {/* Right Column (Sidebar Photo Card) */}
-              <div className="w-full lg:w-[320px] shrink-0 space-y-6">
-                <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm overflow-hidden group">
-                  <div className="rounded-xl overflow-hidden shadow-sm relative">
-                    <img 
-                      src={communityBannerImg} 
-                      alt="AcademiX Collaborative Learning Community" 
-                      className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent p-4 flex flex-col justify-end">
-                      <h4 className="text-white font-bold text-base leading-tight">Learning Community</h4>
-                      <p className="text-slate-200 text-xs mt-1">Connect, collaborate & share academic knowledge.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+
 
             </div>
           )}
