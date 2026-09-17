@@ -73,25 +73,12 @@ const markAttendance = async (req, res, next) => {
     });
 
     if (existingAttendance) {
-      // If forceSend is requested or WhatsApp notification wasn't sent yet, send now
-      let whatsappSuccess = existingAttendance.whatsappSent;
-      if (req.body.forceSend || !whatsappSuccess) {
-        if (student.parentMobile) {
-          whatsappSuccess = await sendAttendanceWhatsApp(student.parentMobile, student.name, existingAttendance.timeArrived || timeArrived);
-          if (whatsappSuccess) {
-            existingAttendance.whatsappSent = true;
-            await existingAttendance.save();
-          }
-        }
-      }
-
-      return res.status(200).json({
-        success: true,
+      return res.status(400).json({
+        success: false,
         alreadyMarked: true,
-        message: `Attendance for ${student.name} (${student.studentId}) is already marked for today (${existingAttendance.timeArrived || 'Earlier'}). ${whatsappSuccess ? 'WhatsApp notification sent to parent.' : ''}`,
-        whatsappSent: existingAttendance.whatsappSent,
-        data: existingAttendance,
-        student
+        message: `Attendance for ${student.name} (${student.studentId}) is ALREADY MARKED for today at ${existingAttendance.timeArrived || 'earlier'}. Duplicate scanning is not allowed.`,
+        student,
+        data: existingAttendance
       });
     }
 
@@ -131,19 +118,59 @@ const markAttendance = async (req, res, next) => {
   }
 };
 
-// @desc    Get all attendance records for today
-// @route   GET /api/attendance/today
+// @desc    Get attendance records for today or a specific date (YYYY-MM-DD)
+// @route   GET /api/attendance/today?date=YYYY-MM-DD&studentId=...
 // @access  Private/Public
 const getTodayAttendance = async (req, res, next) => {
   try {
-    const todayDate = getTodayMidnight();
+    let targetDateStart, targetDateEnd;
+    let selectedDateStr = req.query.date;
 
-    const attendanceRecords = await Attendance.find({ date: todayDate })
-      .populate('student', 'name studentId email grade parentMobile studentMobile status')
+    if (selectedDateStr && /^\d{4}-\d{2}-\d{2}$/.test(selectedDateStr)) {
+      const [year, month, day] = selectedDateStr.split('-').map(Number);
+      targetDateStart = new Date(year, month - 1, day, 0, 0, 0, 0);
+      targetDateEnd = new Date(year, month - 1, day, 23, 59, 59, 999);
+    } else {
+      const today = getTodayMidnight();
+      targetDateStart = today;
+      targetDateEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+      selectedDateStr = new Intl.DateTimeFormat('en-CA', {
+        timeZone: TIMEZONE,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date());
+    }
+
+    let filterQuery = {
+      $or: [
+        { date: { $gte: targetDateStart, $lte: targetDateEnd } },
+        { createdAt: { $gte: targetDateStart, $lte: targetDateEnd } }
+      ]
+    };
+
+    if (req.query.studentId || req.query.student) {
+      const searchStr = String(req.query.studentId || req.query.student).trim();
+      const studentObj = await Student.findOne({
+        $or: [
+          { studentId: searchStr.toUpperCase() },
+          { studentId: searchStr },
+          { email: searchStr.toLowerCase() },
+          { _id: searchStr.match(/^[0-9a-fA-F]{24}$/) ? searchStr : null }
+        ].filter(Boolean)
+      });
+      if (studentObj) {
+        filterQuery.student = studentObj._id;
+      }
+    }
+
+    const attendanceRecords = await Attendance.find(filterQuery)
+      .populate('student', 'name studentId email grade parentMobile studentMobile status color')
       .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
+      selectedDate: selectedDateStr,
       count: attendanceRecords.length,
       data: attendanceRecords
     });
@@ -152,7 +179,52 @@ const getTodayAttendance = async (req, res, next) => {
   }
 };
 
+// @desc    Get complete attendance history for a specific student
+// @route   GET /api/attendance/student/:studentId
+// @access  Private/Public
+const getStudentAttendanceHistory = async (req, res, next) => {
+  try {
+    const { studentId } = req.params;
+    if (!studentId) {
+      res.status(400);
+      throw new Error('Please provide a student ID');
+    }
+
+    const cleanId = String(studentId).trim();
+    const student = await Student.findOne({
+      $or: [
+        { studentId: cleanId.toUpperCase() },
+        { studentId: cleanId },
+        { email: cleanId.toLowerCase() },
+        { _id: cleanId.match(/^[0-9a-fA-F]{24}$/) ? cleanId : null }
+      ].filter(Boolean)
+    });
+
+    if (!student) {
+      res.status(404);
+      throw new Error('Student not found');
+    }
+
+    const records = await Attendance.find({ student: student._id })
+      .populate('student', 'name studentId email grade parentMobile studentMobile status color')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      student,
+      count: records.length,
+      data: records
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   markAttendance,
-  getTodayAttendance
+  getTodayAttendance,
+  getAttendanceByDate: getTodayAttendance,
+  getStudentAttendanceHistory
 };
+
+
