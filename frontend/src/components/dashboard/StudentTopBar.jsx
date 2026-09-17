@@ -217,7 +217,7 @@ export default function StudentTopBar() {
                 <img src={favicon} alt="AcademiX" className="w-8 h-8 object-contain" />
                 <div>
                   <span className="font-bold text-[17px] text-slate-800 tracking-tight">AcademiX</span>
-                  <span className="block text-[11px] font-semibold text-indigo-600 uppercase tracking-wider">Student Portal</span>
+                  <span className="block text-[11px] font-semibold text-indigo-600">Student Portal</span>
                 </div>
               </div>
               <button

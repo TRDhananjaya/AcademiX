@@ -4,6 +4,7 @@ const Student = require('../models/Student');
 const Quiz = require('../models/Quiz');
 const CommunityPost = require('../models/CommunityPost');
 const Attendance = require('../models/Attendance');
+const Lesson = require('../models/Lesson');
 
 // @desc    Get Analytics Records
 // @route   GET /api/analytics
@@ -321,6 +322,7 @@ const getIndividualStudentAnalytics = async (req, res, next) => {
         const lowestScoreObj = combinedHistory.length > 0 ? combinedHistory.reduce((prev, current) => (prev.percentage < current.percentage) ? prev : current) : null;
 
         const overallPercentage = combinedHistory.length > 0 ? combinedHistory.reduce((sum, h) => sum + h.percentage, 0) / combinedHistory.length : 0;
+        const totalSystemLessons = (await Lesson.countDocuments()) || 6;
 
         res.status(200).json({
             studentId,
@@ -335,6 +337,7 @@ const getIndividualStudentAnalytics = async (req, res, next) => {
                 highestScore: highestScoreObj ? highestScoreObj.percentage : 0,
                 lowestScore: lowestScoreObj ? lowestScoreObj.percentage : 0,
                 lessonsCompleted: trendData.length,
+                totalLessons: totalSystemLessons,
                 strongestLesson: strongestLesson ? strongestLesson.lesson : 'N/A',
                 weakestLesson: weakestLesson ? weakestLesson.lesson : 'N/A',
                 strengths,
