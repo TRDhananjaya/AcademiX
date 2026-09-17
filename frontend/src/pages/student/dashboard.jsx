@@ -15,7 +15,7 @@ export default function StudentDashboard() {
   const [analytics, setAnalytics] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [communityPosts, setCommunityPosts] = useState([]);
-  const [selectedLesson, setSelectedLesson] = useState('latest');
+  const [selectedLesson, setSelectedLesson] = useState('overall');
 
   // Fetch Student Analytics
   useEffect(() => {
@@ -24,7 +24,12 @@ export default function StudentDashboard() {
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        const resAnalytics = await fetch(`/api/analytics/student/${user.username}`);
+        const token = localStorage.getItem('token');
+        const resAnalytics = await fetch(`/api/analytics/student/${user.username}`, {
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
         if (resAnalytics.ok) {
           const analyticsData = await resAnalytics.json();
           setAnalytics(analyticsData);
@@ -46,10 +51,14 @@ export default function StudentDashboard() {
     const fetchPrediction = async () => {
       try {
         setLoadingPrediction(true);
+        const token = localStorage.getItem('token');
         const resPrediction = await fetch('/api/ml/predict', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ studentId: user.username, lessonId: '' }) // General prediction
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ studentId: user.username, lessonId: '' }) // General prediction across all lessons
         });
         if (resPrediction.ok) {
           const predData = await resPrediction.json();
@@ -121,10 +130,13 @@ export default function StudentDashboard() {
   let displayLabel = 'No Quizzes Taken';
 
   if (analytics?.history && analytics.history.length > 0) {
-    if (selectedLesson === 'latest') {
+    if (selectedLesson === 'overall') {
+      displayScore = analytics.summary?.overallAverage || 0;
+      displayLabel = 'Overall Quiz Average';
+    } else if (selectedLesson === 'latest') {
       // Display marks from the student's most recently completed quiz
       displayScore = analytics.history[0].percentage || 0;
-      displayLabel = analytics.history[0].lessonName || 'Unknown Lesson';
+      displayLabel = analytics.history[0].lessonName || 'Latest Quiz';
     } else {
       // Find all quizzes associated with the selected lesson and get their average
       const lessonTrend = analytics.trendData?.find(item => item.lesson === selectedLesson);
@@ -178,7 +190,7 @@ export default function StudentDashboard() {
       predictedGrade = 'N/A';
       predictionDetails = 'Take a quiz first';
     } else {
-      const totalMarks = prediction.totalMarks ?? 25;
+      const totalMarks = prediction.totalMarks ?? 100;
       predictionDetails = `Score: ${score.toFixed(0)}% (${prediction.predictedMarks.toFixed(1)} / ${totalMarks})`;
     }
     
@@ -222,8 +234,9 @@ export default function StudentDashboard() {
                       <select
                         value={selectedLesson}
                         onChange={(e) => setSelectedLesson(e.target.value)}
-                        className="text-[13px] bg-slate-50 border border-slate-200 text-slate-600 rounded-lg py-1 px-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium max-w-[130px] truncate cursor-pointer"
+                        className="text-[13px] bg-slate-50 border border-slate-200 text-slate-600 rounded-lg py-1 px-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium max-w-[140px] truncate cursor-pointer"
                       >
+                        <option value="overall">Overall Average</option>
                         <option value="latest">Latest Quiz</option>
                         {uniqueLessons.map((lesson, idx) => (
                           <option key={idx} value={lesson}>{lesson}</option>
