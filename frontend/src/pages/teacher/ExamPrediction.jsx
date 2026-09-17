@@ -215,8 +215,12 @@ export default function ExamPrediction() {
                               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
                                 Available
                               </span>
+                            ) : s.predictionStatus === 'ML_SERVICE_UNAVAILABLE' ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800" title="ML prediction service could not be reached or timed out">
+                                Service Unavailable
+                              </span>
                             ) : (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800" title={s.missingData ? `Missing: ${s.missingData.join(', ')}` : 'Incomplete quiz data'}>
                                 Insufficient Data
                               </span>
                             )}
