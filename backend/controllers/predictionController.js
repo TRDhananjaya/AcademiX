@@ -155,25 +155,37 @@ const getStudentLessonPrediction = async (student, lessonId) => {
         Followup_Quiz_Score: features.Followup_Quiz_Score
     };
 
+    const rawUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001/predict';
+    const trimmed = rawUrl.replace(/\/+$/, '');
+    const mlUrl = trimmed.endsWith('/predict') ? trimmed : `${trimmed}/predict`;
+
     try {
-        const rawUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001/predict';
-        const trimmed = rawUrl.replace(/\/+$/, '');
-        const mlUrl = trimmed.endsWith('/predict') ? trimmed : `${trimmed}/predict`;
+        let mlResponse;
+        try {
+            mlResponse = await fetch(mlUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(mlFeatures),
+                signal: AbortSignal.timeout(35000) // 35s to allow free-tier Render instances to spin up from sleep
+            });
+        } catch (firstErr) {
+            // If timed out or cold-starting, retry once
+            console.warn(`ML service initial call timed out (${firstErr.message}), retrying once...`);
+            mlResponse = await fetch(mlUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(mlFeatures),
+                signal: AbortSignal.timeout(20000)
+            });
+        }
 
-        const mlResponse = await fetch(mlUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(mlFeatures),
-            signal: AbortSignal.timeout(10000) 
-        });
-
-        if (mlResponse.ok) {
+        if (mlResponse && mlResponse.ok) {
             const mlData = await mlResponse.json();
             const predictedPercentage = parseFloat(mlData.predicted_score);
             studentResult.predictedPercentage = parseFloat(predictedPercentage.toFixed(1));
             studentResult.predictedLessonMark = parseFloat(((predictedPercentage / 100) * lessonMaxMark).toFixed(1));
         } else {
-            console.error(`ML service returned status ${mlResponse.status} ${mlResponse.statusText} for URL: ${mlUrl}`);
+            console.error(`ML service returned status ${mlResponse?.status} ${mlResponse?.statusText} for URL: ${mlUrl}`);
             studentResult.predictionStatus = "ML_SERVICE_UNAVAILABLE";
         }
     } catch (mlErr) {
@@ -278,7 +290,18 @@ const getLessonPredictions = async (req, res, next) => {
         const lessonNum = getLessonNumber(lessonId);
         const lessonMaxMark = lessonMaxMarks[lessonNum] || 50;
         
-        // Execute predictions concurrently with Promise.all to avoid cascading sequential timeouts
+        // Pre-warm ML service if sleeping (e.g., Render free-tier cold start)
+        const rawUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001/predict';
+        const baseUrl = rawUrl.replace(/\/predict\/?$/, '').replace(/\/+$/, '');
+        if (baseUrl.startsWith('http')) {
+            try {
+                await fetch(`${baseUrl}/`, { signal: AbortSignal.timeout(30000) });
+            } catch (e) {
+                console.warn('ML service pre-warmup ping status:', e.message);
+            }
+        }
+
+        // Execute predictions concurrently with Promise.all
         const results = await Promise.all(
             students.map(student => getStudentLessonPrediction(student, lessonId))
         );
