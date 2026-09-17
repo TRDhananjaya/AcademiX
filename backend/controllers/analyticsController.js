@@ -357,8 +357,10 @@ const getTeacherDashboardStats = async (req, res, next) => {
         const limit = parseInt(req.query.limit, 10) || 5; // Default 5 items per page
         const skip = (page - 1) * limit;
 
-        // 1. Get total students count
-        const totalStudents = await Student.countDocuments({ status: { $ne: 'Inactive' } });
+        // 1. Get total, active, and inactive student counts
+        const totalStudents = await Student.countDocuments();
+        const activeStudents = await Student.countDocuments({ status: { $ne: 'Inactive' } });
+        const inactiveStudents = await Student.countDocuments({ status: 'Inactive' });
 
         // 2. Get active modules count
         const activeModules = await Quiz.countDocuments();
@@ -545,7 +547,7 @@ const getTeacherDashboardStats = async (req, res, next) => {
         const totalRecords = studentTrackerList.length;
         const paginatedTracker = studentTrackerList.slice(skip, skip + limit);
 
-        // 9. Get today's attendance count
+        // 9. Get today's attendance count (distinct students checked in today)
         let todayPresentCount = 0;
         try {
             const TIMEZONE = process.env.TIMEZONE || 'Asia/Colombo';
@@ -556,8 +558,18 @@ const getTeacherDashboardStats = async (req, res, next) => {
                 day: '2-digit'
             }).format(new Date());
             const [year, month, day] = colomboDateStr.split('-').map(Number);
-            const todayMidnight = new Date(year, month - 1, day);
-            todayPresentCount = await Attendance.countDocuments({ date: todayMidnight, status: 'Present' });
+            const targetDateStart = new Date(year, month - 1, day, 0, 0, 0, 0);
+            const targetDateEnd = new Date(year, month - 1, day, 23, 59, 59, 999);
+
+            const attendanceFilter = {
+                status: 'Present',
+                $or: [
+                    { date: { $gte: targetDateStart, $lte: targetDateEnd } },
+                    { createdAt: { $gte: targetDateStart, $lte: targetDateEnd } }
+                ]
+            };
+            const distinctPresentStudents = await Attendance.distinct('student', attendanceFilter);
+            todayPresentCount = distinctPresentStudents.length;
         } catch (attErr) {
             console.warn('Could not fetch attendance count:', attErr.message);
         }
@@ -565,6 +577,8 @@ const getTeacherDashboardStats = async (req, res, next) => {
         res.status(200).json({
             metrics: {
                 totalStudents,
+                activeStudents,
+                inactiveStudents,
                 totalQuizzes: activeModules,
                 classAverage,
                 atRiskCount,

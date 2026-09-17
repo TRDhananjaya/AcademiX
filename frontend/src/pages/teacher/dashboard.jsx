@@ -27,7 +27,10 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
   useEffect(() => {
     const fetchLessonsList = async () => {
       try {
-        const res = await fetch('/api/analytics/lessons');
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/analytics/lessons', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
         if (res.ok) {
           const data = await res.json();
           setLessons(data.lessons || []);
@@ -52,8 +55,11 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
         } else {
           setTableLoading(true);
         }
+        const token = localStorage.getItem('token');
         const moduleParam = moduleFilter !== 'All Modules' ? `&module=${encodeURIComponent(moduleFilter)}` : '';
-        const res = await fetch(`/api/analytics/teacher-dashboard?page=${currentPage}&limit=5${moduleParam}`);
+        const res = await fetch(`/api/analytics/teacher-dashboard?page=${currentPage}&limit=5${moduleParam}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
         if (res.ok) {
           const data = await res.json();
           setDashboardData(data);
@@ -115,20 +121,27 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
 
               {/* Total Students */}
-              <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden">
+              <div 
+                onClick={() => navigate('/teacher/students')}
+                className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden cursor-pointer hover:border-indigo-300 transition-all group"
+                title="View Student Management"
+              >
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Students</span>
+                    <span className="text-slate-400 text-xs font-bold uppercase tracking-wider group-hover:text-indigo-600 transition-colors">Total Students</span>
                     <h3 className="text-3xl font-extrabold text-slate-900 mt-2">
                       {metrics?.totalStudents !== undefined ? metrics.totalStudents : '--'}
                     </h3>
                   </div>
-                  <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center text-xs font-semibold text-slate-500">
-                  Registered profiles
+                <div className="mt-4 flex items-center justify-between text-xs font-semibold text-slate-500">
+                  <span>{metrics?.activeStudents !== undefined ? metrics.activeStudents : (metrics?.totalStudents || 0)} active enrolled</span>
+                  {metrics?.inactiveStudents > 0 && (
+                    <span className="text-amber-600 font-bold text-[11px]">{metrics.inactiveStudents} inactive</span>
+                  )}
                 </div>
               </div>
 
@@ -169,20 +182,34 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
               </div>
 
               {/* Today's Attendance */}
-              <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden">
+              <div 
+                onClick={() => setActiveNav('attendance')}
+                className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden cursor-pointer hover:border-emerald-300 transition-all group"
+                title="View Live QR Attendance Monitor"
+              >
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Today's Attendance</span>
+                    <span className="text-slate-400 text-xs font-bold uppercase tracking-wider group-hover:text-emerald-600 transition-colors">Today's Attendance</span>
                     <h3 className="text-3xl font-extrabold text-slate-900 mt-2">
-                      {metrics?.todayPresentCount || 0}<span className="text-lg text-slate-400 font-bold">/{metrics?.totalStudents || 0}</span>
+                      {metrics?.todayPresentCount || 0}
+                      <span className="text-lg text-slate-400 font-bold">
+                        /{metrics?.activeStudents !== undefined ? metrics.activeStudents : (metrics?.totalStudents || 0)}
+                      </span>
                     </h3>
                   </div>
-                  <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
                   </div>
                 </div>
-                <div className="mt-4 text-xs font-semibold text-slate-500">
-                  {metrics?.totalStudents > 0 ? `${Math.round(((metrics?.todayPresentCount || 0) / metrics.totalStudents) * 100)}% present today` : 'No students registered'}
+                <div className="mt-4 text-xs font-semibold text-slate-500 flex items-center justify-between">
+                  <span>
+                    {(metrics?.activeStudents || metrics?.totalStudents) > 0 
+                      ? `${Math.round(((metrics?.todayPresentCount || 0) / (metrics?.activeStudents || metrics.totalStudents)) * 100)}% present today` 
+                      : 'No active students'}
+                  </span>
+                  {metrics?.inactiveStudents > 0 && (
+                    <span className="text-slate-400 text-[11px]">({metrics.inactiveStudents} inactive)</span>
+                  )}
                 </div>
               </div>
 
