@@ -190,7 +190,9 @@ export default function StudentDashboard() {
   let isPositiveTrend = true;
 
   if (prediction) {
-    const score = prediction.prediction?.predictedScore || 0;
+    // Safely extract score, accounting for both potential response formats
+    const score = prediction.predictedPercentage || (prediction.prediction && prediction.prediction.predictedScore) || 0;
+    
     if (score >= 90) predictedGrade = 'A+';
     else if (score >= 80) predictedGrade = 'A';
     else if (score >= 70) predictedGrade = 'B';
@@ -198,7 +200,14 @@ export default function StudentDashboard() {
     else if (score >= 50) predictedGrade = 'D';
     else predictedGrade = 'F';
 
-    predictionDetails = `Score: ${score.toFixed(0)}% (${prediction.predictedMarks.toFixed(1)} / ${prediction.totalMarks})`;
+    // Safely format prediction details, avoiding .toFixed() on null
+    if (prediction.predictionStatus === 'INSUFFICIENT_DATA' || prediction.predictedMarks == null) {
+      predictedGrade = 'N/A';
+      predictionDetails = 'Take a quiz first';
+    } else {
+      predictionDetails = `Score: ${score.toFixed(0)}% (${prediction.predictedMarks.toFixed(1)} / ${prediction.totalMarks})`;
+    }
+    
     const improvement = prediction.improvementPercentage || 0;
     trendIndicator = `${improvement >= 0 ? '+' : ''}${improvement.toFixed(1)}% improvement trend`;
     isPositiveTrend = improvement >= 0;
