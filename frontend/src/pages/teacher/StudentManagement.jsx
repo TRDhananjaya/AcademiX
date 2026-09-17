@@ -10,6 +10,7 @@ export default function StudentManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const gradeFilter = 'All Grades';
   const [statusFilter, setStatusFilter] = useState('All Statuses');
+  const [todayAttendanceRecords, setTodayAttendanceRecords] = useState([]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -67,9 +68,25 @@ export default function StudentManagement() {
     }
   };
 
+  const fetchTodayAttendance = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/attendance/today', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (response.ok) {
+        const resData = await response.json();
+        setTodayAttendanceRecords(resData.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching today attendance:', error);
+    }
+  };
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchStudents();
+    fetchTodayAttendance();
   }, []);
 
   // Handlers
@@ -176,8 +193,18 @@ export default function StudentManagement() {
   // Calculate stats
   const totalCount = students.length;
   const activeCount = students.filter(s => s.status === 'Active').length;
-  const atRiskCount = students.filter(s => s.status === 'At Risk').length;
   const inactiveCount = students.filter(s => s.status === 'Inactive').length;
+  const primaryGrade = students.length > 0 ? (students[0].grade || 'Grade 10') : 'Grade 10';
+
+  const presentStudentSet = new Set(
+    todayAttendanceRecords
+      .map(r => (r.student?._id ? r.student._id.toString() : r.student?.toString()))
+      .filter(Boolean)
+  );
+  const presentCount = presentStudentSet.size;
+  const attendancePercentage = activeCount > 0
+    ? Math.min(100, Math.round((presentCount / activeCount) * 100))
+    : 0;
 
   const handleCopyCredentials = () => {
     if (!successStudentDetails) return;
@@ -235,43 +262,57 @@ export default function StudentManagement() {
           {/* Stats Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
 
+            {/* Total Students */}
             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between">
               <div>
-                <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Enrolled</span>
+                <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Students</span>
                 <h3 className="text-3xl font-extrabold text-slate-900 mt-2">{totalCount}</h3>
+                <p className="text-xs text-slate-500 font-medium mt-1">{activeCount} active enrolled</p>
               </div>
-              <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+              <div className="w-11 h-11 rounded-xl bg-indigo-50 text-[#3b28cc] flex items-center justify-center shrink-0">
                 <FiUsers className="w-5.5 h-5.5" />
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between">
-              <div>
-                <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Active Students</span>
-                <h3 className="text-3xl font-extrabold text-teal-600 mt-2">{activeCount}</h3>
-              </div>
-              <div className="w-11 h-11 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
-                <FiCheckCircle className="w-5.5 h-5.5" />
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between">
-              <div>
-                <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">At-Risk Status</span>
-                <h3 className="text-3xl font-extrabold text-red-600 mt-2">{atRiskCount}</h3>
-              </div>
-              <div className="w-11 h-11 rounded-xl bg-red-50 text-red-500 flex items-center justify-center shrink-0">
-                <FiAlertTriangle className="w-5.5 h-5.5" />
-              </div>
-            </div>
-
+            {/* Inactive Students */}
             <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between">
               <div>
                 <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Inactive Students</span>
                 <h3 className="text-3xl font-extrabold text-amber-600 mt-2">{inactiveCount}</h3>
+                <p className="text-xs text-slate-500 font-medium mt-1">
+                  {inactiveCount === 1 ? '1 student inactive' : `${inactiveCount} students inactive`}
+                </p>
               </div>
               <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                <FiAlertTriangle className="w-5.5 h-5.5" />
+              </div>
+            </div>
+
+            {/* Grade / Class */}
+            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between">
+              <div>
+                <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Grade / Class</span>
+                <h3 className="text-2xl font-extrabold text-slate-900 mt-2">{primaryGrade}</h3>
+                <p className="text-xs text-slate-500 font-medium mt-1">Active class cohort</p>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
                 <FiBookOpen className="w-5.5 h-5.5" />
+              </div>
+            </div>
+
+            {/* Today's Attendance */}
+            <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center justify-between">
+              <div>
+                <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Today's Attendance</span>
+                <h3 className="text-3xl font-extrabold text-emerald-600 mt-2">
+                  {activeCount > 0 ? `${attendancePercentage}%` : '0%'}
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-1">
+                  {presentCount} present today <span className="text-slate-400">({inactiveCount} inactive)</span>
+                </p>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                <FiCheckCircle className="w-5.5 h-5.5" />
               </div>
             </div>
 
@@ -305,11 +346,9 @@ export default function StudentManagement() {
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className="bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-xs font-semibold text-slate-600 outline-none focus:bg-white focus:border-indigo-300 transition-all cursor-pointer"
                 >
-                  <option>All Statuses</option>
-                  <option>Active</option>
-                  <option>At Risk</option>
-                  <option>Suspended</option>
-                  <option>Inactive</option>
+                  <option value="All Statuses">All Statuses</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
                 </select>
               </div>
 
@@ -362,13 +401,12 @@ export default function StudentManagement() {
 
                         {/* Status Badge */}
                         <td className="p-4">
-                          <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider
-                            ${student.status === 'Active' ? 'bg-teal-50 text-teal-600' : ''}
-                            ${student.status === 'At Risk' ? 'bg-red-50 text-red-500' : ''}
-                            ${student.status === 'Suspended' ? 'bg-orange-50 text-orange-600' : ''}
-                            ${student.status === 'Inactive' ? 'bg-slate-100 text-slate-500' : ''}
-                          `}>
-                            {student.status}
+                          <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider ${
+                            student.status === 'Active' 
+                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/50' 
+                              : 'bg-slate-100 text-slate-500 border border-slate-200/50'
+                          }`}>
+                            {student.status || 'Active'}
                           </span>
                         </td>
 
@@ -536,10 +574,8 @@ export default function StudentManagement() {
                         onChange={(e) => setNewStudent({ ...newStudent, status: e.target.value })}
                         className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/10 font-sans cursor-pointer bg-white"
                       >
-                        <option>Active</option>
-                        <option>At Risk</option>
-                        <option>Suspended</option>
-                        <option>Inactive</option>
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
                       </select>
                     </div>
 
