@@ -3,6 +3,7 @@ const FollowupResult = require('../models/FollowupResult');
 const Student = require('../models/Student');
 const Quiz = require('../models/Quiz');
 const CommunityPost = require('../models/CommunityPost');
+const Attendance = require('../models/Attendance');
 
 // @desc    Get Analytics Records
 // @route   GET /api/analytics
@@ -504,7 +505,7 @@ const getTeacherDashboardStats = async (req, res, next) => {
             lessonMap[lesson].count += 1;
         });
 
-        let weakestLesson = 'Advanced Calculus';
+        let weakestLesson = 'General';
         let lowestLessonAvg = 100;
         Object.keys(lessonMap).forEach(lesson => {
             const avg = lessonMap[lesson].totalPct / lessonMap[lesson].count;
@@ -544,12 +545,30 @@ const getTeacherDashboardStats = async (req, res, next) => {
         const totalRecords = studentTrackerList.length;
         const paginatedTracker = studentTrackerList.slice(skip, skip + limit);
 
+        // 9. Get today's attendance count
+        let todayPresentCount = 0;
+        try {
+            const TIMEZONE = process.env.TIMEZONE || 'Asia/Colombo';
+            const colomboDateStr = new Intl.DateTimeFormat('en-CA', {
+                timeZone: TIMEZONE,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).format(new Date());
+            const [year, month, day] = colomboDateStr.split('-').map(Number);
+            const todayMidnight = new Date(year, month - 1, day);
+            todayPresentCount = await Attendance.countDocuments({ date: todayMidnight, status: 'Present' });
+        } catch (attErr) {
+            console.warn('Could not fetch attendance count:', attErr.message);
+        }
+
         res.status(200).json({
             metrics: {
                 totalStudents,
-                activeModules,
+                totalQuizzes: activeModules,
                 classAverage,
-                atRiskCount
+                atRiskCount,
+                todayPresentCount
             },
             insights,
             communityActivity,

@@ -14,6 +14,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
   const [moduleFilter, setModuleFilter] = useState('All Modules');
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -46,7 +47,11 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
 
     const fetchStats = async () => {
       try {
-        setLoading(true);
+        if (!dashboardData) {
+          setLoading(true);
+        } else {
+          setTableLoading(true);
+        }
         const moduleParam = moduleFilter !== 'All Modules' ? `&module=${encodeURIComponent(moduleFilter)}` : '';
         const res = await fetch(`/api/analytics/teacher-dashboard?page=${currentPage}&limit=5${moduleParam}`);
         if (res.ok) {
@@ -58,6 +63,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
         console.error('Error fetching teacher stats:', err);
       } finally {
         setLoading(false);
+        setTableLoading(false);
       }
     };
 
@@ -80,7 +86,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
         return <AttendanceMonitor />;
       case 'dashboard':
       default: {
-        if (loading) {
+        if (loading && !dashboardData) {
           return (
             <div className="flex flex-col items-center justify-center py-20">
               <div className="w-12 h-12 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin mb-4"></div>
@@ -106,8 +112,8 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
             </div>
 
             {/* Metric Cards Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+
               {/* Total Students */}
               <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden">
                 <div className="flex justify-between items-start">
@@ -126,13 +132,13 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                 </div>
               </div>
 
-              {/* Active Modules */}
+              {/* Total Quizzes */}
               <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden">
                 <div className="flex justify-between items-start">
                   <div>
-                    <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Active Modules</span>
+                    <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Quizzes</span>
                     <h3 className="text-3xl font-extrabold text-slate-900 mt-2">
-                      {metrics?.activeModules !== undefined ? metrics.activeModules : '--'}
+                      {metrics?.totalQuizzes !== undefined ? metrics.totalQuizzes : '--'}
                     </h3>
                   </div>
                   <div className="w-9 h-9 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
@@ -162,6 +168,24 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                 </div>
               </div>
 
+              {/* Today's Attendance */}
+              <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between relative overflow-hidden">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Today's Attendance</span>
+                    <h3 className="text-3xl font-extrabold text-slate-900 mt-2">
+                      {metrics?.todayPresentCount || 0}<span className="text-lg text-slate-400 font-bold">/{metrics?.totalStudents || 0}</span>
+                    </h3>
+                  </div>
+                  <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                  </div>
+                </div>
+                <div className="mt-4 text-xs font-semibold text-slate-500">
+                  {metrics?.totalStudents > 0 ? `${Math.round(((metrics?.todayPresentCount || 0) / metrics.totalStudents) * 100)}% present today` : 'No students registered'}
+                </div>
+              </div>
+
               {/* At-Risk Students */}
               <div className={`bg-white rounded-2xl p-6 ${atRiskBorder} flex flex-col justify-between relative overflow-hidden`}>
                 <div className="flex justify-between items-start">
@@ -184,7 +208,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
 
             {/* Middle Columns (Predictive Insights & Community Activity) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              
+
               {/* Predictive Insights */}
               <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col">
                 <div className="flex justify-between items-start mb-6">
@@ -193,15 +217,9 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                       <span className="text-indigo-600">✨</span> Predictive Insights
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      AI-driven forecasts based on recent module engagement.
+                      Data-driven forecasts based on recent quiz performance.
                     </p>
                   </div>
-                  <button 
-                    onClick={() => navigate('/exam-prediction')}
-                    className="text-indigo-600 hover:text-indigo-800 text-xs font-bold transition-colors"
-                  >
-                    View All
-                  </button>
                 </div>
 
                 <div className="space-y-4 flex-1">
@@ -211,12 +229,12 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                       const iconBg = isMidterm ? 'bg-indigo-50' : 'bg-red-50';
                       const iconColor = isMidterm ? 'text-indigo-600' : 'text-red-500';
                       const alertBg = isMidterm ? 'bg-slate-50/70 border border-slate-100' : 'bg-red-50/30 border border-red-100/60';
-                      
+
                       return (
                         <div key={idx} className={`${alertBg} rounded-2xl p-5 flex items-start gap-4`}>
                           <div className={`w-10 h-10 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
                             {isMidterm ? (
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={iconColor}><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5"/></svg>
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={iconColor}><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" /></svg>
                             ) : (
                               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={iconColor}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                             )}
@@ -231,7 +249,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                                 Action Recommended
                               </span>
                             ) : (
-                              <button 
+                              <button
                                 onClick={() => setActiveNav('notifications')}
                                 className="text-red-600 hover:text-red-800 text-xs font-bold transition-colors"
                               >
@@ -291,7 +309,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                   </div>
                 </div>
 
-                <button 
+                <button
                   onClick={() => setActiveNav('community')}
                   className="w-full mt-6 py-2.5 border border-slate-200 hover:border-slate-300 text-slate-600 hover:text-slate-800 rounded-xl text-sm font-semibold transition-all flex items-center justify-center"
                 >
@@ -305,9 +323,9 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
               <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <h3 className="text-lg font-bold text-slate-900">Student Progress Tracker</h3>
-                
+
                 <div className="relative">
-                  <select 
+                  <select
                     value={moduleFilter}
                     onChange={(e) => {
                       setModuleFilter(e.target.value);
@@ -321,7 +339,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                     ))}
                   </select>
                   <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                    <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
                   </div>
                 </div>
               </div>
@@ -337,7 +355,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                       <th className="p-4 pr-6 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className={`divide-y divide-slate-100 transition-opacity duration-200 ${tableLoading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
                     {dashboardData?.studentTracker && dashboardData.studentTracker.length > 0 ? (
                       dashboardData.studentTracker.map((student) => {
                         const isAtRisk = student.status === 'At Risk';
@@ -363,11 +381,10 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                             <td className="p-4">
                               <div className="flex items-end gap-1.5 h-6">
                                 {student.trend.map((val, i) => (
-                                  <div 
-                                    key={i} 
-                                    className={`w-2.5 rounded-t-sm ${
-                                      i === 3 ? 'bg-indigo-600 animate-pulse' : 'bg-slate-200'
-                                    }`} 
+                                  <div
+                                    key={i}
+                                    className={`w-2.5 rounded-t-sm ${i === 3 ? 'bg-indigo-600 animate-pulse' : 'bg-slate-200'
+                                      }`}
                                     style={{ height: `${Math.max(10, val)}%` }}
                                     title={`Score: ${val}%`}
                                   ></div>
@@ -395,19 +412,30 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
               {/* Pagination Controls */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-6 py-4 bg-white border-t border-slate-100">
-                  <button 
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentPage(prev => Math.max(1, prev - 1));
+                    }}
+                    disabled={currentPage === 1 || tableLoading}
                     className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   >
                     Previous
                   </button>
-                  <span className="text-xs text-slate-500 font-medium font-sans">
+                  <span className="text-xs text-slate-500 font-medium font-sans flex items-center gap-2">
+                    {tableLoading && (
+                      <span className="w-3.5 h-3.5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin inline-block"></span>
+                    )}
                     Page {currentPage} of {totalPages}
                   </span>
-                  <button 
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setCurrentPage(prev => Math.min(totalPages, prev + 1));
+                    }}
+                    disabled={currentPage === totalPages || tableLoading}
                     className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   >
                     Next

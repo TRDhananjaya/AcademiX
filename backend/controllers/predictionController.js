@@ -141,12 +141,15 @@ const getStudentLessonPrediction = async (student, lessonId) => {
     };
 
     try {
-        const mlUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001/predict';
+        const rawUrl = process.env.ML_SERVICE_URL || 'http://127.0.0.1:5001/predict';
+        const trimmed = rawUrl.replace(/\/+$/, '');
+        const mlUrl = trimmed.endsWith('/predict') ? trimmed : `${trimmed}/predict`;
+
         const mlResponse = await fetch(mlUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(mlFeatures),
-            signal: AbortSignal.timeout(2000) 
+            signal: AbortSignal.timeout(10000) 
         });
 
         if (mlResponse.ok) {
@@ -155,9 +158,11 @@ const getStudentLessonPrediction = async (student, lessonId) => {
             studentResult.predictedPercentage = parseFloat(predictedPercentage.toFixed(1));
             studentResult.predictedLessonMark = parseFloat(((predictedPercentage / 100) * lessonMaxMark).toFixed(1));
         } else {
+            console.error(`ML service returned status ${mlResponse.status} ${mlResponse.statusText} for URL: ${mlUrl}`);
             studentResult.predictionStatus = "ML_SERVICE_UNAVAILABLE";
         }
     } catch (mlErr) {
+        console.error(`ML service call failed: ${mlErr.message}`);
         studentResult.predictionStatus = "ML_SERVICE_UNAVAILABLE";
     }
 
@@ -207,11 +212,10 @@ const getLessonPredictions = async (req, res, next) => {
         const lessonNum = getLessonNumber(lessonId);
         const lessonMaxMark = lessonMaxMarks[lessonNum] || 50;
         
-        const results = [];
-        for (const student of students) {
-            const studentResult = await getStudentLessonPrediction(student, lessonId);
-            results.push(studentResult);
-        }
+        // Execute predictions concurrently with Promise.all to avoid cascading sequential timeouts
+        const results = await Promise.all(
+            students.map(student => getStudentLessonPrediction(student, lessonId))
+        );
         
         res.status(200).json({
             lesson: {
