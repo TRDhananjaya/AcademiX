@@ -187,9 +187,9 @@ export default function ProfileSettings() {
 
         <main className="flex-1 p-[20px_16px] md:p-[32px_40px_40px] overflow-y-auto">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-slate-900 mb-2">Profile Settings</h1>
-            <p className="text-slate-500 text-base">
+          <div className="mb-6 md:mb-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-1 sm:mb-2">Profile Settings</h1>
+            <p className="text-slate-500 text-sm sm:text-base">
               Manage your account, preferences, and view achievements.
             </p>
           </div>

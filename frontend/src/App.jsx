@@ -39,7 +39,8 @@ function App() {
   const teacherRoutes = [
     'teacher/dashboard', 'teacher/resources', 'teacher/quizzes', 'teacher/quiz-report',
     'teacher/notifications', 'teacher/community', 'teacher/attendance', 'teacher/profile',
-    'teacher/students', 'create-quiz', 'analytics', 'exam-prediction'
+    'teacher/students', 'teacher/analytics', 'teacher/create-quiz', 'teacher/exam-prediction',
+    'create-quiz', 'analytics', 'exam-prediction'
   ];
   const studentRoutes = [
     'student/dashboard', 'student/lessons', 'student/quizzes', 'student/study-plans',
@@ -109,9 +110,11 @@ function App() {
     case 'teacher/quiz-report':
       return <TeacherDashboard activeTab="quiz-report" />;
     case 'create-quiz':
+    case 'teacher/create-quiz':
       return <CreateQuiz />;
 
     case 'analytics':
+    case 'teacher/analytics':
       return <Analytics />;
     case 'student/lessons':
       return <Lessons />;
@@ -136,6 +139,7 @@ function App() {
     case 'student/profile':
       return <ProfileSettings />;
     case 'exam-prediction':
+    case 'teacher/exam-prediction':
       return <ExamPrediction />;
     default:
       if (currentPage.startsWith('exam-prediction/student/')) {

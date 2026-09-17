@@ -19,7 +19,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    // setActiveNav(activeTab); // fixed lint error
+    setActiveNav(activeTab);
   }, [activeTab]);
 
   // Fetch available lessons/modules for the selector dropdown
