@@ -15,7 +15,6 @@ export default function StudentDashboard() {
   const [analytics, setAnalytics] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [communityPosts, setCommunityPosts] = useState([]);
-  const [selectedLesson, setSelectedLesson] = useState('latest');
 
   // Fetch Student Analytics
   useEffect(() => {
@@ -24,7 +23,12 @@ export default function StudentDashboard() {
     const fetchAnalytics = async () => {
       try {
         setLoading(true);
-        const resAnalytics = await fetch(`/api/analytics/student/${user.username}`);
+        const token = localStorage.getItem('token');
+        const resAnalytics = await fetch(`/api/analytics/student/${user.username}`, {
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
         if (resAnalytics.ok) {
           const analyticsData = await resAnalytics.json();
           setAnalytics(analyticsData);
@@ -46,10 +50,14 @@ export default function StudentDashboard() {
     const fetchPrediction = async () => {
       try {
         setLoadingPrediction(true);
+        const token = localStorage.getItem('token');
         const resPrediction = await fetch('/api/ml/predict', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ studentId: user.username, lessonId: '' }) // General prediction
+          headers: { 
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+          body: JSON.stringify({ studentId: user.username, lessonId: '' }) // General prediction across all lessons
         });
         if (resPrediction.ok) {
           const predData = await resPrediction.json();
@@ -116,23 +124,13 @@ export default function StudentDashboard() {
     );
   }
 
-  // Dynamic calculation for the marks display section based on selected filter
+  // Calculation for the Quiz Performance display
   let displayScore = 0;
   let displayLabel = 'No Quizzes Taken';
 
   if (analytics?.history && analytics.history.length > 0) {
-    if (selectedLesson === 'latest') {
-      // Display marks from the student's most recently completed quiz
-      displayScore = analytics.history[0].percentage || 0;
-      displayLabel = analytics.history[0].lessonName || 'Unknown Lesson';
-    } else {
-      // Find all quizzes associated with the selected lesson and get their average
-      const lessonTrend = analytics.trendData?.find(item => item.lesson === selectedLesson);
-      if (lessonTrend) {
-        displayScore = lessonTrend.percentage || 0;
-        displayLabel = selectedLesson;
-      }
-    }
+    displayScore = analytics.summary?.overallAverage || 0;
+    displayLabel = 'Overall Quiz Performance';
   }
 
   const progressData = [
@@ -161,8 +159,6 @@ export default function StudentDashboard() {
   // Map Exam Prediction
   let predictedGrade = 'N/A';
   let predictionDetails = 'Take a quiz first';
-  let trendIndicator = '0% since last week';
-  let isPositiveTrend = true;
 
   if (prediction) {
     const score = prediction.predictedPercentage || (prediction.prediction && prediction.prediction.predictedScore) || 0;
@@ -178,13 +174,9 @@ export default function StudentDashboard() {
       predictedGrade = 'N/A';
       predictionDetails = 'Take a quiz first';
     } else {
-      const totalMarks = prediction.totalMarks ?? 25;
+      const totalMarks = prediction.totalMarks ?? 100;
       predictionDetails = `Score: ${score.toFixed(0)}% (${prediction.predictedMarks.toFixed(1)} / ${totalMarks})`;
     }
-    
-    const improvement = prediction.improvementPercentage || 0;
-    trendIndicator = `${improvement >= 0 ? '+' : ''}${improvement.toFixed(1)}% improvement trend`;
-    isPositiveTrend = improvement >= 0;
   }
 
   return (
@@ -217,23 +209,9 @@ export default function StudentDashboard() {
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center">
                   <div className="w-full flex justify-between items-center mb-2">
                     <h3 className="text-slate-800 font-semibold text-[15px]">Quiz Performance</h3>
-                    
-                    {analytics?.history && analytics.history.length > 0 ? (
-                      <select
-                        value={selectedLesson}
-                        onChange={(e) => setSelectedLesson(e.target.value)}
-                        className="text-[13px] bg-slate-50 border border-slate-200 text-slate-600 rounded-lg py-1 px-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium max-w-[130px] truncate cursor-pointer"
-                      >
-                        <option value="latest">Latest Quiz</option>
-                        {uniqueLessons.map((lesson, idx) => (
-                          <option key={idx} value={lesson}>{lesson}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <div className="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                      </div>
-                    )}
+                    <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
                   </div>
                   
                   <div className="relative w-36 h-36 mt-2 mb-3">
@@ -400,10 +378,6 @@ export default function StudentDashboard() {
                     
                     <div className="bg-slate-50 px-4 py-1.5 rounded-full text-slate-600 text-xs font-semibold mb-2 text-center">
                       {predictionDetails}
-                    </div>
-
-                    <div className={`text-xs font-bold ${isPositiveTrend ? 'text-emerald-500' : 'text-red-500'} mb-2`}>
-                      {trendIndicator}
                     </div>
                   </>
                 )}
