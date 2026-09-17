@@ -101,8 +101,6 @@ export default function StudentDashboard() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-
-
   if (loading) {
     return (
       <div className="flex min-h-screen font-sans bg-[#f8f9fb]" id="student-dashboard-layout">
@@ -167,7 +165,8 @@ export default function StudentDashboard() {
   let isPositiveTrend = true;
 
   if (prediction) {
-    const score = prediction.prediction?.predictedScore || 0;
+    const score = prediction.predictedPercentage || (prediction.prediction && prediction.prediction.predictedScore) || 0;
+    
     if (score >= 90) predictedGrade = 'A+';
     else if (score >= 80) predictedGrade = 'A';
     else if (score >= 70) predictedGrade = 'B';
@@ -175,9 +174,14 @@ export default function StudentDashboard() {
     else if (score >= 50) predictedGrade = 'D';
     else predictedGrade = 'F';
 
-    const predictedMarks = prediction.predictedMarks ?? 0;
-    const totalMarks = prediction.totalMarks ?? 25;
-    predictionDetails = `Score: ${score.toFixed(0)}% (${predictedMarks.toFixed(1)} / ${totalMarks})`;
+    if (prediction.predictionStatus === 'INSUFFICIENT_DATA' || prediction.predictedMarks == null) {
+      predictedGrade = 'N/A';
+      predictionDetails = 'Take a quiz first';
+    } else {
+      const totalMarks = prediction.totalMarks ?? 25;
+      predictionDetails = `Score: ${score.toFixed(0)}% (${prediction.predictedMarks.toFixed(1)} / ${totalMarks})`;
+    }
+    
     const improvement = prediction.improvementPercentage || 0;
     trendIndicator = `${improvement >= 0 ? '+' : ''}${improvement.toFixed(1)}% improvement trend`;
     isPositiveTrend = improvement >= 0;

@@ -8,5 +8,9 @@ const studyPlanSchema = new mongoose.Schema({
   status: { type: String, enum: ['Active', 'Completed', 'Archived'], default: 'Active' },
   createdAt: { type: Date, default: Date.now }
 });
+studyPlanSchema.index(
+  { studentId: 1, lessonId: 1 },
+  { unique: true }
+);
 
 module.exports = mongoose.model('StudyPlan', studyPlanSchema);

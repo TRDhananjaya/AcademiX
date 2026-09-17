@@ -19,43 +19,26 @@ def health():
 @app.route('/predict', methods=['POST'])
 def predict():
     data = request.json
-    sample_dict = {f: 0 for f in model_features}
+    
+    # Initialize dictionary with zeros for expected features
+    sample_dict = {f: 0.0 for f in model_features}
 
     # Match numeric features
-    numeric_features = [
-        'Module_1_Score', 'Module_2_Score', 'Module_3_Score',
-        'Avg_Module_Score', 'Weak_Module_Count', 'Priority_Score',
-        'Followup_Quiz_Score', 'Improvement_Percentage'
-    ]
-    
-    for f in numeric_features:
+    for f in model_features:
         if f in data:
-            sample_dict[f] = data[f]
-
-    # Handle Categorical variables
-    lesson_id = data.get('LessonID')
-    if lesson_id:
-        lesson_col = f"Lesson_ID_{lesson_id}"
-        if lesson_col in sample_dict:
-            sample_dict[lesson_col] = 1
-            
-    lesson_perf = data.get('Lesson_Performance')
-    if lesson_perf:
-        perf_col = f"Lesson_Performance_{lesson_perf}"
-        if perf_col in sample_dict:
-            sample_dict[perf_col] = 1
-            
-    quiz_diff = data.get('Quiz_Difficulty')
-    if quiz_diff:
-        diff_col = f"Quiz_Difficulty_{quiz_diff}"
-        if diff_col in sample_dict:
-            sample_dict[diff_col] = 1
+            # Ensure input is clipped between 0 and 100 as per training normalization
+            val = float(data[f])
+            sample_dict[f] = max(0.0, min(100.0, val))
 
     sample = pd.DataFrame([sample_dict])[model_features]
     prediction = model.predict(sample)
+    
+    predicted_percentage = float(prediction[0])
+    # Clip prediction between 0 and 100 just in case
+    predicted_percentage = max(0.0, min(100.0, predicted_percentage))
 
     return jsonify({
-        "predicted_score": float(prediction[0])
+        "predicted_score": predicted_percentage
     })
 
 if __name__ == "__main__":

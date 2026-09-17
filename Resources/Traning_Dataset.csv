@@ -1,0 +1,119 @@
+Student_ID,Student_Name,Lesson_ID,Lesson_Name,Quiz_1_Score,Quiz_2_Score,Quiz_3_Score,Quiz_Average,Followup_Quiz_Score,Lesson_Wise_Term_Test_Score
+ST001,Nimal Perera,1,Information and Communication Technology,0,30,15,15,65,15
+ST002,Kasun Silva,1,Information and Communication Technology,45,60,30,45,90,29
+ST003,Sahan Jayasuriya,1,Information and Communication Technology,35,30,35,33.33333333,70,26
+ST004,Dinesh Fernando,1,Information and Communication Technology,,,,#DIV/0!,,
+ST005,Chamara Wijesinghe,1,Information and Communication Technology,10,30,40,26.66666667,85,23
+ST006,Tharindu Gunawardena,1,Information and Communication Technology,55,40,35,43.33333333,75,32
+ST007,Sachintha Ranasinghe,1,Information and Communication Technology,15,25,30,23.33333333,65,17
+ST008,Nuwan Bandara,1,Information and Communication Technology,25,35,30,30,80,25
+ST009,Kavindu Ekanayake,1,Information and Communication Technology,15,45,35,31.66666667,70,24
+ST010,Supun Herath,1,Information and Communication Technology,35,25,25,28.33333333,60,19
+ST011,Isuru Karunaratne,1,Information and Communication Technology,20,10,45,25,55,17
+ST012,Malintha Samarasinghe,1,Information and Communication Technology,15,15,25,18.33333333,80,16
+ST013,Gayan Madushanka,1,Information and Communication Technology,30,35,10,25,90,25
+ST014,Pasindu Lakshan,1,Information and Communication Technology,30,15,25,23.33333333,85,18
+ST015,Dilshan Peris,1,Information and Communication Technology,25,20,15,20,80,20
+ST016,Janith Rodrigo,1,Information and Communication Technology,60,65,50,58.33333333,55,33
+ST017,Ravindu Senanayake,1,Information and Communication Technology,50,70,50,56.66666667,55,30
+ST018,Ashen Weerasinghe,1,Information and Communication Technology,80,70,75,75,90,41
+ST019,Charith Wickramasinghe,1,Information and Communication Technology,80,65,70,71.66666667,90,40
+ST020,Lahiru Abeykoon,1,Information and Communication Technology,75,65,65,68.33333333,90,39
+ST021,Thilina Rathnayake,1,Information and Communication Technology,75,65,65,68.33333333,80,34
+ST022,Yasiru Peiris,1,Information and Communication Technology,75,75,95,81.66666667,85,38
+ST023,Pramuditha Jayawardena,1,Information and Communication Technology,90,90,95,91.66666667,100,45
+ST024,Dinuka Hettiarachchi,1,Information and Communication Technology,55,50,50,51.66666667,45,29
+ST025,Akila Kumara,1,Information and Communication Technology,65,65,50,60,70,30
+ST026,Sandaru Pathirana,1,Information and Communication Technology,55,50,50,51.66666667,65,29
+ST027,Vihanga De Silva,1,Information and Communication Technology,75,55,65,65,65,33
+ST028,Nethmina Gunasekara,1,Information and Communication Technology,60,70,75,68.33333333,75,36
+ST029,Pabasara Jayathilake,1,Information and Communication Technology,80,85,65,76.66666667,65,40
+ST030,Shehan Kulatunga,1,Information and Communication Technology,80,95,90,88.33333333,100,46
+ST031,Anjana Dissanayake,1,Information and Communication Technology,95,100,100,98.33333333,90,50
+ST032,Kanishka Mendis,1,Information and Communication Technology,75,95,80,83.33333333,95,47
+ST033,Nipun Chathuranga,1,Information and Communication Technology,90,100,85,91.66666667,85,42
+ST034,Ruchira Fernando,1,Information and Communication Technology,30,20,35,28.33333333,80,23
+ST035,Harshana Perera,1,Information and Communication Technology,35,20,25,26.66666667,75,18
+ST036,Tharuka Nadeeshan,1,Information and Communication Technology,90,90,85,88.33333333,75,46
+ST037,Bhanuka Dilshan,1,Information and Communication Technology,90,95,90,91.66666667,85,45
+ST038,Udara Sampath,1,Information and Communication Technology,80,90,80,83.33333333,80,38
+ST039,Lasith Maduranga,1,Information and Communication Technology,95,95,75,88.33333333,55,35
+ST040,Vishwa Amarasinghe,1,Information and Communication Technology,0,85,85,56.66666667,55,28
+ST041,Amanda Perera,1,Information and Communication Technology,80,70,79,76.33333333,75,36
+ST042,Nethmi Fernando,1,Information and Communication Technology,71,90,56,72.33333333,65,39
+ST043,Kavindi Silva,1,Information and Communication Technology,90,62,62,71.33333333,65,37
+ST044,Sachini Jayawardena,1,Information and Communication Technology,72,58,75,68.33333333,80,33
+ST045,Yasasmi Peris,1,Information and Communication Technology,30,5,30,21.66666667,85,18
+ST046,Tharushi Senanayake,1,Information and Communication Technology,75,100,100,91.66666667,85,48
+ST047,Dinithi Wickramasinghe,1,Information and Communication Technology,15,25,35,25,45,17
+ST048,Piumi Herath,1,Information and Communication Technology,80,85,85,83.33333333,55,39
+ST049,Ayesha Ranasinghe,1,Information and Communication Technology,85,80,95,86.66666667,95,43
+ST050,Hashini Ekanayake,1,Information and Communication Technology,100,70,80,83.33333333,70,40
+ST051,Imesha Bandara,1,Information and Communication Technology,15,25,40,26.66666667,45,14
+ST052,Nadeesha Gunawardena,1,Information and Communication Technology,70,90,90,83.33333333,75,39
+ST053,Shashini Karunaratne,1,Information and Communication Technology,100,55,80,78.33333333,75,36
+ST054,Upeksha Samarasinghe,1,Information and Communication Technology,70,100,85,85,75,44
+ST055,Dilki Peiris,1,Information and Communication Technology,95,80,100,91.66666667,65,45
+ST056,Rashmi Rodrigo,1,Information and Communication Technology,55,80,70,68.33333333,60,34
+ST057,Nethara Weerasinghe,1,Information and Communication Technology,90,85,75,83.33333333,50,40
+ST058,Chamodi Abeykoon,1,Information and Communication Technology,45,60,90,65,70,31
+ST059,Keshani Rathnayake,1,Information and Communication Technology,25,5,51,27,45,14
+ST001,Nimal Perera,2,Fundamentals of a Computer System,20,25,35,26.66666667,60,16
+ST002,Kasun Silva,2,Fundamentals of a Computer System,25,25,15,21.66666667,90,18
+ST003,Sahan Jayasuriya,2,Fundamentals of a Computer System,35,35,30,33.33333333,60,25
+ST004,Dinesh Fernando,2,Fundamentals of a Computer System,,,,#DIV/0!,,
+ST005,Chamara Wijesinghe,2,Fundamentals of a Computer System,25,20,35,26.66666667,90,22
+ST006,Tharindu Gunawardena,2,Fundamentals of a Computer System,20,30,35,28.33333333,75,19
+ST007,Sachintha Ranasinghe,2,Fundamentals of a Computer System,25,65,25,38.33333333,70,21
+ST008,Nuwan Bandara,2,Fundamentals of a Computer System,40,55,65,53.33333333,85,28
+ST009,Kavindu Ekanayake,2,Fundamentals of a Computer System,15,5,55,25,70,23
+ST010,Supun Herath,2,Fundamentals of a Computer System,100,95,95,96.66666667,50,42
+ST011,Isuru Karunaratne,2,Fundamentals of a Computer System,,,,#DIV/0!,,
+ST012,Malintha Samarasinghe,2,Fundamentals of a Computer System,80,85,90,85,95,44
+ST013,Gayan Madushanka,2,Fundamentals of a Computer System,95,85,75,85,90,44
+ST014,Pasindu Lakshan,2,Fundamentals of a Computer System,75,90,65,76.66666667,90,39
+ST015,Dilshan Peris,2,Fundamentals of a Computer System,,,,#DIV/0!,,
+ST016,Janith Rodrigo,2,Fundamentals of a Computer System,50,45,60,51.66666667,55,24
+ST017,Ravindu Senanayake,2,Fundamentals of a Computer System,65,65,70,66.66666667,75,31
+ST018,Ashen Weerasinghe,2,Fundamentals of a Computer System,60,75,70,68.33333333,85,39
+ST019,Charith Wickramasinghe,2,Fundamentals of a Computer System,75,75,70,73.33333333,85,38
+ST020,Lahiru Abeykoon,2,Fundamentals of a Computer System,85,80,70,78.33333333,100,43
+ST021,Thilina Rathnayake,2,Fundamentals of a Computer System,65,75,75,71.66666667,80,36
+ST022,Yasiru Peiris,2,Fundamentals of a Computer System,95,90,75,86.66666667,85,43
+ST023,Pramuditha Jayawardena,2,Fundamentals of a Computer System,90,90,90,90,100,50
+ST024,Dinuka Hettiarachchi,2,Fundamentals of a Computer System,55,45,60,53.33333333,45,29
+ST025,Akila Kumara,2,Fundamentals of a Computer System,60,60,55,58.33333333,70,34
+ST026,Sandaru Pathirana,2,Fundamentals of a Computer System,50,55,55,53.33333333,75,33
+ST027,Vihanga De Silva,2,Fundamentals of a Computer System,55,70,70,65,65,33
+ST028,Nethmina Gunasekara,2,Fundamentals of a Computer System,65,60,65,63.33333333,70,31
+ST029,Pabasara Jayathilake,2,Fundamentals of a Computer System,70,80,80,76.66666667,65,34
+ST030,Shehan Kulatunga,2,Fundamentals of a Computer System,80,90,95,88.33333333,100,44
+ST031,Anjana Dissanayake,2,Fundamentals of a Computer System,100,85,90,91.66666667,95,50
+ST032,Kanishka Mendis,2,Fundamentals of a Computer System,90,90,95,91.66666667,85,42
+ST033,Nipun Chathuranga,2,Fundamentals of a Computer System,80,85,85,83.33333333,95,46
+ST034,Ruchira Fernando,2,Fundamentals of a Computer System,50,50,45,48.33333333,75,27
+ST035,Harshana Perera,2,Fundamentals of a Computer System,35,25,45,35,65,19
+ST036,Tharuka Nadeeshan,2,Fundamentals of a Computer System,75,80,85,80,65,34
+ST037,Bhanuka Dilshan,2,Fundamentals of a Computer System,75,75,90,80,95,41
+ST038,Udara Sampath,2,Fundamentals of a Computer System,70,80,75,75,95,39
+ST039,Lasith Maduranga,2,Fundamentals of a Computer System,60,95,75,76.66666667,50,31
+ST040,Vishwa Amarasinghe,2,Fundamentals of a Computer System,30,35,45,36.66666667,70,21
+ST041,Amanda Perera,2,Fundamentals of a Computer System,85,80,90,85,75,39
+ST042,Nethmi Fernando,2,Fundamentals of a Computer System,75,85,90,83.33333333,65,39
+ST043,Kavindi Silva,2,Fundamentals of a Computer System,80,95,90,88.33333333,65,41
+ST044,Sachini Jayawardena,2,Fundamentals of a Computer System,90,100,90,93.33333333,95,50
+ST045,Yasasmi Peris,2,Fundamentals of a Computer System,90,95,90,91.66666667,80,48
+ST046,Tharushi Senanayake,2,Fundamentals of a Computer System,100,100,100,100,100,49
+ST047,Dinithi Wickramasinghe,2,Fundamentals of a Computer System,60,75,75,70,55,34
+ST048,Piumi Herath,2,Fundamentals of a Computer System,75,90,70,78.33333333,90,38
+ST049,Ayesha Ranasinghe,2,Fundamentals of a Computer System,100,85,55,80,85,39
+ST050,Hashini Ekanayake,2,Fundamentals of a Computer System,95,80,55,76.66666667,85,43
+ST051,Imesha Bandara,2,Fundamentals of a Computer System,75,75,60,70,95,41
+ST052,Nadeesha Gunawardena,2,Fundamentals of a Computer System,100,55,95,83.33333333,90,44
+ST053,Shashini Karunaratne,2,Fundamentals of a Computer System,70,75,75,73.33333333,80,41
+ST054,Upeksha Samarasinghe,2,Fundamentals of a Computer System,100,85,60,81.66666667,65,40
+ST055,Dilki Peiris,2,Fundamentals of a Computer System,55,60,95,70,55,34
+ST056,Rashmi Rodrigo,2,Fundamentals of a Computer System,90,95,65,83.33333333,70,44
+ST057,Nethara Weerasinghe,2,Fundamentals of a Computer System,90,70,85,81.66666667,85,39
+ST058,Chamodi Abeykoon,2,Fundamentals of a Computer System,65,95,90,83.33333333,90,46
+ST059,Keshani Rathnayake,2,Fundamentals of a Computer System,65,65,75,68.33333333,80,39
