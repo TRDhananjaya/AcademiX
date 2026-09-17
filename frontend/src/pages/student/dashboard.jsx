@@ -120,7 +120,7 @@ export default function StudentDashboard() {
           <StudentTopBar />
           <div className="flex-1 flex flex-col items-center justify-center p-8">
             <div className="w-12 h-12 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin mb-4"></div>
-            <p className="text-slate-500 font-medium">Generating your AI insights...</p>
+            <p className="text-slate-500 font-medium">Loading your dashboard...</p>
           </div>
         </div>
       </div>
@@ -156,32 +156,25 @@ export default function StudentDashboard() {
     : [];
 
   // Map Streak Info
-  const streakTarget = streak < 7 ? 7 : (streak < 14 ? 14 : 30);
-  const streakPercent = Math.min(100, (streak / streakTarget) * 100);
-  const daysRemaining = streakTarget - streak;
+  const streakMessage = streak === 0
+    ? 'Start a quiz today to begin your streak!'
+    : streak === 1
+    ? 'Great start! Keep it going tomorrow.'
+    : `${streak} days in a row — keep the momentum!`;
 
   // Map Focus Areas (Lowest score lessons)
   const focusAreas = analytics?.trendData 
     ? [...analytics.trendData].sort((a, b) => a.percentage - b.percentage).slice(0, 2)
     : [];
 
-  // Map AI Optimized Plan
-  const weakestLesson = analytics?.summary?.weakestLesson && analytics.summary.weakestLesson !== 'N/A' 
-    ? analytics.summary.weakestLesson 
-    : null;
-  const planTitle = weakestLesson ? `Your Optimized Plan for ${weakestLesson}` : 'Your Optimized Plan for Today';
-  const planDescription = weakestLesson
-    ? `Based on your recent quiz performance, we've prioritized ${weakestLesson} and structured a focused session.`
-    : 'Ready to start? Complete a practice quiz, and the AI will analyze your weaknesses to build a custom plan.';
-  const planTasks = weakestLesson
-    ? [
-        { name: `Read Chapter: ${weakestLesson} Key Concepts`, est: '35 mins' },
-        { name: `Practice Set: ${weakestLesson} Practice Quiz`, est: '25 mins' }
-      ]
-    : [
-        { name: 'Review study materials & lessons', est: '20 mins' },
-        { name: 'Attempt a practice quiz', est: '15 mins' }
-      ];
+  // Map Performance Summary from real analytics
+  const summary = analytics?.summary;
+  const totalQuizzes = summary?.totalQuizzes || 0;
+  const overallAvg = summary?.overallAverage || 0;
+  const strongestLesson = summary?.strongestLesson && summary.strongestLesson !== 'N/A' ? summary.strongestLesson : null;
+  const weakestLesson = summary?.weakestLesson && summary.weakestLesson !== 'N/A' ? summary.weakestLesson : null;
+  const highestScore = summary?.highestScore || 0;
+  const lowestScore = summary?.lowestScore || 0;
 
   // Map Exam Prediction
   let predictedGrade = 'N/A';
@@ -198,7 +191,9 @@ export default function StudentDashboard() {
     else if (score >= 50) predictedGrade = 'D';
     else predictedGrade = 'F';
 
-    predictionDetails = `Score: ${score.toFixed(0)}% (${prediction.predictedMarks.toFixed(1)} / ${prediction.totalMarks})`;
+    const predictedMarks = prediction.predictedMarks ?? 0;
+    const totalMarks = prediction.totalMarks ?? 25;
+    predictionDetails = `Score: ${score.toFixed(0)}% (${predictedMarks.toFixed(1)} / ${totalMarks})`;
     const improvement = prediction.improvementPercentage || 0;
     trendIndicator = `${improvement >= 0 ? '+' : ''}${improvement.toFixed(1)}% improvement trend`;
     isPositiveTrend = improvement >= 0;
@@ -218,16 +213,16 @@ export default function StudentDashboard() {
               Welcome back, {user ? (user.firstName || user.username) : 'Student'}!
             </h1>
             <p className="text-slate-500 text-base">
-              Ready to crush your goals today? Your AI plan is waiting.
+              Here's your performance overview. Keep up the great work!
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             
-            {/* Course Progress Card */}
+            {/* Quiz Performance Card */}
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center">
               <div className="w-full flex justify-between items-center mb-2">
-                <h3 className="text-slate-800 font-semibold text-[15px]">Course Progress</h3>
+                <h3 className="text-slate-800 font-semibold text-[15px]">Quiz Performance</h3>
                 
                 {analytics?.history && analytics.history.length > 0 ? (
                   <select
@@ -298,15 +293,13 @@ export default function StudentDashboard() {
                     <div 
                       key={i} 
                       className={`h-1.5 flex-1 rounded-full ${
-                        i < Math.round((streakPercent / 100) * 7) ? 'bg-amber-400' : 'bg-slate-100'
+                        i < Math.min(streak, 7) ? 'bg-amber-400' : 'bg-slate-100'
                       }`}
                     ></div>
                   ))}
                 </div>
                 <p className="text-xs text-slate-400 font-medium">
-                  {daysRemaining > 0 
-                    ? `${daysRemaining} more day${daysRemaining > 1 ? 's' : ''} to unlock the '${streakTarget === 7 ? 'Consistency' : 'Expert'}' badge!`
-                    : 'Congrats! You unlocked the badge! Keep up the streak!'}
+                  {streakMessage}
                 </p>
               </div>
             </div>
@@ -359,7 +352,7 @@ export default function StudentDashboard() {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* Optimized Plan Card */}
+            {/* Performance Summary Card (replaces fake AI Plan) */}
             <div className="lg:col-span-2 bg-white rounded-2xl p-8 shadow-sm border border-slate-100 relative overflow-hidden flex flex-col justify-between">
               
               {/* Background Graphic Pattern */}
@@ -373,30 +366,58 @@ export default function StudentDashboard() {
               </div>
 
               <div>
-                <div className="inline-flex items-center gap-1.5 bg-[#e0f7fa] text-[#00838f] px-3 py-1 rounded-full text-xs font-bold tracking-wide mb-6">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 9h-2V7h-2v5H6v2h2v5h2v-5h2v-2z"/></svg>
-                  AI GENERATED
+                <div className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold tracking-wide mb-6">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                  PERFORMANCE SUMMARY
                 </div>
                 
                 <h2 className="text-2xl font-bold text-slate-800 mb-3 max-w-sm">
-                  {planTitle}
+                  Your Quiz Analytics
                 </h2>
                 
                 <p className="text-slate-500 text-[15px] mb-8 max-w-md leading-relaxed">
-                  {planDescription}
+                  {totalQuizzes > 0
+                    ? `You've completed ${totalQuizzes} quiz${totalQuizzes > 1 ? 'zes' : ''} with an overall average of ${overallAvg}%.`
+                    : 'Start taking quizzes to see your performance analytics here.'}
                 </p>
 
-                <div className="space-y-6">
-                  {planTasks.map((task, i) => (
-                    <div key={i} className="flex gap-4 items-start">
-                      <div className="w-5 h-5 rounded border-2 border-slate-200 mt-0.5 flex-shrink-0"></div>
-                      <div>
-                        <h4 className="text-[15px] font-medium text-slate-800">{task.name}</h4>
-                        <p className="text-[13px] text-slate-400 mt-1">Est. {task.est}</p>
-                      </div>
+                {totalQuizzes > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <div className="bg-slate-50 rounded-xl p-4 text-center">
+                      <p className="text-2xl font-extrabold text-slate-800">{totalQuizzes}</p>
+                      <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mt-1">Quizzes Taken</p>
                     </div>
-                  ))}
-                </div>
+                    <div className="bg-slate-50 rounded-xl p-4 text-center">
+                      <p className="text-2xl font-extrabold text-slate-800">{overallAvg}%</p>
+                      <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mt-1">Overall Avg</p>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-4 text-center">
+                      <p className="text-2xl font-extrabold text-emerald-600">{highestScore}%</p>
+                      <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mt-1">Highest</p>
+                    </div>
+                    <div className="bg-slate-50 rounded-xl p-4 text-center">
+                      <p className="text-2xl font-extrabold text-red-500">{lowestScore}%</p>
+                      <p className="text-[11px] text-slate-400 font-semibold uppercase tracking-wider mt-1">Lowest</p>
+                    </div>
+                  </div>
+                ) : null}
+
+                {(strongestLesson || weakestLesson) && (
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    {strongestLesson && (
+                      <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        <span className="text-xs font-semibold text-emerald-700">Strongest: {strongestLesson}</span>
+                      </div>
+                    )}
+                    {weakestLesson && (
+                      <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-red-500"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        <span className="text-xs font-semibold text-red-600">Needs Work: {weakestLesson}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="mt-8">
@@ -404,7 +425,7 @@ export default function StudentDashboard() {
                   onClick={() => navigate('/student/quizzes')}
                   className="bg-[#3b28cc] text-white px-6 py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-colors flex items-center gap-2"
                 >
-                  Start Session
+                  Take a Quiz
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 </button>
               </div>
