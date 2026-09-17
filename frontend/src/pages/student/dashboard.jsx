@@ -159,8 +159,6 @@ export default function StudentDashboard() {
   // Map Exam Prediction
   let predictedGrade = 'N/A';
   let predictionDetails = 'Take a quiz first';
-  let trendIndicator = '0% since last week';
-  let isPositiveTrend = true;
 
   if (prediction) {
     const score = prediction.predictedPercentage || (prediction.prediction && prediction.prediction.predictedScore) || 0;
@@ -179,10 +177,6 @@ export default function StudentDashboard() {
       const totalMarks = prediction.totalMarks ?? 100;
       predictionDetails = `Score: ${score.toFixed(0)}% (${prediction.predictedMarks.toFixed(1)} / ${totalMarks})`;
     }
-    
-    const improvement = prediction.improvementPercentage || 0;
-    trendIndicator = `${improvement >= 0 ? '+' : ''}${improvement.toFixed(1)}% improvement trend`;
-    isPositiveTrend = improvement >= 0;
   }
 
   return (
@@ -384,10 +378,6 @@ export default function StudentDashboard() {
                     
                     <div className="bg-slate-50 px-4 py-1.5 rounded-full text-slate-600 text-xs font-semibold mb-2 text-center">
                       {predictionDetails}
-                    </div>
-
-                    <div className={`text-xs font-bold ${isPositiveTrend ? 'text-emerald-500' : 'text-red-500'} mb-2`}>
-                      {trendIndicator}
                     </div>
                   </>
                 )}
