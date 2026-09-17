@@ -296,21 +296,6 @@ export default function CommunityHub() {
                       
                       <div className="flex flex-wrap items-center justify-between border-t border-slate-100 pt-4 gap-4">
                         <div className="flex items-center gap-4">
-                          <div className="flex items-center bg-slate-50 rounded-full border border-slate-100">
-                            <button 
-                              onClick={() => handleVote(post._id, 'up')}
-                              className={`p-2 hover:bg-slate-200 rounded-l-full transition-colors cursor-pointer ${post.upvotedBy?.includes(user?.username) ? 'text-indigo-600 font-bold' : ''}`}
-                            >
-                              <BiUpvote className="w-4 h-4" />
-                            </button>
-                            <span className="text-sm font-bold text-slate-700 px-1 min-w-[1.5rem] text-center">{post.votes || 0}</span>
-                            <button 
-                              onClick={() => handleVote(post._id, 'down')}
-                              className="p-2 hover:bg-slate-200 rounded-r-full transition-colors cursor-pointer"
-                            >
-                              <BiDownvote className="w-4 h-4 text-slate-500" />
-                            </button>
-                          </div>
 
                           <button 
                             onClick={() => setExpandedPostId(expandedPostId === post._id ? null : post._id)}
@@ -374,24 +359,6 @@ export default function CommunityHub() {
                 )}
 
               </div>
-
-              {/* Right Column (Sidebar Photo Card) */}
-              <div className="w-full lg:w-[320px] shrink-0 space-y-6">
-                <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm overflow-hidden group">
-                  <div className="rounded-xl overflow-hidden shadow-sm relative">
-                    <img 
-                      src={communityBannerImg} 
-                      alt="AcademiX Collaborative Learning Community" 
-                      className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent p-4 flex flex-col justify-end">
-                      <h4 className="text-white font-bold text-base leading-tight">Learning Community</h4>
-                      <p className="text-slate-200 text-xs mt-1">Connect, collaborate & share academic knowledge.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
             </div>
           )}
         </main>
