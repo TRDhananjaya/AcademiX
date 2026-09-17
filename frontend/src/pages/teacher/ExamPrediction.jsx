@@ -3,13 +3,16 @@ import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
 import { navigate } from '../../App';
 
+const CACHE_KEY_PREFIX = 'academix_lesson_prediction_';
+const CACHE_STATE_KEY = 'academix_lesson_prediction_state';
+
 export default function ExamPrediction() {
   const [activeNav, setActiveNav] = useState('analytics');
   
   const [lessons, setLessons] = useState([]);
   
   const [selectedLesson, setSelectedLesson] = useState('');
-  const [studentSearch, setStudentSearch] = useState('');
+  const [selectedStudentFilter, setSelectedStudentFilter] = useState('');
   
   const [classPredictions, setClassPredictions] = useState(null);
   
@@ -19,22 +22,47 @@ export default function ExamPrediction() {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
   
-  const [allStudents, setAllStudents] = useState([]);
+  useEffect(() => {
+    return () => {
+      setTimeout(() => {
+        if (!window.location.pathname.includes('exam-prediction')) {
+          sessionStorage.removeItem(CACHE_STATE_KEY);
+          const keysToRemove = [];
+          for (let i = 0; i < sessionStorage.length; i++) {
+            const key = sessionStorage.key(i);
+            if (key && key.startsWith(CACHE_KEY_PREFIX)) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach(key => sessionStorage.removeItem(key));
+        }
+      }, 0);
+    };
+  }, []);
 
   useEffect(() => {
-    async function fetchStudents() {
+    const stateStr = sessionStorage.getItem(CACHE_STATE_KEY);
+    if (stateStr) {
       try {
-        const res = await fetch('/api/analytics/students');
-        if (res.ok) {
-          const data = await res.json();
-          setAllStudents(data.students || []);
-        }
-      } catch (err) {
-        console.error('Failed to fetch students', err);
+        const state = JSON.parse(stateStr);
+        if (state.selectedLesson) setSelectedLesson(state.selectedLesson);
+        if (state.selectedStudentFilter) setSelectedStudentFilter(state.selectedStudentFilter);
+        if (state.currentPage) setCurrentPage(state.currentPage);
+      } catch (e) {
+        sessionStorage.removeItem(CACHE_STATE_KEY);
       }
     }
-    fetchStudents();
   }, []);
+
+  useEffect(() => {
+    if (selectedLesson) {
+      sessionStorage.setItem(CACHE_STATE_KEY, JSON.stringify({
+        selectedLesson,
+        selectedStudentFilter,
+        currentPage
+      }));
+    }
+  }, [selectedLesson, selectedStudentFilter, currentPage]);
 
   useEffect(() => {
     async function fetchLessons() {
@@ -55,16 +83,32 @@ export default function ExamPrediction() {
     async function fetchLessonPredictions() {
       if (!selectedLesson) return;
       
+      const cacheKey = CACHE_KEY_PREFIX + selectedLesson;
+      const cachedStr = sessionStorage.getItem(cacheKey);
+      
+      if (cachedStr) {
+        try {
+          const cached = JSON.parse(cachedStr);
+          setClassPredictions(cached.classPredictions);
+          return;
+        } catch (e) {
+          sessionStorage.removeItem(cacheKey);
+        }
+      }
+      
       setIsLoading(true);
       setError(null);
       setClassPredictions(null);
-      setCurrentPage(1);
 
       try {
         const res = await fetch(`/api/ml/lesson/${selectedLesson}`);
         const data = await res.json();
         if (res.ok) {
           setClassPredictions(data);
+          sessionStorage.setItem(cacheKey, JSON.stringify({
+            classPredictions: data,
+            timestamp: Date.now()
+          }));
         } else {
           setError(data.message || "Failed to fetch class predictions.");
         }
@@ -78,16 +122,23 @@ export default function ExamPrediction() {
     fetchLessonPredictions();
   }, [selectedLesson]);
 
+  const handleLessonChange = (e) => {
+    setSelectedLesson(e.target.value);
+    setSelectedStudentFilter('');
+    setCurrentPage(1);
+  };
+  
+  const handleStudentFilterChange = (e) => {
+    setSelectedStudentFilter(e.target.value);
+    setCurrentPage(1);
+  };
+
   const filteredStudents = useMemo(() => {
     if (!classPredictions?.students) return [];
-    if (!studentSearch) return classPredictions.students;
+    if (!selectedStudentFilter) return classPredictions.students;
     
-    const lowerSearch = studentSearch.toLowerCase();
-    return classPredictions.students.filter(s => 
-      (s.studentName && s.studentName.toLowerCase().includes(lowerSearch)) ||
-      (s.studentId && s.studentId.toLowerCase().includes(lowerSearch))
-    );
-  }, [classPredictions, studentSearch]);
+    return classPredictions.students.filter(s => s.studentId === selectedStudentFilter);
+  }, [classPredictions, selectedStudentFilter]);
 
   const totalPages = Math.ceil(filteredStudents.length / rowsPerPage);
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
@@ -120,7 +171,7 @@ export default function ExamPrediction() {
               <label className="block text-sm font-bold text-slate-700 mb-2">Select Lesson</label>
               <select 
                 value={selectedLesson} 
-                onChange={(e) => setSelectedLesson(e.target.value)}
+                onChange={handleLessonChange}
                 className="w-full border border-slate-200 text-slate-700 rounded-lg px-4 py-2.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="" disabled>-- Select a Lesson --</option>
@@ -131,14 +182,14 @@ export default function ExamPrediction() {
             <div className="flex-1">
               <label className="block text-sm font-bold text-slate-700 mb-2">Filter Student</label>
               <select 
-                onChange={(e) => {
-                  if (e.target.value) navigate(`/exam-prediction/student/${e.target.value}`);
-                }}
-                className="w-full border border-slate-200 text-slate-700 rounded-lg px-4 py-2.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={selectedStudentFilter}
+                onChange={handleStudentFilterChange}
+                disabled={!classPredictions || !classPredictions.students}
+                className="w-full border border-slate-200 text-slate-700 rounded-lg px-4 py-2.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
               >
-                <option value="">-- Jump to a student... --</option>
-                {allStudents.map(s => (
-                  <option key={s.id} value={s.id}>{s.id} - {s.name}</option>
+                <option value="">All Students</option>
+                {classPredictions?.students?.map(s => (
+                  <option key={s.studentId} value={s.studentId}>{s.studentName} — {s.studentId}</option>
                 ))}
               </select>
             </div>
