@@ -72,6 +72,7 @@ export default function AttendanceMonitor() {
   const [scanResult, setScanResult] = useState(null);
   const [scanError, setScanError] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+  const [notificationModal, setNotificationModal] = useState(null);
 
   const html5QrCodeRef = useRef(null);
 
@@ -322,6 +323,12 @@ export default function AttendanceMonitor() {
 
         setScanResult(null);
         setScanError(errorText);
+        setNotificationModal({
+          type: 'warning',
+          title: 'Duplicate Check-in Blocked',
+          message: errorText,
+          buttonText: 'OK'
+        });
         return;
       }
 
@@ -348,6 +355,12 @@ export default function AttendanceMonitor() {
     } catch (err) {
       console.error('Error marking attendance via QR code:', err);
       setScanError('Server error while saving attendance. Please check network connection.');
+      setNotificationModal({
+        type: 'error',
+        title: 'Server Error',
+        message: 'Server error while saving attendance. Please check network connection.',
+        buttonText: 'OK'
+      });
     }
   };
 
@@ -372,14 +385,29 @@ export default function AttendanceMonitor() {
 
       const data = await res.json();
       if (res.ok && data.whatsappSent) {
-        alert(`Parent notification sent successfully for ${item.name}!`);
+        setNotificationModal({
+          type: 'success',
+          title: 'WhatsApp Notification Sent',
+          message: `Parent notification sent successfully for ${item.name}!`,
+          buttonText: 'OK'
+        });
       } else {
-        alert(data.message || `Could not send WhatsApp notification to parent.`);
+        setNotificationModal({
+          type: 'warning',
+          title: 'Notification Alert',
+          message: data.message || `Could not send WhatsApp notification to parent.`,
+          buttonText: 'OK'
+        });
       }
       await fetchAttendanceByDate(selectedDate);
     } catch (err) {
       console.error('Error notifying parent:', err);
-      alert('Failed to send parent notification.');
+      setNotificationModal({
+        type: 'error',
+        title: 'Notification Error',
+        message: 'Failed to send parent notification.',
+        buttonText: 'OK'
+      });
     }
   };
 
@@ -1134,6 +1162,50 @@ export default function AttendanceMonitor() {
               </div>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* System Custom Notification Pop-up Modal */}
+      {notificationModal && (
+        <div 
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-[60] p-4"
+          onClick={() => setNotificationModal(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-200 flex flex-col p-6 text-center space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={`w-14 h-14 rounded-full mx-auto flex items-center justify-center shadow-md border-4 ${
+              notificationModal.type === 'error'
+                ? 'bg-red-100 text-red-600 border-red-50'
+                : notificationModal.type === 'warning'
+                ? 'bg-amber-100 text-amber-600 border-amber-50'
+                : 'bg-emerald-100 text-emerald-600 border-emerald-50'
+            }`}>
+              {notificationModal.type === 'error' && <FiAlertCircle className="w-7 h-7" />}
+              {notificationModal.type === 'warning' && <FiAlertCircle className="w-7 h-7" />}
+              {notificationModal.type === 'success' && <FiCheckCircle className="w-7 h-7" />}
+            </div>
+
+            <div>
+              <h3 className="text-lg font-extrabold text-slate-900 mb-1">
+                {notificationModal.title || 'Notification'}
+              </h3>
+              <p className="text-slate-600 text-xs font-medium leading-relaxed">
+                {notificationModal.message}
+              </p>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setNotificationModal(null)}
+                className="w-full bg-[#3b28cc] hover:bg-indigo-700 text-white font-bold py-2.5 px-5 rounded-xl text-xs transition-all shadow-md cursor-pointer active:scale-[0.99]"
+              >
+                {notificationModal.buttonText || 'OK'}
+              </button>
+            </div>
           </div>
         </div>
       )}
