@@ -1,41 +1,19 @@
 const CommonMessage = require('../models/CommonMessage');
 const User = require('../models/User');
 
-const seedMessages = [
-  {
-    senderId: 'drjenkins',
-    senderName: 'Dr. Sarah Jenkins',
-    senderRole: 'teacher',
-    senderAvatar: 'https://i.pravatar.cc/150?u=drjenkins',
-    text: 'Welcome everyone to the AcademiX Common Learning Platform! Feel free to ask questions and share study notes here.',
-    timestamp: new Date(Date.now() - 7200000)
-  },
-  {
-    senderId: 'alexchen',
-    senderName: 'Alex Chen',
-    senderRole: 'student',
-    senderAvatar: 'https://i.pravatar.cc/150?u=alexchen',
-    text: 'Hello Dr. Jenkins! Does anyone have the formula sheet for thermodynamics chapter 3?',
-    timestamp: new Date(Date.now() - 3600000)
-  },
-  {
-    senderId: 'student1',
-    senderName: 'John Doe',
-    senderRole: 'student',
-    senderAvatar: 'https://i.pravatar.cc/150?u=student1',
-    text: 'I just uploaded the summary notes in the Shared Resources section Alex!',
-    timestamp: new Date(Date.now() - 1800000)
-  }
-];
+const seedMessages = [];
 
 // @desc    Get all global community messages
 // @route   GET /api/common-messages
 const getMessages = async (req, res) => {
   try {
-    let count = await CommonMessage.countDocuments();
-    if (count === 0) {
-      await CommonMessage.insertMany(seedMessages);
-    }
+    // Delete legacy dummy seed messages
+    await CommonMessage.deleteMany({
+      $or: [
+        { senderId: { $in: ['drjenkins', 'alexchen', 'student1'] } },
+        { text: { $regex: "thermodynamics|AcademiX Common Learning Platform|Shared Resources section Alex", $options: 'i' } }
+      ]
+    });
 
     const messages = await CommonMessage.find({}).sort({ timestamp: 1 }).limit(200);
 

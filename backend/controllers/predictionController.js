@@ -56,12 +56,17 @@ const calculateFeatures = async (studentId, lessonId) => {
 
     let q1 = 0, q2 = 0, q3 = 0, followup = 0;
     
-    const latestQuizzes = {};
+    // Track best percentage achieved across attempts
+    const bestQuizzes = {};
     for (const result of quizResults) {
         if (!result.quizId) continue;
         const id = result.quizId.toUpperCase();
-        if (!latestQuizzes[id]) {
-            latestQuizzes[id] = result.percentage || (result.score / 20) * 100;
+        const score = typeof result.percentage === 'number' 
+            ? result.percentage 
+            : (((result.score || 0) / (result.totalQuestions || 20)) * 100);
+            
+        if (bestQuizzes[id] === undefined || score > bestQuizzes[id]) {
+            bestQuizzes[id] = Math.max(0, Math.min(100, score));
         }
     }
 
@@ -69,17 +74,27 @@ const calculateFeatures = async (studentId, lessonId) => {
     const expectedQ2 = `${prefix.toUpperCase()}.2`;
     const expectedQ3 = `${prefix.toUpperCase()}.3`;
 
-    const hasQuiz1 = latestQuizzes[expectedQ1] !== undefined;
-    const hasQuiz2 = latestQuizzes[expectedQ2] !== undefined;
-    const hasQuiz3 = latestQuizzes[expectedQ3] !== undefined;
+    const hasQuiz1 = bestQuizzes[expectedQ1] !== undefined;
+    const hasQuiz2 = bestQuizzes[expectedQ2] !== undefined;
+    const hasQuiz3 = bestQuizzes[expectedQ3] !== undefined;
     
-    if (hasQuiz1) q1 = latestQuizzes[expectedQ1];
-    if (hasQuiz2) q2 = latestQuizzes[expectedQ2];
-    if (hasQuiz3) q3 = latestQuizzes[expectedQ3];
+    if (hasQuiz1) q1 = bestQuizzes[expectedQ1];
+    if (hasQuiz2) q2 = bestQuizzes[expectedQ2];
+    if (hasQuiz3) q3 = bestQuizzes[expectedQ3];
 
     let hasFollowup = false;
-    if (followupResults.length > 0) {
-        followup = followupResults[0]?.percentage || followup;
+    // Prefer followup for this lesson, or highest followup score
+    for (const fr of followupResults) {
+        const score = typeof fr.percentage === 'number' 
+            ? fr.percentage 
+            : (((fr.score || 0) / (fr.totalQuestions || 20)) * 100);
+        if (score > followup) {
+            followup = Math.max(0, Math.min(100, score));
+            hasFollowup = true;
+        }
+    }
+    if (!hasFollowup && followupResults.length > 0) {
+        followup = followupResults[0].percentage || 0;
         hasFollowup = true;
     }
 
@@ -93,11 +108,11 @@ const calculateFeatures = async (studentId, lessonId) => {
     const avg = completedQuizzes > 0 ? (q1 + q2 + q3) / completedQuizzes : 0;
 
     return {
-        Quiz_1_Score: q1,
-        Quiz_2_Score: q2,
-        Quiz_3_Score: q3,
-        Quiz_Average: avg,
-        Followup_Quiz_Score: followup,
+        Quiz_1_Score: parseFloat(q1.toFixed(1)),
+        Quiz_2_Score: parseFloat(q2.toFixed(1)),
+        Quiz_3_Score: parseFloat(q3.toFixed(1)),
+        Quiz_Average: parseFloat(avg.toFixed(1)),
+        Followup_Quiz_Score: parseFloat(followup.toFixed(1)),
         missingData
     };
 };
@@ -183,18 +198,69 @@ const generatePrediction = async (req, res, next) => {
             return res.status(404).json({ message: 'Student not found' });
         }
 
-        const predictionResult = await getStudentLessonPrediction(student, lessonId);
+        // If a specific lesson was requested, predict for that lesson
+        if (lessonId && lessonId.toString().trim() !== '') {
+            const predictionResult = await getStudentLessonPrediction(student, lessonId);
 
-        // Map to the format expected by the detail page component
-        res.status(200).json({
-            studentName: predictionResult.studentName,
-            lesson: predictionResult.lesson,
-            predictedPercentage: predictionResult.predictedPercentage,
-            predictedMarks: predictionResult.predictedLessonMark,
-            totalMarks: predictionResult.lessonMaxMark,
-            predictionStatus: predictionResult.predictionStatus,
-            features: predictionResult.features,
-            quizzesAnalyzed: predictionResult.quizzesAnalyzed
+            return res.status(200).json({
+                studentName: predictionResult.studentName,
+                lesson: predictionResult.lesson,
+                predictedPercentage: predictionResult.predictedPercentage,
+                predictedMarks: predictionResult.predictedLessonMark,
+                totalMarks: predictionResult.lessonMaxMark,
+                predictionStatus: predictionResult.predictionStatus,
+                features: predictionResult.features,
+                quizzesAnalyzed: predictionResult.quizzesAnalyzed
+            });
+        }
+
+        // When no lessonId is passed (e.g. Student Dashboard general Final Exam Prediction):
+        // Evaluate across all unique lessons the student has attempted
+        const quizResults = await QuizResult.find({ 
+            studentId: { $regex: new RegExp(`^${studentId}$`, 'i') } 
+        });
+
+        const lessonNumbers = [...new Set(quizResults.map(r => {
+            const match = r.quizId?.match(/^[QL](\d+)/i);
+            return match ? match[1] : '1';
+        }))].sort();
+
+        if (lessonNumbers.length === 0) lessonNumbers.push('1');
+
+        let totalPredictedPct = 0;
+        let predictionCount = 0;
+        let lastResult = null;
+
+        for (const num of lessonNumbers) {
+            const pred = await getStudentLessonPrediction(student, num.toString());
+            lastResult = pred;
+            if (pred.predictionStatus === "AVAILABLE" && pred.predictedPercentage !== null) {
+                totalPredictedPct += pred.predictedPercentage;
+                predictionCount++;
+            }
+        }
+
+        if (predictionCount === 0) {
+            return res.status(200).json({
+                studentName: student.name || 'Unknown',
+                lesson: "Final Exam (All Lessons)",
+                predictedPercentage: null,
+                predictedMarks: null,
+                totalMarks: 100,
+                predictionStatus: lastResult?.predictionStatus || "INSUFFICIENT_DATA"
+            });
+        }
+
+        const avgPredictedPct = parseFloat((totalPredictedPct / predictionCount).toFixed(1));
+        
+        return res.status(200).json({
+            studentName: student.name || 'Unknown',
+            lesson: "Final Exam (All Lessons)",
+            predictedPercentage: avgPredictedPct,
+            predictedMarks: avgPredictedPct, // Out of 100 for Final Exam
+            totalMarks: 100,
+            predictionStatus: "AVAILABLE",
+            lessonsEvaluated: predictionCount
         });
     } catch (error) {
         console.error('Prediction error:', error);

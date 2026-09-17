@@ -231,7 +231,6 @@ export default function CommunityMonitor() {
                 <div className="space-y-4">
                   {questions.map((q) => (
                     <div key={q._id} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-start gap-4">
-                      
                       <div className="flex-1 min-w-0 pr-2">
                         {/* Meta Row */}
                         <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -283,9 +282,6 @@ export default function CommunityMonitor() {
               )}
             </div>
           </div>
-
-
-
         </div>
       )}
 

@@ -295,21 +295,6 @@ export default function CommunityHub() {
                       
                       <div className="flex flex-wrap items-center justify-between border-t border-slate-100 pt-4 gap-4">
                         <div className="flex items-center gap-4">
-                          <div className="flex items-center bg-slate-50 rounded-full border border-slate-100">
-                            <button 
-                              onClick={() => handleVote(post._id, 'up')}
-                              className={`p-2 hover:bg-slate-200 rounded-l-full transition-colors cursor-pointer ${post.upvotedBy?.includes(user?.username) ? 'text-indigo-600 font-bold' : ''}`}
-                            >
-                              <BiUpvote className="w-4 h-4" />
-                            </button>
-                            <span className="text-sm font-bold text-slate-700 px-1 min-w-[1.5rem] text-center">{post.votes || 0}</span>
-                            <button 
-                              onClick={() => handleVote(post._id, 'down')}
-                              className="p-2 hover:bg-slate-200 rounded-r-full transition-colors cursor-pointer"
-                            >
-                              <BiDownvote className="w-4 h-4 text-slate-500" />
-                            </button>
-                          </div>
 
                           <button 
                             onClick={() => setExpandedPostId(expandedPostId === post._id ? null : post._id)}
@@ -373,9 +358,6 @@ export default function CommunityHub() {
                 )}
 
               </div>
-
-
-
             </div>
           )}
         </main>
