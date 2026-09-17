@@ -1,46 +1,6 @@
 const DirectMessage = require('../models/DirectMessage');
 const User = require('../models/User');
 
-// Seed messages for initial demonstration if collection is empty
-const seedMessages = [
-  {
-    conversationId: 'drjenkins_student1',
-    senderId: 'drjenkins',
-    senderName: 'Dr. Sarah Jenkins',
-    senderRole: 'teacher',
-    senderAvatar: 'https://i.pravatar.cc/150?u=drjenkins',
-    receiverId: 'student1',
-    receiverName: 'John Doe',
-    text: 'Hello John! I noticed your recent question about calculus derivatives. Did you review chapter 4?',
-    read: true,
-    timestamp: new Date(Date.now() - 7200000)
-  },
-  {
-    conversationId: 'drjenkins_student1',
-    senderId: 'student1',
-    senderName: 'John Doe',
-    senderRole: 'student',
-    senderAvatar: 'https://i.pravatar.cc/150?u=student1',
-    receiverId: 'drjenkins',
-    receiverName: 'Dr. Sarah Jenkins',
-    text: 'Yes Dr. Jenkins! Thank you for checking in. I had a quick question regarding example 4.2 on page 95.',
-    read: true,
-    timestamp: new Date(Date.now() - 3600000)
-  },
-  {
-    conversationId: 'drjenkins_student1',
-    senderId: 'drjenkins',
-    senderName: 'Dr. Sarah Jenkins',
-    senderRole: 'teacher',
-    senderAvatar: 'https://i.pravatar.cc/150?u=drjenkins',
-    receiverId: 'student1',
-    receiverName: 'John Doe',
-    text: 'Feel free to post your solution draft here and I will review it before office hours today! 📚',
-    read: false,
-    timestamp: new Date(Date.now() - 1800000)
-  }
-];
-
 // Helper to construct consistent conversation ID
 const getConversationId = (uid1, uid2) => {
   return [uid1, uid2].sort().join('_');
@@ -50,23 +10,22 @@ const getConversationId = (uid1, uid2) => {
 // @route   GET /api/messages/conversations
 const getConversations = async (req, res) => {
   try {
-    const currentUserId = req.query.currentUserId || (req.user ? req.user.username || req.user._id.toString() : 'student1');
-    
-    let count = await DirectMessage.countDocuments();
-    if (count === 0) {
-      await DirectMessage.insertMany(seedMessages);
+    const currentUserId = req.user ? req.user.username || req.user._id.toString() : req.query.currentUserId;
+    if (!currentUserId) {
+      return res.status(401).json({ message: 'Authentication required' });
     }
 
-    // Default contact list for quick messaging
-    const defaultContacts = [
-      { id: 'drjenkins', name: 'Dr. Sarah Jenkins', role: 'teacher', avatar: 'https://i.pravatar.cc/150?u=drjenkins', status: 'Online • Advanced Calculus' },
-      { id: 'proffrank', name: 'Prof. Frank Alan', role: 'teacher', avatar: 'https://i.pravatar.cc/150?u=proffrank', status: 'Online • Physics 202' },
-      { id: 'student1', name: 'John Doe', role: 'student', avatar: 'https://i.pravatar.cc/150?u=student1', status: 'Student • Math 301' },
-      { id: 'alexchen', name: 'Alex Chen', role: 'student', avatar: 'https://i.pravatar.cc/150?u=alexchen', status: 'Student • Physics 202' }
-    ];
-
-    // Filter out self from contacts list
-    const contacts = defaultContacts.filter(c => c.id !== currentUserId);
+    // Fetch all real users except current user from the database
+    const users = await User.find({}, 'firstName lastName username role profilePicture');
+    const contacts = users
+      .filter(u => (u.username || u._id.toString()) !== currentUserId)
+      .map(u => ({
+        id: u.username || u._id.toString(),
+        name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.username,
+        role: u.role || 'student',
+        avatar: u.profilePicture || null,
+        status: u.role === 'teacher' ? 'Teacher' : 'Student'
+      }));
 
     // Fetch latest message for each contact to show snippet and unread status
     const conversationSummaries = await Promise.all(
@@ -89,6 +48,7 @@ const getConversations = async (req, res) => {
     res.status(500).json({ message: 'Server error fetching conversations' });
   }
 };
+
 
 // @desc    Get message thread with a specific user
 // @route   GET /api/messages/thread/:otherUserId
@@ -122,9 +82,12 @@ const sendMessage = async (req, res) => {
       return res.status(400).json({ message: 'Receiver and text are required' });
     }
 
-    const sId = senderId || (req.user ? req.user.username || req.user._id.toString() : 'student1');
+    const sId = senderId || (req.user ? req.user.username || req.user._id.toString() : null);
     const sName = senderName || (req.user ? `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() || req.user.username : 'User');
     const sRole = senderRole || (req.user ? req.user.role : 'student');
+    if (!sId) {
+      return res.status(401).json({ message: 'Authentication required to send messages' });
+    }
 
     const convId = getConversationId(sId, receiverId);
 
@@ -133,7 +96,7 @@ const sendMessage = async (req, res) => {
       senderId: sId,
       senderName: sName,
       senderRole: sRole,
-      senderAvatar: senderAvatar || `https://i.pravatar.cc/150?u=${encodeURIComponent(sId)}`,
+      senderAvatar: senderAvatar || req.user?.profilePicture || null,
       receiverId,
       receiverName: receiverName || 'Contact',
       text,

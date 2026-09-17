@@ -5,6 +5,7 @@ import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiAward, FiPlus, FiBell } from
 import { TbSchool, TbCertificate } from 'react-icons/tb';
 import { useAuth } from '../../context/AuthContext';
 import { updateProfile } from '../../services/authService';
+import propic from '../../assets/propic.png';
 
 export default function TeacherProfileSettings() {
   const { user, setUser } = useAuth();
@@ -143,7 +144,7 @@ export default function TeacherProfileSettings() {
                 <div className="relative -mt-12 mb-4">
                   <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden bg-white shadow-md relative group">
                     <img
-                      src={profilePicture || 'https://i.pravatar.cc/150?img=47'}
+                      src={profilePicture || propic}
                       alt={fullName}
                       className="w-full h-full object-cover"
                     />

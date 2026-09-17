@@ -206,7 +206,7 @@ const createPost = async (req, res) => {
       tags: Array.isArray(tags) ? tags : (tags ? tags.split(',').map(t => t.trim()) : []),
       authorName: authorName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Anonymous Student'),
       authorRole: authorRole || (user ? user.role : 'student'),
-      authorAvatar: authorAvatar || `https://i.pravatar.cc/150?u=${encodeURIComponent(authorName || 'user')}`,
+      authorAvatar: authorAvatar || req.user?.profilePicture || null,
       needsTeacherInput: (authorRole || user?.role) !== 'teacher'
     });
 
@@ -239,7 +239,7 @@ const addReply = async (req, res) => {
     post.replies.push({
       authorName: replyAuthorName,
       authorRole: replyAuthorRole,
-      authorAvatar: authorAvatar || `https://i.pravatar.cc/150?u=${encodeURIComponent(replyAuthorName)}`,
+      authorAvatar: authorAvatar || req.user?.profilePicture || null,
       text,
       createdAt: new Date()
     });

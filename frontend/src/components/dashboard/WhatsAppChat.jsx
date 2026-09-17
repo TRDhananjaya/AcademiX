@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FiSend, FiSearch, FiCheck, FiCheckCircle, FiUser, FiMoreVertical, FiPaperclip, FiSmile } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
+import propic from '../../assets/propic.png';
 
 export default function WhatsAppChat({ defaultSelectedContactId = null }) {
   const { user } = useAuth();
-  const currentUserId = user?.username || (user?.role === 'teacher' ? 'drjenkins' : 'student1');
-  const currentUserName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : (user?.role === 'teacher' ? 'Dr. Sarah Jenkins' : 'John Doe');
+  const currentUserId = user?.username || '';
+  const currentUserName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : '';
   const currentUserRole = user?.role || 'student';
 
   const [conversations, setConversations] = useState([]);
@@ -106,7 +107,7 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
           senderId: currentUserId,
           senderName: currentUserName,
           senderRole: currentUserRole,
-          senderAvatar: `https://i.pravatar.cc/150?u=${encodeURIComponent(currentUserId)}`
+          senderAvatar: user?.profilePicture || null
         })
       });
 
@@ -133,7 +134,7 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
         <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
-              src={`https://i.pravatar.cc/150?u=${encodeURIComponent(currentUserId)}`} 
+              src={user?.profilePicture || propic} 
               alt={currentUserName} 
               className="w-10 h-10 rounded-full border border-slate-200"
             />

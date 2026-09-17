@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { FiMessageSquare, FiTrendingUp, FiPlus, FiFileText, FiLink, FiPlay, FiSend, FiX, FiCheckCircle } from 'react-icons/fi';
 import { TbMessageReport, TbFlag } from 'react-icons/tb';
 import CommonCommunityChat from '../../components/dashboard/CommonCommunityChat';
+import { useAuth } from '../../context/AuthContext';
 
 export default function CommunityMonitor() {
+  const { user } = useAuth();
   const [hubMode, setHubMode] = useState('discussions'); // 'discussions' | 'messages'
   const [activeTab, setActiveTab] = useState('Unanswered'); // 'Recent' or 'Unanswered'
   const [flaggedPosts, setFlaggedPosts] = useState([]);
@@ -90,9 +92,9 @@ export default function CommunityMonitor() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: guidanceText.trim(),
-          authorName: 'Dr. Sarah Jenkins',
+          authorName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Teacher',
           authorRole: 'teacher',
-          authorAvatar: 'https://i.pravatar.cc/150?u=drjenkins'
+          authorAvatar: user?.profilePicture || null
         })
       });
 
