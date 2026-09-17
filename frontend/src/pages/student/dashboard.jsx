@@ -15,7 +15,6 @@ export default function StudentDashboard() {
   const [analytics, setAnalytics] = useState(null);
   const [prediction, setPrediction] = useState(null);
   const [communityPosts, setCommunityPosts] = useState([]);
-  const [selectedLesson, setSelectedLesson] = useState('overall');
 
   // Fetch Student Analytics
   useEffect(() => {
@@ -125,26 +124,13 @@ export default function StudentDashboard() {
     );
   }
 
-  // Dynamic calculation for the marks display section based on selected filter
+  // Calculation for the Quiz Performance display
   let displayScore = 0;
   let displayLabel = 'No Quizzes Taken';
 
   if (analytics?.history && analytics.history.length > 0) {
-    if (selectedLesson === 'overall') {
-      displayScore = analytics.summary?.overallAverage || 0;
-      displayLabel = 'Overall Quiz Average';
-    } else if (selectedLesson === 'latest') {
-      // Display marks from the student's most recently completed quiz
-      displayScore = analytics.history[0].percentage || 0;
-      displayLabel = analytics.history[0].lessonName || 'Latest Quiz';
-    } else {
-      // Find all quizzes associated with the selected lesson and get their average
-      const lessonTrend = analytics.trendData?.find(item => item.lesson === selectedLesson);
-      if (lessonTrend) {
-        displayScore = lessonTrend.percentage || 0;
-        displayLabel = selectedLesson;
-      }
-    }
+    displayScore = analytics.summary?.overallAverage || 0;
+    displayLabel = 'Overall Quiz Performance';
   }
 
   const progressData = [
@@ -229,24 +215,9 @@ export default function StudentDashboard() {
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center">
                   <div className="w-full flex justify-between items-center mb-2">
                     <h3 className="text-slate-800 font-semibold text-[15px]">Quiz Performance</h3>
-                    
-                    {analytics?.history && analytics.history.length > 0 ? (
-                      <select
-                        value={selectedLesson}
-                        onChange={(e) => setSelectedLesson(e.target.value)}
-                        className="text-[13px] bg-slate-50 border border-slate-200 text-slate-600 rounded-lg py-1 px-2 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium max-w-[140px] truncate cursor-pointer"
-                      >
-                        <option value="overall">Overall Average</option>
-                        <option value="latest">Latest Quiz</option>
-                        {uniqueLessons.map((lesson, idx) => (
-                          <option key={idx} value={lesson}>{lesson}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <div className="w-6 h-6 rounded-md bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-                      </div>
-                    )}
+                    <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
                   </div>
                   
                   <div className="relative w-36 h-36 mt-2 mb-3">
