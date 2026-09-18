@@ -387,7 +387,8 @@ const getTeacherDashboardStats = async (req, res, next) => {
                 totalQuestions: 1,
                 percentage: 1,
                 submittedAt: 1,
-                lessonName: { $ifNull: ["$quizData.bundleTopic", "Unknown Lesson"] }
+                lessonName: { $ifNull: ["$quizData.bundleTopic", "Unknown Lesson"] },
+                quizTitle: { $ifNull: ["$quizData.title", "$quizId"] }
             }}
         ];
 
@@ -546,11 +547,127 @@ const getTeacherDashboardStats = async (req, res, next) => {
             });
         }
 
-        // Apply pagination
+        // 9. Compute Recent Quizzes
+        const quizStatsMap = {};
+        allQuizResults.forEach(r => {
+            const qId = r.quizId || 'Unknown';
+            if (!quizStatsMap[qId]) {
+                quizStatsMap[qId] = {
+                    quizCode: qId,
+                    title: (r.quizTitle || qId).replace(/^Q\d+\.\d+\s*-\s*/, '').replace(/\s*Random Quiz/gi, '').trim() || qId,
+                    topic: r.lessonName || 'General',
+                    submissions: 0,
+                    totalPercentage: 0,
+                    passedCount: 0,
+                    highestScore: 0,
+                    lowestScore: 100,
+                    lastSubmittedAt: null
+                };
+            }
+            const q = quizStatsMap[qId];
+            q.submissions += 1;
+            const pct = typeof r.percentage === 'number' ? r.percentage : 0;
+            q.totalPercentage += pct;
+            if (pct >= 50) q.passedCount += 1;
+            if (pct > q.highestScore) q.highestScore = pct;
+            if (pct < q.lowestScore) q.lowestScore = pct;
+            if (!q.lastSubmittedAt || new Date(r.submittedAt) > new Date(q.lastSubmittedAt)) {
+                q.lastSubmittedAt = r.submittedAt;
+            }
+        });
+
+        const recentQuizzesList = Object.values(quizStatsMap)
+            .map(q => ({
+                quizCode: q.quizCode,
+                title: q.title,
+                topic: q.topic,
+                submissions: q.submissions,
+                averageScore: q.submissions > 0 ? Math.round(q.totalPercentage / q.submissions) : 0,
+                passRate: q.submissions > 0 ? Math.round((q.passedCount / q.submissions) * 100) : 0,
+                highestScore: q.highestScore,
+                lowestScore: q.lowestScore === 100 && q.submissions === 0 ? 0 : q.lowestScore,
+                lastSubmittedAt: q.lastSubmittedAt
+            }))
+            .sort((a, b) => new Date(b.lastSubmittedAt || 0) - new Date(a.lastSubmittedAt || 0));
+
+        // 10. Compute Curriculum Topic Mastery Breakdown
+        const topicStatsMap = {};
+        allQuizResults.forEach(r => {
+            const topic = r.lessonName || 'General';
+            if (!topicStatsMap[topic]) {
+                topicStatsMap[topic] = {
+                    topic,
+                    topicShort: topic.replace(/^Lesson \d+:\s*/i, '').trim(),
+                    quizzes: new Set(),
+                    totalSubmissions: 0,
+                    totalPercentage: 0,
+                    passedCount: 0,
+                    studentScores: {}
+                };
+            }
+            const t = topicStatsMap[topic];
+            if (r.quizId) t.quizzes.add(r.quizId);
+            t.totalSubmissions += 1;
+            const pct = typeof r.percentage === 'number' ? r.percentage : 0;
+            t.totalPercentage += pct;
+            if (pct >= 50) t.passedCount += 1;
+
+            if (r.studentId) {
+                const s = r.studentId.toLowerCase();
+                if (!t.studentScores[s]) t.studentScores[s] = [];
+                t.studentScores[s].push(pct);
+            }
+        });
+
+        const topicMastery = Object.values(topicStatsMap)
+            .filter(t => t.topic !== 'Unknown Lesson' || Object.keys(topicStatsMap).length === 1)
+            .map(t => {
+            const avg = t.totalSubmissions > 0 ? Math.round(t.totalPercentage / t.totalSubmissions) : 0;
+            const passRate = t.totalSubmissions > 0 ? Math.round((t.passedCount / t.totalSubmissions) * 100) : 0;
+
+            let strugglingCount = 0;
+            Object.values(t.studentScores).forEach(scores => {
+                const sAvg = scores.reduce((sum, v) => sum + v, 0) / scores.length;
+                if (sAvg < 50) strugglingCount += 1;
+            });
+
+            let status = 'Mastered';
+            let statusColor = 'emerald';
+            let recommendation = 'Class is demonstrating solid mastery on this topic.';
+
+            if (avg < 60) {
+                status = 'Needs Attention';
+                statusColor = 'rose';
+                recommendation = `${strugglingCount} student(s) below 50%. Suggest targeted review session.`;
+            } else if (avg < 75) {
+                status = 'Moderate';
+                statusColor = 'amber';
+                recommendation = 'Moderate understanding. Additional practice questions recommended.';
+            }
+
+            return {
+                topic: t.topic,
+                topicShort: t.topicShort,
+                quizzesCount: t.quizzes.size,
+                submissionsCount: t.totalSubmissions,
+                averageScore: avg,
+                passRate,
+                strugglingCount,
+                status,
+                statusColor,
+                recommendation
+            };
+        }).sort((a, b) => a.averageScore - b.averageScore);
+
+        // Apply pagination for quizzes feed
+        const totalQuizzesCount = recentQuizzesList.length;
+        const paginatedRecentQuizzes = recentQuizzesList.slice(skip, skip + limit);
+
+        // Apply pagination for legacy student tracker
         const totalRecords = studentTrackerList.length;
         const paginatedTracker = studentTrackerList.slice(skip, skip + limit);
 
-        // 9. Get today's attendance count (distinct students checked in today)
+        // 11. Get today's attendance count (distinct students checked in today)
         let todayPresentCount = 0;
         try {
             const TIMEZONE = process.env.TIMEZONE || 'Asia/Colombo';
@@ -589,8 +706,17 @@ const getTeacherDashboardStats = async (req, res, next) => {
             },
             insights,
             communityActivity,
+            recentQuizzes: paginatedRecentQuizzes,
+            allRecentQuizzes: recentQuizzesList,
+            topicMastery,
             studentTracker: paginatedTracker,
             pagination: {
+                totalRecords: totalQuizzesCount,
+                currentPage: page,
+                totalPages: Math.ceil(totalQuizzesCount / limit) || 1,
+                limit
+            },
+            studentPagination: {
                 totalRecords,
                 currentPage: page,
                 totalPages: Math.ceil(totalRecords / limit),
