@@ -3,6 +3,7 @@ import { navigate } from '../../App';
 import { login } from '../../services/authService';
 import { useAuth } from '../../context/AuthContext';
 import logoBlack from '../../assets/logo_black.png';
+import studentIllustration from '../../assets/login_student.jpg';
 
 export default function LoginForm() {
   const [username, setUsername] = useState('');
@@ -16,7 +17,7 @@ export default function LoginForm() {
     e.preventDefault();
     setError('');
 
-    if (!username || !password) {
+    if (!username.trim() || !password) {
       setError('Please enter both username and password');
       return;
     }
@@ -24,10 +25,10 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
-      const result = await login(username, password);
+      const result = await login(username.trim(), password);
 
       if (!result.ok) {
-        setError(result.message);
+        setError(result.message || 'Invalid credentials');
         setLoading(false);
         return;
       }
@@ -43,165 +44,209 @@ export default function LoginForm() {
       const dashboard = result.data.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
       navigate(dashboard);
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 min-h-screen select-none">
-      {/* Left Section (Gradient Info & Marketing) */}
-      <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-indigo-100 p-8 lg:p-16 flex items-center justify-center relative overflow-hidden">
-        {/* Floating Ambient Glowing Blobs */}
-        <div className="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-indigo-300/30 blur-3xl animate-drift"></div>
-        <div className="absolute -bottom-20 -right-20 w-80 h-80 rounded-full bg-purple-300/30 blur-3xl animate-drift-slow"></div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50/80 via-slate-50 to-purple-50/60 flex items-center justify-center p-4 sm:p-6 lg:p-8 select-none relative overflow-hidden">
+      
+      {/* Subtle Dot Grid Pattern */}
+      <div
+        className="absolute inset-0 opacity-40 pointer-events-none"
+        style={{
+          backgroundImage: 'radial-gradient(#6366f1 1px, transparent 1px)',
+          backgroundSize: '32px 32px'
+        }}
+      />
 
-        <div className="w-full max-w-md z-10 animate-fade-in-up">
-          <h1 className="text-4xl lg:text-5xl font-extrabold text-slate-900 mb-6 leading-tight tracking-tight">
-            Master ICT<br />
-            <span className="text-gradient">smartly & faster.</span>
-          </h1>
-          <p className="text-slate-600 mb-8 leading-relaxed">
-            Join AcademiX to experience personalized, AI-driven learning pathways designed for modern minds.
-          </p>
+      {/* Top-Left Flowing Curved Waves & Arcs (matching user reference) */}
+      <svg
+        className="absolute -top-16 -left-16 w-[620px] h-[620px] text-indigo-300/40 pointer-events-none stroke-current"
+        viewBox="0 0 600 600"
+        fill="none"
+      >
+        <path d="M-80,60 C80,140 200,240 320,440 C400,580 520,600 620,620" strokeWidth="1.5" strokeDasharray="4 6" />
+        <path d="M-40,20 C120,100 240,200 360,400 C440,540 560,560 660,580" strokeWidth="2" opacity="0.7" />
+        <path d="M0,-20 C160,60 280,160 400,360 C480,500 600,520 700,540" strokeWidth="2.5" opacity="0.9" />
+        <circle cx="160" cy="160" r="180" strokeWidth="1" opacity="0.3" />
+        <circle cx="160" cy="160" r="280" strokeWidth="1" strokeDasharray="6 6" opacity="0.2" />
+      </svg>
 
-          {/* Study Assistant Card */}
-          <div className="bg-white/75 backdrop-blur-lg rounded-2xl p-5 border border-white/60 shadow-md-custom mb-6 animate-float hover:scale-[1.02] transition-transform duration-300">
-            <div className="flex gap-4 items-center">
-              <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-lg shadow-inner">
-                AI
-              </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-slate-800 text-[15px] mb-0.5">AI Study Plans</h4>
-                <p className="text-[13px] text-slate-500">Analyzing your learning patterns...</p>
-              </div>
-            </div>
-            <div className="w-full h-1.5 bg-slate-100 rounded-full mt-4 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-full animate-pulse" style={{ width: '65%' }}></div>
+      {/* Bottom-Right Flowing Waves */}
+      <svg
+        className="absolute -bottom-20 -right-20 w-[560px] h-[560px] text-purple-300/35 pointer-events-none stroke-current"
+        viewBox="0 0 550 550"
+        fill="none"
+      >
+        <path d="M580,20 C460,120 340,240 220,380 C140,480 40,520 -20,540" strokeWidth="2" opacity="0.7" />
+        <path d="M620,60 C500,160 380,280 260,420 C180,520 80,560 20,580" strokeWidth="1.5" strokeDasharray="5 5" opacity="0.5" />
+        <circle cx="420" cy="420" r="200" strokeWidth="1" opacity="0.25" />
+      </svg>
+
+      {/* Ambient Glowing Blobs */}
+      <div className="absolute -top-28 -left-28 w-96 h-96 rounded-full bg-indigo-300/30 blur-3xl animate-drift pointer-events-none" />
+      <div className="absolute -bottom-32 -right-32 w-[440px] h-[440px] rounded-full bg-purple-300/25 blur-3xl animate-drift-slow pointer-events-none" />
+      <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-80 h-80 rounded-full bg-indigo-200/20 blur-3xl pointer-events-none" />
+
+      {/* Outer Card Container matching reference frame */}
+      <div className="bg-white/95 backdrop-blur-md rounded-3xl border border-white/80 shadow-2xl shadow-indigo-950/10 w-full max-w-5xl overflow-hidden p-8 sm:p-12 lg:p-14 transition-all relative z-10">
+
+        {/* Main 2-Column Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+
+          {/* Left Side: Student Illustration on Indigo Arch (Bigger) */}
+          <div className="flex items-center justify-center">
+            <div className="relative w-full max-w-[480px] lg:max-w-[520px] aspect-square flex items-center justify-center group">
+              <img
+                src={studentIllustration}
+                alt="Student studying with AcademiX"
+                className="w-full h-full object-contain rounded-2xl drop-shadow-lg group-hover:scale-[1.03] transition-transform duration-500"
+              />
             </div>
           </div>
 
-          {/* Community Goal Card */}
-          <div className="bg-white/75 backdrop-blur-lg rounded-2xl p-5 border border-white/60 shadow-md-custom animate-float-delayed hover:scale-[1.02] transition-transform duration-300 flex items-center gap-4">
-            <div className="flex -space-x-2">
-              <img src="https://i.pravatar.cc/100?img=33" alt="user" className="w-10 h-10 rounded-full border-2 border-white object-cover" />
-              <img src="https://i.pravatar.cc/100?img=12" alt="user" className="w-10 h-10 rounded-full border-2 border-white object-cover" />
-              <img src="https://i.pravatar.cc/100?img=47" alt="user" className="w-10 h-10 rounded-full border-2 border-white object-cover" />
+          {/* Right Side: Exact Login Form Section */}
+          <div className="w-full max-w-sm mx-auto flex flex-col justify-center">
+
+            {/* AcademiX Logo (Bigger) */}
+            <div className="mb-1 flex justify-center">
+              <img
+                src={logoBlack}
+                alt="AcademiX"
+                className="h-18 sm:h-24 w-auto object-contain mx-auto hover:opacity-90 transition-all hover:scale-105 duration-300 cursor-pointer"
+                onClick={() => navigate('/')}
+              />
             </div>
-            <div>
-              <p className="font-semibold text-slate-800 text-[15px] mb-0.5">Active Study Community</p>
-              <p className="text-[13px] text-slate-500">+240 peers online now</p>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Right Section (Login Form - Clean White Space) */}
-      <div className="bg-white p-8 lg:p-16 flex items-center justify-center relative border-l border-slate-100">
-        <div className="w-full max-w-sm z-10 animate-fade-in-up flex flex-col justify-center">
-          {/* Brand Logo - Centered */}
-          <div className="mb-8 flex justify-center">
-            <img src={logoBlack} alt="AcademiX" className="h-16 w-auto object-contain hover:scale-105 transition-transform duration-300 mx-auto" />
-          </div>
+            {/* Header */}
+            <h2 className="text-3xl font-bold text-slate-900 mb-2 text-center tracking-tight">
+              Welcome Back
+            </h2>
+            <p className="text-slate-500 text-center mb-8 leading-relaxed text-sm">
+              Log in to continue your learning journey.
+            </p>
 
-          <h2 className="text-3xl font-bold text-slate-900 mb-2 text-center tracking-tight">Welcome Back</h2>
-          <p className="text-slate-500 text-center mb-8 leading-relaxed text-sm">Log in to continue your learning journey.</p>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm text-center font-semibold animate-shake">
-              {error}
-            </div>
-          )}
-
-          {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-6 mb-6">
-            <div>
-              <label htmlFor="username" className="block text-[14px] font-medium text-slate-700 mb-2 text-left tracking-wide">Username</label>
-              <div className="relative group">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  id="username"
-                  placeholder="Enter your username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all text-slate-800 placeholder-slate-400"
-                />
+            {/* Error Message */}
+            {error && (
+              <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm text-center font-semibold animate-shake">
+                {error}
               </div>
-            </div>
+            )}
 
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label htmlFor="password" className="block text-[14px] font-medium text-slate-700 tracking-wide">Password</label>
-                <button type="button" onClick={() => navigate('/forgot')} className="text-[13px] text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer bg-transparent border-none p-0">Forgot password?</button>
-              </div>
-              <div className="relative group">
-                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                  </svg>
-                </span>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all text-slate-800 placeholder-slate-400"
-                />
-                <button
-                  type="button"
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center cursor-pointer"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
+            {/* Login Form */}
+            <form onSubmit={handleSubmit} className="space-y-6 mb-6">
+              <div>
+                <label htmlFor="username" className="block text-[14px] font-medium text-slate-700 mb-2 text-left tracking-wide">
+                  Username
+                </label>
+                <div className="relative group">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
                     </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
-                </button>
+                  </span>
+                  <input
+                    type="text"
+                    id="username"
+                    placeholder="Enter your username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all text-slate-800 placeholder-slate-400 text-sm"
+                  />
+                </div>
               </div>
-            </div>
 
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label htmlFor="password" className="block text-[14px] font-medium text-slate-700 tracking-wide">
+                    Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/forgot')}
+                    className="text-[13px] text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer bg-transparent border-none p-0 font-medium"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <div className="relative group">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                  </span>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    id="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-11 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-50 transition-all text-slate-800 placeholder-slate-400 text-sm"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors flex items-center justify-center cursor-pointer"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                        <line x1="1" y1="1" x2="23" y2="23" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                        <circle cx="12" cy="12" r="3" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Sign In Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-3.5 rounded-xl font-semibold text-[15px] shadow-lg shadow-indigo-100 hover:shadow-indigo-200 hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
+              >
+                {loading ? 'Signing In...' : 'Sign In →'}
+              </button>
+            </form>
+
+            {/* Help / Support Note */}
+            <p className="text-xs text-slate-400 text-center leading-relaxed mb-6">
+              Having trouble signing in?{' '}
+              <button
+                type="button"
+                onClick={() => navigate('/contact')}
+                className="text-indigo-600 hover:text-indigo-700 hover:underline font-medium cursor-pointer bg-transparent border-none p-0 inline"
+              >
+                Contact Support
+              </button>
+            </p>
+
+            {/* Back to Home Button */}
             <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 text-white py-3.5 rounded-xl font-semibold text-[15px] shadow-lg shadow-indigo-100 hover:shadow-indigo-200 hover:-translate-y-0.5 active:translate-y-0 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-colors group font-medium text-sm cursor-pointer justify-center w-full"
             >
-              {loading ? 'Signing In...' : 'Sign In →'}
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:-translate-x-1 transition-transform">
+                <path d="M19 12H5" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+              <span>Back to Home</span>
             </button>
-          </form>
-
-          <p className="text-xs text-slate-400 text-center leading-relaxed mb-6">
-            By continuing, you agree to AcademiX's <a href="/terms" className="text-indigo-600 hover:underline font-medium">Terms of Service</a> and <a href="/privacy" className="text-indigo-600 hover:underline font-medium">Privacy Policy</a>.
-          </p>
-
-          {/* Back Button - Centered */}
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-colors group font-medium text-sm cursor-pointer justify-center w-full"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="group-hover:-translate-x-1 transition-transform">
-              <path d="M19 12H5" />
-              <polyline points="12 19 5 12 12 5" />
-            </svg>
-            <span>Back to Home</span>
-          </button>
+          </div>
         </div>
+
       </div>
     </div>
   );
 }
+
+
