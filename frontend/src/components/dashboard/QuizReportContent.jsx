@@ -240,13 +240,12 @@ export default function QuizReportContent() {
                 <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">Student Name</th>
                 <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">ID</th>
                 <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">Marks</th>
-                <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">Time Taken</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
               {sortedSubmissions.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="p-10 text-center text-slate-500 font-medium">No submissions found.</td>
+                  <td colSpan="3" className="p-10 text-center text-slate-500 font-medium">No submissions found.</td>
                 </tr>
               )}
               {sortedSubmissions.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((student) => (
@@ -265,7 +264,6 @@ export default function QuizReportContent() {
                       {student.percentage}% {student.score !== undefined && student.totalQuestions ? `(${student.score}/${student.totalQuestions})` : ''}
                     </span>
                   </td>
-                  <td className="p-[16px_24px] text-[14px] text-slate-500">{student.timeTaken}</td>
                 </tr>
               ))}
             </tbody>
