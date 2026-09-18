@@ -35,9 +35,9 @@ const seedPosts = [
     needsTeacherInput: true,
     replies: [
       {
-        authorName: 'Mr. Wickramasinghe',
+        authorName: 'Mr. Akila Savinda',
         authorRole: 'teacher',
-        authorAvatar: 'https://i.pravatar.cc/150?u=wickramasinghe',
+        authorAvatar: 'https://i.pravatar.cc/150?u=akila',
         text: 'The 10 characters breakdown: 1st is file type ("-" for regular file), next 3 are owner permissions ("rw-"), next 3 are group ("r--"), last 3 are others ("r--"). To set permissions to rwxr-xr-x in octal mode, use "chmod 755 notes.txt" because owner=7 (4+2+1), group=5 (4+0+1), others=5 (4+0+1)!',
         createdAt: new Date(Date.now() - 7200000)
       }
@@ -64,9 +64,9 @@ const seedPosts = [
     ]
   },
   {
-    authorName: 'Mr. Wickramasinghe',
+    authorName: 'Mr. Akila Savinda',
     authorRole: 'teacher',
-    authorAvatar: 'https://i.pravatar.cc/150?u=wickramasinghe',
+    authorAvatar: 'https://i.pravatar.cc/150?u=akila',
     title: 'Grade 10 ICT Revision Outline: Purpose of core UNIX commands (ls, date, who, passwd)',
     body: 'Hello students! For your upcoming ICT exam, make sure you know the purpose of basic UNIX commands:\n1. ls - List directory contents\n2. date - Display current system date and time\n3. who - Show users currently logged into the system\n4. passwd - Change user password\nReview directory management commands (pwd, cd, mkdir) as well!',
     course: 'Grade 10 ICT - Computer Systems',
@@ -113,6 +113,17 @@ const getPosts = async (req, res) => {
         { title: { $regex: "Maxwell's Equations|Chain Rule|Thermodynamics", $options: 'i' } }
       ]
     });
+
+    // Update instructor name if legacy name is present in existing DB records
+    await CommunityPost.updateMany(
+      { authorName: /Wickramasinghe/i, authorRole: 'teacher' },
+      { $set: { authorName: 'Mr. Akila Savinda', authorAvatar: 'https://i.pravatar.cc/150?u=akila' } }
+    );
+    await CommunityPost.updateMany(
+      { 'replies.authorName': /Wickramasinghe/i, 'replies.authorRole': 'teacher' },
+      { $set: { 'replies.$[elem].authorName': 'Mr. Akila Savinda', 'replies.$[elem].authorAvatar': 'https://i.pravatar.cc/150?u=akila' } },
+      { arrayFilters: [{ 'elem.authorName': { $regex: /Wickramasinghe/i }, 'elem.authorRole': 'teacher' }] }
+    );
 
     let count = await CommunityPost.countDocuments();
     if (count === 0) {

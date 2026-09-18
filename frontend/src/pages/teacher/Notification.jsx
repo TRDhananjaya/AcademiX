@@ -50,35 +50,7 @@ export default function TeacherNotifications() {
           }
         }
 
-        // Add static notifications for presentation
-        const staticNotifs = [
-          {
-            _id: 'static-1',
-            notificationType: 'Academic Alerts',
-            badgeLabel: 'Academic Alert',
-            badgeClass: 'bg-red-50 text-red-600',
-            createdAt: new Date(Date.now() - 10*60000).toISOString(),
-            title: '5 Students at risk in Physics 101',
-            message: 'Recent midterm scores for 5 students have fallen below the 60% threshold. Intervention is recommended.',
-            actionLabel: 'View Student Profiles',
-            actionPath: '/teacher/students',
-            isRead: false,
-          },
-          {
-            _id: 'static-3',
-            notificationType: 'Student Activity',
-            badgeLabel: 'Student Activity',
-            badgeClass: 'bg-slate-100 text-slate-600',
-            createdAt: new Date(Date.now() - 3*3600000).toISOString(),
-            title: 'New question in Community Hub',
-            message: 'Sarah Jenkins posted a new question regarding the upcoming assignment criteria in the Advanced Calculus hub.',
-            actionLabel: 'Reply to Thread',
-            actionPath: '/teacher/community',
-            isRead: true,
-          },
-        ];
-
-        setNotifications([...notifs1, ...notifs2, ...staticNotifs].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+        setNotifications([...notifs1, ...notifs2].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
       } catch (error) {
         console.error('Error fetching notifications:', error);
       } finally {
@@ -124,10 +96,6 @@ export default function TeacherNotifications() {
     }
   };
 
-  const filteredNotifications = activeFilter === 'All'
-    ? notifications
-    : notifications.filter((n) => n.notificationType === activeFilter);
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -135,7 +103,7 @@ export default function TeacherNotifications() {
         <div>
           <h1 className="text-4xl font-bold text-slate-900 mb-2">Notification Center</h1>
           <p className="text-slate-500 text-base">
-            Manage your academic alerts and system updates.
+            Manage your notifications and system updates.
           </p>
         </div>
         
@@ -150,29 +118,12 @@ export default function TeacherNotifications() {
         )}
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2.5 mb-6 overflow-x-auto pb-1">
-        {['All', 'Quiz Results', 'Academic Alerts', 'Student Activity', 'System Updates'].map((filter) => (
-          <button
-            key={filter}
-            onClick={() => setActiveFilter(filter)}
-            className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer
-              ${activeFilter === filter
-                ? 'bg-[#3b28cc] text-white shadow-sm'
-                : 'bg-white border border-slate-100 text-slate-600 hover:bg-slate-50 hover:text-slate-800'
-              }`}
-          >
-            {filter}
-          </button>
-        ))}
-      </div>
-
       {/* Notification Items */}
       <div className="space-y-4">
         {loading ? (
           <p className="text-slate-500">Loading notifications...</p>
-        ) : filteredNotifications.length > 0 ? (
-          filteredNotifications.map((notif) => (
+        ) : notifications.length > 0 ? (
+          notifications.map((notif) => (
             <div
               key={notif._id}
               className={`relative rounded-2xl p-6 border transition-all duration-200 bg-white shadow-sm

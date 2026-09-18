@@ -147,7 +147,7 @@ export default function QuizManagement() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
         <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
           <div className="text-xs font-semibold text-slate-500 tracking-wide mb-2 uppercase">AVG. DEPT SCORE</div>
           <div className="text-[32px] font-bold text-slate-800 flex items-baseline gap-2">
@@ -159,18 +159,6 @@ export default function QuizManagement() {
           <div className="text-xs font-semibold text-slate-500 tracking-wide mb-2 uppercase">ACTIVE QUIZZES</div>
           <div className="text-[32px] font-bold text-slate-800 flex items-baseline gap-2">
             {activeQuizzes.length} <span className="text-[14px] font-medium text-slate-500">Live</span>
-          </div>
-        </div>
-        <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
-          <div className="text-xs font-semibold text-slate-500 tracking-wide mb-2 uppercase">TOTAL ATTEMPTS</div>
-          <div className="text-[32px] font-bold text-slate-800 flex items-baseline gap-2">
-            {totalSubmissions} <span className="text-[14px] font-medium text-slate-500">Attempts</span>
-          </div>
-        </div>
-        <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
-          <div className="text-xs font-semibold text-slate-500 tracking-wide mb-2 uppercase">FLAGGED RESPONSES</div>
-          <div className="text-[32px] font-bold text-slate-800 flex items-baseline gap-2">
-            {flaggedCount} <span className="text-[13px] font-semibold text-red-500">Needs Review</span>
           </div>
         </div>
       </div>
@@ -384,10 +372,9 @@ export default function QuizManagement() {
                 </svg>
               </div>
               <h3 className="text-lg font-bold m-0 mb-3 relative z-10">Did you know?</h3>
-              <p className="text-sm leading-relaxed text-indigo-200 m-0 mb-4 relative z-10">
+              <p className="text-sm leading-relaxed text-indigo-200 m-0 relative z-10">
                 Quizzes are generated dynamically by pulling 20 random questions from the 30-question bank for each module. Once published, the quiz remains identical for all students.
               </p>
-              <a href="#" className="text-white text-sm font-semibold underline relative z-10" onClick={(e) => e.preventDefault()}>Learn more</a>
             </div>
 
           </div>

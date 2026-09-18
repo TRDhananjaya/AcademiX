@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { FiMessageSquare, FiTrendingUp, FiPlus, FiFileText, FiLink, FiPlay, FiSend, FiX, FiCheckCircle } from 'react-icons/fi';
-import { TbMessageReport, TbFlag } from 'react-icons/tb';
+import { FiMessageSquare, FiTrendingUp, FiPlus, FiFileText, FiLink, FiPlay, FiSend, FiX, FiCheckCircle, FiMessageCircle } from 'react-icons/fi';
+import { TbMessageReport, TbFlag, TbSpeakerphone } from 'react-icons/tb';
 import CommonCommunityChat from '../../components/dashboard/CommonCommunityChat';
 import { useAuth } from '../../context/AuthContext';
 
@@ -92,7 +92,7 @@ export default function CommunityMonitor() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: guidanceText.trim(),
-          authorName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Teacher',
+          authorName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Mr. Akila Savinda',
           authorRole: 'teacher',
           authorAvatar: user?.profilePicture || null
         })
@@ -131,14 +131,16 @@ export default function CommunityMonitor() {
           className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2
             ${hubMode === 'discussions' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
         >
-          📢 Public Q&A & Moderation
+          <TbSpeakerphone className="w-5.5 h-5.5 sm:w-6 sm:h-6 shrink-0" />
+          <span>Public Q&A & Moderation</span>
         </button>
         <button
           onClick={() => setHubMode('messages')}
           className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2
             ${hubMode === 'messages' ? 'bg-[#3b28cc] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
         >
-          💬 Common Platform Stream
+          <FiMessageCircle className="w-5.5 h-5.5 sm:w-6 sm:h-6 shrink-0" />
+          <span>Common Platform Stream</span>
         </button>
       </div>
 

@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import propic from '../../assets/propic.png';
 import { FiEdit, FiFilter, FiTrendingUp, FiShield, FiMoreHorizontal, FiMessageSquare, FiShare2, FiBookmark, FiX, FiFlag, FiSend, FiMessageCircle } from 'react-icons/fi';
 import { BiUpvote, BiDownvote } from 'react-icons/bi';
+import { TbSpeakerphone } from 'react-icons/tb';
 
 export default function CommunityHub() {
   const { user } = useAuth();
@@ -212,14 +213,16 @@ export default function CommunityHub() {
               className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2
                 ${hubMode === 'discussions' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
-              📢 Public Discussions
+              <TbSpeakerphone className="w-5.5 h-5.5 sm:w-6 sm:h-6 shrink-0" />
+              <span>Public Discussions</span>
             </button>
             <button
               onClick={() => setHubMode('messages')}
               className={`flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-2
                 ${hubMode === 'messages' ? 'bg-[#3b28cc] text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
-              💬 Common Platform Stream
+              <FiMessageCircle className="w-5.5 h-5.5 sm:w-6 sm:h-6 shrink-0" />
+              <span>Common Platform Stream</span>
             </button>
           </div>
 

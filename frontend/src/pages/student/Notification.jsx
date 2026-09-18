@@ -137,31 +137,14 @@ export default function Notifications() {
             )}
           </div>
 
-          {/* Filters */}
-          <div className="flex gap-2.5 mb-6 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
-            {['All', 'StudyPlanGenerated', 'Quiz Results', 'Attendance'].map((filter) => (
-              <button
-                key={filter}
-                onClick={() => handleFilterClick(filter)}
-                className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer
-                  ${activeFilter === filter
-                    ? 'bg-[#3b28cc] text-white shadow-sm'
-                    : 'bg-white border border-slate-100 text-slate-600 hover:bg-slate-50 hover:text-slate-800'
-                  }`}
-              >
-                {filter === 'StudyPlanGenerated' ? 'Study Plans' : filter}
-              </button>
-            ))}
-          </div>
-
           <div className="flex flex-col lg:flex-row gap-6">
             
             {/* Left Column (Notifications List) */}
             <div className="flex-1 space-y-4">
               {loading ? (
                 <p className="text-slate-500">Loading notifications...</p>
-              ) : filteredNotifications.length > 0 ? (
-                filteredNotifications.map((notif) => (
+              ) : notifications.length > 0 ? (
+                notifications.map((notif) => (
                   <div
                     key={notif._id}
                     className={`relative rounded-2xl p-6 border transition-all duration-200 bg-white
