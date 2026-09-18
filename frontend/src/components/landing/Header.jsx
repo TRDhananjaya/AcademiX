@@ -49,7 +49,7 @@ export default function Header() {
             >
               About
             </a>
-            
+
             <a
               href="/contact"
               onClick={handleClick('/contact')}

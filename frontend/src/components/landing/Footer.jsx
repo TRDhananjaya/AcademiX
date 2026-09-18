@@ -40,48 +40,7 @@ export default function Footer() {
               Personalized, AI-driven learning pathways helping Grade 11 students in Sri Lanka master O/L ICT.
             </p>
 
-            {/* Social Icons */}
-            <div className="flex items-center gap-3">
-              <a
-                href="https://twitter.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-xl bg-slate-800/50 hover:bg-indigo-600 border border-slate-700/50 hover:border-indigo-500 flex items-center justify-center text-slate-400 hover:text-white hover:-translate-y-1 transition-all duration-300"
-                aria-label="Twitter"
-              >
-                <FaTwitter className="w-4 h-4" />
-              </a>
 
-              <a
-                href="https://linkedin.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-xl bg-slate-800/50 hover:bg-indigo-600 border border-slate-700/50 hover:border-indigo-500 flex items-center justify-center text-slate-400 hover:text-white hover:-translate-y-1 transition-all duration-300"
-                aria-label="LinkedIn"
-              >
-                <FaLinkedinIn className="w-4 h-4" />
-              </a>
-
-              <a
-                href="https://github.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-xl bg-slate-800/50 hover:bg-indigo-600 border border-slate-700/50 hover:border-indigo-500 flex items-center justify-center text-slate-400 hover:text-white hover:-translate-y-1 transition-all duration-300"
-                aria-label="GitHub"
-              >
-                <FaGithub className="w-4 h-4" />
-              </a>
-
-              <a
-                href="https://youtube.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-9 h-9 rounded-xl bg-slate-800/50 hover:bg-indigo-600 border border-slate-700/50 hover:border-indigo-500 flex items-center justify-center text-slate-400 hover:text-white hover:-translate-y-1 transition-all duration-300"
-                aria-label="YouTube"
-              >
-                <FaYoutube className="w-4 h-4" />
-              </a>
-            </div>
           </div>
 
           {/* Quick Links Column */}
@@ -162,7 +121,7 @@ export default function Footer() {
                 University of Ruhuna
               </li>
               <li>
-                <span className="font-semibold text-slate-200">Target:</span> Grade 11 O/L ICT
+                <span className="font-semibold text-slate-200">Target:</span> Grade 10 O/L ICT
               </li>
             </ul>
           </div>
@@ -199,10 +158,10 @@ export default function Footer() {
 
         {/* Bottom Section */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-6 text-slate-500 text-sm">
-          
+
           <div className="flex flex-col md:flex-row items-center gap-3 md:gap-8 text-center md:text-left">
             <p>&copy; {new Date().getFullYear()} AcademiX. All rights reserved.</p>
-            
+
             <div className="flex items-center gap-4">
               <a
                 href="/privacy"
