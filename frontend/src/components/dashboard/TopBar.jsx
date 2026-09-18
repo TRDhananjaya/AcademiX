@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { navigate } from '../../App';
 import ConfirmModal from '../common/ConfirmModal';
 import favicon from '../../assets/favicon.png';
+import propic from '../../assets/propic.png';
 
 const teacherNavItems = [
   {
@@ -154,7 +155,7 @@ export default function TopBar() {
   };
 
   const currentPath = window.location.pathname;
-  const avatarSrc = user?.profilePicture || 'https://i.pravatar.cc/150?img=47';
+  const avatarSrc = user?.profilePicture || propic;
   const fullName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Teacher';
 
   return (

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import favicon from '../../../assets/favicon.png';
 import logoBlack from '../../../assets/logo_black.png';
 import { useAuth } from '../../../context/AuthContext';
+import propic from '../../../assets/propic.png';
 
 const navItems = [
   {
@@ -105,7 +106,7 @@ const navItems = [
 
 export default function Sidebar({ activeItem = 'quizzes', onNavigate }) {
   const { user } = useAuth();
-  const fullName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Dr. Sarah Jenkins';
+  const fullName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : '';
   const roleName = user ? (user.role === 'teacher' ? 'Teacher' : 'Student') : 'Teacher';
   return (
     <aside className="fixed top-0 left-0 h-screen bg-white border-r border-slate-100 flex-col z-40 overflow-y-auto hidden md:flex md:w-[72px] lg:w-[240px]">
@@ -175,7 +176,7 @@ export default function Sidebar({ activeItem = 'quizzes', onNavigate }) {
         }}
         className="p-4 border-t border-slate-100 flex items-center gap-3 justify-center lg:p-[20px_24px] lg:justify-start w-full text-left bg-transparent hover:bg-slate-50 transition-colors cursor-pointer border-none shrink-0"
       >
-        <img src={user?.profilePicture || "https://i.pravatar.cc/150?img=47"} alt={fullName} className="w-10 h-10 rounded-full object-cover" />
+        <img src={user?.profilePicture || propic} alt={fullName} className="w-10 h-10 rounded-full object-cover" />
         <div className="flex-col hidden lg:flex">
           <span className="text-[14px] font-semibold text-slate-800">{fullName}</span>
           <span className="text-[12px] text-slate-500">{roleName}</span>

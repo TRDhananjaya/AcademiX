@@ -5,8 +5,8 @@ import propic from '../../assets/propic.png';
 
 export default function CommonCommunityChat() {
   const { user } = useAuth();
-  const currentUserId = user?.username || (user?.role === 'teacher' ? 'drjenkins' : 'student1');
-  const currentUserName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : (user?.role === 'teacher' ? 'Dr. Sarah Jenkins' : 'John Doe');
+  const currentUserId = user?.username || '';
+  const currentUserName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : '';
   const currentUserRole = user?.role || 'student';
 
   const [messages, setMessages] = useState([]);
@@ -120,7 +120,7 @@ export default function CommonCommunityChat() {
 
         <div className="hidden sm:flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          Connected as {currentUserName} ({currentUserRole === 'teacher' ? 'Faculty' : 'Student'})
+          Connected as {currentUserName}
         </div>
       </div>
 
@@ -144,10 +144,10 @@ export default function CommonCommunityChat() {
             return (
               <div key={msg._id} className={`flex items-start gap-3 max-w-[85%] md:max-w-[75%] ${isMe ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}>
                 <img 
-                  src={msg.senderAvatar || (msg.senderRole === 'teacher' ? 'https://i.pravatar.cc/150?img=47' : propic)} 
+                  src={msg.senderAvatar || (msg.senderRole === 'teacher' ? propic : propic)} 
                   alt={msg.senderName} 
                   className="w-9 h-9 rounded-full border border-slate-200 shrink-0 mt-0.5 shadow-sm"
-                  onError={(e) => { e.target.src = msg.senderRole === 'teacher' ? 'https://i.pravatar.cc/150?img=47' : propic; }}
+                  onError={(e) => { e.target.src = propic; }}
                 />
 
                 <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>

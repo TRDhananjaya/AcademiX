@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { FiMessageSquare, FiTrendingUp, FiPlus, FiFileText, FiLink, FiPlay, FiSend, FiX, FiCheckCircle } from 'react-icons/fi';
-import { TbMessageReport, TbFlag, TbChevronUp, TbChevronDown } from 'react-icons/tb';
+import { TbMessageReport, TbFlag } from 'react-icons/tb';
 import CommonCommunityChat from '../../components/dashboard/CommonCommunityChat';
-import communityBannerImg from '../../assets/community_banner.png';
+import { useAuth } from '../../context/AuthContext';
 
 export default function CommunityMonitor() {
+  const { user } = useAuth();
   const [hubMode, setHubMode] = useState('discussions'); // 'discussions' | 'messages'
   const [activeTab, setActiveTab] = useState('Unanswered'); // 'Recent' or 'Unanswered'
   const [flaggedPosts, setFlaggedPosts] = useState([]);
@@ -91,9 +92,9 @@ export default function CommunityMonitor() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: guidanceText.trim(),
-          authorName: 'Dr. Sarah Jenkins',
+          authorName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Teacher',
           authorRole: 'teacher',
-          authorAvatar: 'https://i.pravatar.cc/150?u=drjenkins'
+          authorAvatar: user?.profilePicture || null
         })
       });
 
@@ -232,24 +233,6 @@ export default function CommunityMonitor() {
                 <div className="space-y-4">
                   {questions.map((q) => (
                     <div key={q._id} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-start gap-4">
-                      
-                      {/* Upvote controller */}
-                      <div className="flex flex-col items-center bg-slate-50 border border-slate-200/50 rounded-xl p-1.5 shrink-0">
-                        <button 
-                          onClick={() => handleVote(q._id, 1)}
-                          className="text-slate-400 hover:text-indigo-600 transition-colors p-1 cursor-pointer"
-                        >
-                          <TbChevronUp className="w-5 h-5 stroke-[2.5]" />
-                        </button>
-                        <span className="text-xs font-bold text-slate-800 my-0.5">{q.votes || 0}</span>
-                        <button 
-                          onClick={() => handleVote(q._id, -1)}
-                          className="text-slate-400 hover:text-indigo-600 transition-colors p-1 cursor-pointer"
-                        >
-                          <TbChevronDown className="w-5 h-5 stroke-[2.5]" />
-                        </button>
-                      </div>
-
                       <div className="flex-1 min-w-0 pr-2">
                         {/* Meta Row */}
                         <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -301,24 +284,6 @@ export default function CommunityMonitor() {
               )}
             </div>
           </div>
-
-          {/* Right Column (Sidebar Photo Card) */}
-          <div className="w-full lg:w-[320px] shrink-0 space-y-6">
-            <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm overflow-hidden group">
-              <div className="rounded-xl overflow-hidden shadow-sm relative">
-                <img 
-                  src={communityBannerImg} 
-                  alt="AcademiX Faculty & Student Community" 
-                  className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent p-4 flex flex-col justify-end">
-                  <h4 className="text-white font-bold text-base leading-tight">Faculty & Student Lounge</h4>
-                  <p className="text-slate-200 text-xs mt-1">Provide guidance & foster academic excellence.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
         </div>
       )}
 

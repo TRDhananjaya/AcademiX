@@ -1,49 +1,101 @@
 const CommunityPost = require('../models/CommunityPost');
 const User = require('../models/User');
 
-// Initial seed posts if database collection is empty
+// Initial seed posts for Grade 10 ICT & System Level Programming
 const seedPosts = [
   {
-    authorName: 'Alex Chen',
+    authorName: 'Tharindu Gunawardena',
     authorRole: 'student',
-    authorAvatar: 'https://i.pravatar.cc/150?u=alexchen',
-    title: 'Help understanding the Chain Rule application in multi-variable functions?',
-    body: "I'm struggling with assignment 4. When applying the chain rule to f(x,y) where both x and y are functions of t, I keep messing up the partial derivatives. Does anyone have a good mental model or visual?",
-    course: 'Advanced Calculus',
-    tags: ['Calculus', 'Math 301', 'Help Needed'],
-    votes: 42,
+    authorAvatar: 'https://i.pravatar.cc/150?u=tharindu',
+    title: 'How do UNIX directory management commands (pwd, cd, mkdir) work with relative vs absolute pathnames?',
+    body: 'In our ICT Unit on System Level Programming & Operating Systems, we are learning directory management. If my current working directory is /home/student/Project, what is the difference between running "cd .." vs "cd /home/student"? Can someone explain absolute and relative paths with simple examples?',
+    course: 'Grade 10 ICT - Operating Systems',
+    tags: ['UNIX Commands', 'File System', 'Grade 10 ICT', 'Directory Management'],
+    votes: 38,
     needsTeacherInput: true,
     replies: [
       {
-        authorName: 'Sarah Jenkins',
+        authorName: 'Kavindu Perera',
         authorRole: 'student',
-        authorAvatar: 'https://i.pravatar.cc/150?u=sarahj',
-        text: 'Try drawing a tree diagram! Put f at the top, branch to x and y, and then branch both of those down to t. Multiply along branches and add them together!',
+        authorAvatar: 'https://i.pravatar.cc/150?u=kavindu',
+        text: 'An absolute path always starts from the root directory "/" (like /home/student/Project). A relative path starts from your current directory! So "cd .." moves up one directory level to /home/student using a relative path.',
         createdAt: new Date(Date.now() - 3600000)
       }
     ]
   },
   {
-    authorName: 'Dr. Sarah Jenkins',
+    authorName: 'Nethmi Fernando',
+    authorRole: 'student',
+    authorAvatar: 'https://i.pravatar.cc/150?u=nethmi',
+    title: 'Understanding UNIX file permissions in ls -l output (e.g. -rw-r--r-- and chmod modes)',
+    body: 'When I run "ls -l notes.txt" in the terminal, the output shows "-rw-r--r-- 1 student csdept 1024 Nov 05 10:30 notes.txt". What do the 10 permission characters mean for owner, group, and others? How do I change permissions to rwxr-xr-x using octal mode with chmod?',
+    course: 'Grade 10 ICT - System Level Programming',
+    tags: ['File Permissions', 'chmod', 'ls -l', 'Grade 10 ICT'],
+    votes: 29,
+    needsTeacherInput: true,
+    replies: [
+      {
+        authorName: 'Mr. Wickramasinghe',
+        authorRole: 'teacher',
+        authorAvatar: 'https://i.pravatar.cc/150?u=wickramasinghe',
+        text: 'The 10 characters breakdown: 1st is file type ("-" for regular file), next 3 are owner permissions ("rw-"), next 3 are group ("r--"), last 3 are others ("r--"). To set permissions to rwxr-xr-x in octal mode, use "chmod 755 notes.txt" because owner=7 (4+2+1), group=5 (4+0+1), others=5 (4+0+1)!',
+        createdAt: new Date(Date.now() - 7200000)
+      }
+    ]
+  },
+  {
+    authorName: 'Sachintha Ranasinghe',
+    authorRole: 'student',
+    authorAvatar: 'https://i.pravatar.cc/150?u=sachintha',
+    title: 'Differentiating base Linux distributions and derived Linux distributions with examples',
+    body: 'Can someone help clarify the difference between base Linux distributions and derived Linux distributions for our ICT test? For example, is Debian a base distribution and Ubuntu a derived distribution?',
+    course: 'Grade 10 ICT - Operating Systems',
+    tags: ['Linux Distros', 'Operating Systems', 'Grade 10 ICT'],
+    votes: 19,
+    needsTeacherInput: false,
+    replies: [
+      {
+        authorName: 'Dinithi Wickramasinghe',
+        authorRole: 'student',
+        authorAvatar: 'https://i.pravatar.cc/150?u=dinithi',
+        text: 'Yes exactly! Base distributions like Debian or RedHat are built from scratch. Derived distributions like Ubuntu or Mint are built upon base distros to add user-friendly desktop environments and pre-installed software packages.',
+        createdAt: new Date(Date.now() - 14400000)
+      }
+    ]
+  },
+  {
+    authorName: 'Mr. Wickramasinghe',
     authorRole: 'teacher',
-    authorAvatar: 'https://i.pravatar.cc/150?u=drjenkins',
-    title: 'Clarification on Thermodynamics Midterm Study Outline',
-    body: 'Hello class! Please note that entropy calculations for non-ideal gases will NOT be tested in detail. Focus on ideal gas cycles and Carnot efficiency equations.',
-    course: 'Physics 202',
-    tags: ['Physics', 'Exam Prep', 'Instructor Announcement'],
-    votes: 28,
+    authorAvatar: 'https://i.pravatar.cc/150?u=wickramasinghe',
+    title: 'Grade 10 ICT Revision Outline: Purpose of core UNIX commands (ls, date, who, passwd)',
+    body: 'Hello students! For your upcoming ICT exam, make sure you know the purpose of basic UNIX commands:\n1. ls - List directory contents\n2. date - Display current system date and time\n3. who - Show users currently logged into the system\n4. passwd - Change user password\nReview directory management commands (pwd, cd, mkdir) as well!',
+    course: 'Grade 10 ICT - Computer Systems',
+    tags: ['UNIX Commands', 'Instructor Announcement', 'Grade 10 ICT'],
+    votes: 35,
     needsTeacherInput: false,
     replies: []
   },
   {
-    authorName: 'Student ID #892',
+    authorName: 'Bhanuka Dilshan',
     authorRole: 'student',
-    authorAvatar: 'https://i.pravatar.cc/150?u=student892',
-    title: "Clarification needed on Maxwell's Equations in non-vacuum media",
-    body: "I'm struggling to understand how the permittivity and permeability constants change when we move from a vacuum to a dielectric material like glass.",
-    course: 'Physics 202',
-    tags: ['Electromagnetism', 'Physics 202'],
+    authorAvatar: 'https://i.pravatar.cc/150?u=bhanuka',
+    title: 'What positional parameters ($#, $*, $1) represent in UNIX shell scripting?',
+    body: 'When executing a bash shell script with command line arguments like "./script.sh apple banana orange", what do special parameters $#, $*, and positional variables $1 and $2 store inside the script?',
+    course: 'Grade 10 ICT - Shell Scripting',
+    tags: ['Shell Scripting', 'UNIX Variables', 'Grade 10 ICT'],
     votes: 14,
+    needsTeacherInput: true,
+    replies: []
+  },
+  {
+    authorName: 'Amanda Perera',
+    authorRole: 'student',
+    authorAvatar: 'https://i.pravatar.cc/150?u=amanda',
+    title: 'What information is stored in UNIX system files /etc/passwd, /etc/group, and /etc/shadow?',
+    body: 'I am reviewing UNIX system configuration files. What is the specific purpose of /etc/passwd, /etc/group, and /etc/shadow? Why are encrypted passwords stored in /etc/shadow instead of /etc/passwd?',
+    course: 'Grade 10 ICT - System Level Programming',
+    tags: ['System Files', 'UNIX Security', 'Grade 10 ICT'],
+    votes: 22,
     needsTeacherInput: true,
     replies: []
   }
@@ -53,6 +105,15 @@ const seedPosts = [
 // @route   GET /api/community
 const getPosts = async (req, res) => {
   try {
+    // Remove legacy non-ICT dummy seed posts if present in database
+    await CommunityPost.deleteMany({
+      $or: [
+        { course: 'Advanced Calculus' },
+        { course: 'Physics 202' },
+        { title: { $regex: "Maxwell's Equations|Chain Rule|Thermodynamics", $options: 'i' } }
+      ]
+    });
+
     let count = await CommunityPost.countDocuments();
     if (count === 0) {
       await CommunityPost.insertMany(seedPosts);
@@ -145,7 +206,7 @@ const createPost = async (req, res) => {
       tags: Array.isArray(tags) ? tags : (tags ? tags.split(',').map(t => t.trim()) : []),
       authorName: authorName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Anonymous Student'),
       authorRole: authorRole || (user ? user.role : 'student'),
-      authorAvatar: authorAvatar || `https://i.pravatar.cc/150?u=${encodeURIComponent(authorName || 'user')}`,
+      authorAvatar: authorAvatar || req.user?.profilePicture || null,
       needsTeacherInput: (authorRole || user?.role) !== 'teacher'
     });
 
@@ -178,7 +239,7 @@ const addReply = async (req, res) => {
     post.replies.push({
       authorName: replyAuthorName,
       authorRole: replyAuthorRole,
-      authorAvatar: authorAvatar || `https://i.pravatar.cc/150?u=${encodeURIComponent(replyAuthorName)}`,
+      authorAvatar: authorAvatar || req.user?.profilePicture || null,
       text,
       createdAt: new Date()
     });

@@ -4,6 +4,7 @@ const Student = require('../models/Student');
 const Quiz = require('../models/Quiz');
 const CommunityPost = require('../models/CommunityPost');
 const Attendance = require('../models/Attendance');
+const Lesson = require('../models/Lesson');
 
 // @desc    Get Analytics Records
 // @route   GET /api/analytics
@@ -321,6 +322,7 @@ const getIndividualStudentAnalytics = async (req, res, next) => {
         const lowestScoreObj = combinedHistory.length > 0 ? combinedHistory.reduce((prev, current) => (prev.percentage < current.percentage) ? prev : current) : null;
 
         const overallPercentage = combinedHistory.length > 0 ? combinedHistory.reduce((sum, h) => sum + h.percentage, 0) / combinedHistory.length : 0;
+        const totalSystemLessons = (await Lesson.countDocuments()) || 6;
 
         res.status(200).json({
             studentId,
@@ -335,6 +337,7 @@ const getIndividualStudentAnalytics = async (req, res, next) => {
                 highestScore: highestScoreObj ? highestScoreObj.percentage : 0,
                 lowestScore: lowestScoreObj ? lowestScoreObj.percentage : 0,
                 lessonsCompleted: trendData.length,
+                totalLessons: totalSystemLessons,
                 strongestLesson: strongestLesson ? strongestLesson.lesson : 'N/A',
                 weakestLesson: weakestLesson ? weakestLesson.lesson : 'N/A',
                 strengths,
@@ -357,8 +360,10 @@ const getTeacherDashboardStats = async (req, res, next) => {
         const limit = parseInt(req.query.limit, 10) || 5; // Default 5 items per page
         const skip = (page - 1) * limit;
 
-        // 1. Get total students count
-        const totalStudents = await Student.countDocuments({ status: { $ne: 'Inactive' } });
+        // 1. Get total, active, and inactive student counts
+        const totalStudents = await Student.countDocuments();
+        const activeStudents = await Student.countDocuments({ status: { $ne: 'Inactive' } });
+        const inactiveStudents = await Student.countDocuments({ status: 'Inactive' });
 
         // 2. Get active modules count
         const activeModules = await Quiz.countDocuments();
@@ -545,7 +550,7 @@ const getTeacherDashboardStats = async (req, res, next) => {
         const totalRecords = studentTrackerList.length;
         const paginatedTracker = studentTrackerList.slice(skip, skip + limit);
 
-        // 9. Get today's attendance count
+        // 9. Get today's attendance count (distinct students checked in today)
         let todayPresentCount = 0;
         try {
             const TIMEZONE = process.env.TIMEZONE || 'Asia/Colombo';
@@ -556,8 +561,18 @@ const getTeacherDashboardStats = async (req, res, next) => {
                 day: '2-digit'
             }).format(new Date());
             const [year, month, day] = colomboDateStr.split('-').map(Number);
-            const todayMidnight = new Date(year, month - 1, day);
-            todayPresentCount = await Attendance.countDocuments({ date: todayMidnight, status: 'Present' });
+            const targetDateStart = new Date(year, month - 1, day, 0, 0, 0, 0);
+            const targetDateEnd = new Date(year, month - 1, day, 23, 59, 59, 999);
+
+            const attendanceFilter = {
+                status: 'Present',
+                $or: [
+                    { date: { $gte: targetDateStart, $lte: targetDateEnd } },
+                    { createdAt: { $gte: targetDateStart, $lte: targetDateEnd } }
+                ]
+            };
+            const distinctPresentStudents = await Attendance.distinct('student', attendanceFilter);
+            todayPresentCount = distinctPresentStudents.length;
         } catch (attErr) {
             console.warn('Could not fetch attendance count:', attErr.message);
         }
@@ -565,6 +580,8 @@ const getTeacherDashboardStats = async (req, res, next) => {
         res.status(200).json({
             metrics: {
                 totalStudents,
+                activeStudents,
+                inactiveStudents,
                 totalQuizzes: activeModules,
                 classAverage,
                 atRiskCount,
