@@ -249,17 +249,17 @@ export default function ExamPrediction() {
                         >
                           <td className="px-6 py-4 text-sm font-semibold text-slate-800">{s.studentId}</td>
                           <td className="px-6 py-4 text-sm font-medium text-slate-600">{s.studentName}</td>
-                          <td className="px-6 py-4 text-sm text-slate-600">{s.quiz1Score || '-'}</td>
-                          <td className="px-6 py-4 text-sm text-slate-600">{s.quiz2Score || '-'}</td>
-                          <td className="px-6 py-4 text-sm text-slate-600">{s.quiz3Score || '-'}</td>
-                          <td className="px-6 py-4 text-sm font-medium text-slate-700">{s.quizAverage ? s.quizAverage.toFixed(1) : '-'}</td>
-                          <td className="px-6 py-4 text-sm text-slate-600">{s.followupScore || '-'}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600">{s.quiz1Score ?? '-'}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600">{s.quiz2Score ?? '-'}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600">{s.quiz3Score ?? '-'}</td>
+                          <td className="px-6 py-4 text-sm font-medium text-slate-700">{typeof s.quizAverage === 'number' ? s.quizAverage.toFixed(1) : '-'}</td>
+                          <td className="px-6 py-4 text-sm text-slate-600">{s.followupScore ?? '-'}</td>
                           
                           <td className="px-6 py-4 text-sm font-bold text-indigo-700">
-                            {s.predictedPercentage ? `${s.predictedPercentage}%` : '-'}
+                            {typeof s.predictedPercentage === 'number' ? `${s.predictedPercentage}%` : '-'}
                           </td>
                           <td className="px-6 py-4 text-sm font-bold text-slate-800">
-                            {s.predictedLessonMark ? `${s.predictedLessonMark} / ${s.lessonMaxMark}` : '-'}
+                            {typeof s.predictedLessonMark === 'number' ? `${s.predictedLessonMark} / ${s.lessonMaxMark}` : '-'}
                           </td>
                           <td className="px-6 py-4 text-sm">
                             {s.predictionStatus === 'AVAILABLE' ? (

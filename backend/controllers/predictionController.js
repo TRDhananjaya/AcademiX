@@ -113,7 +113,8 @@ const calculateFeatures = async (studentId, lessonId) => {
         Quiz_3_Score: parseFloat(q3.toFixed(1)),
         Quiz_Average: parseFloat(avg.toFixed(1)),
         Followup_Quiz_Score: parseFloat(followup.toFixed(1)),
-        missingData
+        missingData,
+        hasCompletedRequiredQuizzes: hasQuiz1 && hasQuiz2 && hasQuiz3
     };
 };
 
@@ -123,7 +124,7 @@ const getStudentLessonPrediction = async (student, lessonId) => {
     const lessonMaxMark = lessonMaxMarks[lessonNum] || 50;
 
     const featuresData = await calculateFeatures(student.studentId, lessonId);
-    const { missingData, ...features } = featuresData;
+    const { missingData, hasCompletedRequiredQuizzes, ...features } = featuresData;
 
     const studentResult = {
         studentId: student.studentId,
@@ -139,6 +140,7 @@ const getStudentLessonPrediction = async (student, lessonId) => {
         predictionStatus: "AVAILABLE",
         features,
         missingData,
+        hasCompletedRequiredQuizzes,
         lesson: lessonId
     };
 
@@ -306,13 +308,16 @@ const getLessonPredictions = async (req, res, next) => {
             students.map(student => getStudentLessonPrediction(student, lessonId))
         );
         
+        // Filter out students who haven't completed all three required module quizzes (Q1, Q2, Q3)
+        const eligibleStudents = results.filter(student => student.hasCompletedRequiredQuizzes);
+        
         res.status(200).json({
             lesson: {
                 lessonId: lessonId,
                 lessonName: `Lesson ${lessonNum}`,
                 maxMark: lessonMaxMark
             },
-            students: results
+            students: eligibleStudents
         });
         
     } catch (error) {
