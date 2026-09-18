@@ -37,7 +37,7 @@ export default function Footer() {
             </a>
 
             <p className="text-slate-400 text-sm leading-relaxed max-w-xs font-sans">
-              Personalized, AI-driven learning pathways helping Grade 11 students in Sri Lanka master O/L ICT.
+              Personalized, AI-driven learning pathways helping Grade 10 students master O/L ICT.
             </p>
 
 
