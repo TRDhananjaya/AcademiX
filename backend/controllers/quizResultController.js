@@ -227,10 +227,10 @@ const getAllResults = async (req, res) => {
   }
 };
 
-// @desc    Export quiz results to Excel
-// @route   GET /api/quiz-results/export-excel
+// @desc    Export quiz results to CSV
+// @route   GET /api/quiz-results/export-csv
 // @access  Public (for now)
-const exportQuizResultsExcel = async (req, res) => {
+const exportQuizResultsCSV = async (req, res) => {
   try {
     const students = await Student.find({ status: 'Active' }).select('studentId name');
     const lessons = await Lesson.find().sort({ lessonNumber: 1 });
@@ -254,7 +254,19 @@ const exportQuizResultsExcel = async (req, res) => {
     const studentFollowupResultMap = {};
     for (const r of allFollowupResults) {
       const sId = r.studentId ? r.studentId.toLowerCase() : '';
-      studentFollowupResultMap[sId] = r.percentage !== undefined ? r.percentage : r.score;
+      const lId = r.lessonId ? String(r.lessonId) : '';
+      if (!studentFollowupResultMap[sId]) {
+        studentFollowupResultMap[sId] = {};
+      }
+      
+      let val = null;
+      if (r.percentage !== undefined && r.percentage !== null) {
+        val = r.percentage;
+      } else if (r.score !== undefined && r.score !== null) {
+        val = r.score;
+      }
+      
+      studentFollowupResultMap[sId][lId] = val;
     }
 
     const moduleToCodeMap = {};
@@ -312,15 +324,10 @@ const exportQuizResultsExcel = async (req, res) => {
         
         // Followup score
         let followupScore = null;
-        const studentFq = followupQuizzes.find(fq => 
-            fq.moduleId === lesson._id.toString() && 
-            fq.quizCode && fq.quizCode.toLowerCase().includes(sId)
-        );
+        const lId = String(lesson._id);
         
-        if (studentFq && studentFollowupResultMap[sId] !== undefined) {
-           followupScore = studentFollowupResultMap[sId];
-        } else if (scores.length > 0 && studentFollowupResultMap[sId] !== undefined) {
-           followupScore = studentFollowupResultMap[sId];
+        if (studentFollowupResultMap[sId] && studentFollowupResultMap[sId][lId] !== undefined && studentFollowupResultMap[sId][lId] !== null) {
+           followupScore = studentFollowupResultMap[sId][lId];
         }
         
         if (quiz1Score !== null || quiz2Score !== null || quiz3Score !== null || followupScore !== null) {
@@ -332,10 +339,9 @@ const exportQuizResultsExcel = async (req, res) => {
             'Quiz_1_Score': quiz1Score !== null ? quiz1Score : '',
             'Quiz_2_Score': quiz2Score !== null ? quiz2Score : '',
             'Quiz_3_Score': quiz3Score !== null ? quiz3Score : '',
-            'Avg_Quiz_Score': avgScore !== null ? avgScore : '',
+            'Quiz_Average': avgScore !== null ? avgScore : '',
             'Followup_Quiz_Score': followupScore !== null ? followupScore : ''
           });
-          if (followupScore !== null) delete studentFollowupResultMap[sId]; // Prevent duplicate mapping
         }
       }
     }
@@ -345,25 +351,40 @@ const exportQuizResultsExcel = async (req, res) => {
       return a.Student_ID.localeCompare(b.Student_ID);
     });
     
-    const wb = xlsx.utils.book_new();
-    // Use json_to_sheet directly to convert the array of objects
-    const ws = xlsx.utils.json_to_sheet(excelData, {
-      header: [
-        'Student_ID', 'Student_Name', 'Lesson_ID', 'Lesson_Name',
-        'Quiz_1_Score', 'Quiz_2_Score', 'Quiz_3_Score', 
-        'Avg_Quiz_Score', 'Followup_Quiz_Score'
-      ]
-    });
-    xlsx.utils.book_append_sheet(wb, ws, "Quiz Results");
+    const headers = [
+      'Student_ID', 'Student_Name', 'Lesson_ID', 'Lesson_Name',
+      'Quiz_1_Score', 'Quiz_2_Score', 'Quiz_3_Score', 
+      'Quiz_Average', 'Followup_Quiz_Score'
+    ];
+
+    const escapeCSV = (val) => {
+      if (val === null || val === undefined) return '';
+      const str = String(val);
+      if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+        return '"' + str.replace(/"/g, '""') + '"';
+      }
+      return str;
+    };
+
+    const csvRows = [];
+    csvRows.push(headers.join(','));
+
+    for (const row of excelData) {
+      const rowValues = headers.map(header => escapeCSV(row[header]));
+      csvRows.push(rowValues.join(','));
+    }
+
+    const csvString = csvRows.join('\n');
     
-    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    // Add BOM to support UTF-8 characters like Sinhala in Excel
+    const buffer = Buffer.from('\uFEFF' + csvString, 'utf-8');
     
-    res.setHeader('Content-Disposition', 'attachment; filename="Quiz_Results.xlsx"');
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="quiz_results.csv"');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.status(200).send(buffer);
   } catch (error) {
-    console.error('Error generating Excel export:', error);
-    res.status(500).json({ message: 'Server error while generating Excel export' });
+    console.error('Error generating CSV export:', error);
+    res.status(500).json({ message: 'Server error while generating CSV export' });
   }
 };
 
@@ -372,5 +393,5 @@ module.exports = {
   getResultsByQuiz,
   getResultsByStudent,
   getAllResults,
-  exportQuizResultsExcel
+  exportQuizResultsCSV
 };
