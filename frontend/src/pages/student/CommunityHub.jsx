@@ -56,10 +56,16 @@ export default function CommunityHub() {
   const [expandedPostId, setExpandedPostId] = useState(null);
   const [replyInputs, setReplyInputs] = useState({});
 
+  // Auth helper for protected API calls
+  const authHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const fetchPosts = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/community');
+      const res = await fetch('/api/community', { headers: authHeaders() });
       const data = await res.json();
       if (Array.isArray(data)) {
         setPosts(data);
@@ -84,7 +90,7 @@ export default function CommunityHub() {
     try {
       const res = await fetch(`/api/community/${postId}/vote`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           voteType,
           userId: user?.username || 'student_user'
@@ -107,7 +113,7 @@ export default function CommunityHub() {
     try {
       const res = await fetch('/api/community', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           title: newPostTitle,
           body: newPostBody,
@@ -140,7 +146,7 @@ export default function CommunityHub() {
     try {
       const res = await fetch(`/api/community/${postId}/reply`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           text: text.trim(),
           authorName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Peer Student',
@@ -166,7 +172,7 @@ export default function CommunityHub() {
     try {
       const res = await fetch(`/api/community/${postId}/flag`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ reason })
       });
       if (res.ok) {

@@ -11,13 +11,15 @@ const {
     getTeacherDashboardStats
 } = require('../controllers/analyticsController');
 
-// Only teachers can access analytics
+// Teacher-only analytics
 router.get('/quizzes', roleMiddleware('teacher'), getAvailableQuizzes);
 router.get('/lessons', roleMiddleware('teacher'), getAvailableLessons);
 router.get('/student-performance', roleMiddleware('teacher'), getStudentPerformance);
 router.get('/students', roleMiddleware('teacher'), getAllStudents);
 router.get('/teacher-dashboard', roleMiddleware('teacher'), getTeacherDashboardStats);
-router.get('/student/:studentId', roleMiddleware('teacher'), getIndividualStudentAnalytics);
 router.get('/', roleMiddleware('teacher'), getAnalytics);
+
+// Both students (own data) and teachers can access individual student analytics
+router.get('/student/:studentId', getIndividualStudentAnalytics);
 
 module.exports = router;

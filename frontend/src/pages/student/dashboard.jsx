@@ -78,7 +78,10 @@ export default function StudentDashboard() {
     const fetchCommunity = async () => {
       try {
         setLoadingCommunity(true);
-        const res = await fetch('/api/community');
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/community', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {

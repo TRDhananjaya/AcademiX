@@ -30,9 +30,19 @@ const app = express();
 // Security: HTTP headers hardening
 app.use(helmet());
 
-// Security: CORS — restrict to frontend origin
+// Security: CORS — restrict to frontend origin(s)
+const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+    .split(',')
+    .map(o => o.trim());
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: function (origin, callback) {
+        // Allow requests with no origin (e.g. Postman, server-to-server)
+        if (!origin) return callback(null, true);
+        // In development, allow any localhost port
+        if (origin.match(/^http:\/\/localhost:\d+$/)) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true,
 }));
 
