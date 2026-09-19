@@ -254,7 +254,19 @@ const exportQuizResultsCSV = async (req, res) => {
     const studentFollowupResultMap = {};
     for (const r of allFollowupResults) {
       const sId = r.studentId ? r.studentId.toLowerCase() : '';
-      studentFollowupResultMap[sId] = r.percentage !== undefined ? r.percentage : r.score;
+      const lId = r.lessonId ? String(r.lessonId) : '';
+      if (!studentFollowupResultMap[sId]) {
+        studentFollowupResultMap[sId] = {};
+      }
+      
+      let val = null;
+      if (r.percentage !== undefined && r.percentage !== null) {
+        val = r.percentage;
+      } else if (r.score !== undefined && r.score !== null) {
+        val = r.score;
+      }
+      
+      studentFollowupResultMap[sId][lId] = val;
     }
 
     const moduleToCodeMap = {};
@@ -312,15 +324,10 @@ const exportQuizResultsCSV = async (req, res) => {
         
         // Followup score
         let followupScore = null;
-        const studentFq = followupQuizzes.find(fq => 
-            fq.moduleId === lesson._id.toString() && 
-            fq.quizCode && fq.quizCode.toLowerCase().includes(sId)
-        );
+        const lId = String(lesson._id);
         
-        if (studentFq && studentFollowupResultMap[sId] !== undefined) {
-           followupScore = studentFollowupResultMap[sId];
-        } else if (scores.length > 0 && studentFollowupResultMap[sId] !== undefined) {
-           followupScore = studentFollowupResultMap[sId];
+        if (studentFollowupResultMap[sId] && studentFollowupResultMap[sId][lId] !== undefined && studentFollowupResultMap[sId][lId] !== null) {
+           followupScore = studentFollowupResultMap[sId][lId];
         }
         
         if (quiz1Score !== null || quiz2Score !== null || quiz3Score !== null || followupScore !== null) {
@@ -335,7 +342,6 @@ const exportQuizResultsCSV = async (req, res) => {
             'Quiz_Average': avgScore !== null ? avgScore : '',
             'Followup_Quiz_Score': followupScore !== null ? followupScore : ''
           });
-          if (followupScore !== null) delete studentFollowupResultMap[sId]; // Prevent duplicate mapping
         }
       }
     }
