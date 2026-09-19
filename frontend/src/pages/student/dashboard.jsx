@@ -212,9 +212,9 @@ export default function StudentDashboard() {
         nextTargetPct: 65,
         progressPct: progress
       };
-    } else if (score >= 35) {
+    } else if (score >= 30) {
       const gap = (50 - score).toFixed(1);
-      const progress = Math.min(100, Math.max(0, ((score - 35) / 15) * 100));
+      const progress = Math.min(100, Math.max(0, ((score - 30) / 20) * 100));
       return {
         grade: 'S',
         label: 'Simple Pass',
@@ -227,8 +227,8 @@ export default function StudentDashboard() {
         progressPct: progress
       };
     } else {
-      const gap = (35 - score).toFixed(1);
-      const progress = Math.min(100, Math.max(0, (score / 35) * 100));
+      const gap = (30 - score).toFixed(1);
+      const progress = Math.min(100, Math.max(0, (score / 30) * 100));
       return {
         grade: 'W',
         label: 'Needs Revision',
@@ -237,7 +237,7 @@ export default function StudentDashboard() {
         borderColor: 'border-red-400',
         shadowColor: 'rgba(239,68,68,0.15)',
         nextTargetText: `🎯 +${gap}% more to reach 'S' (Pass)!`,
-        nextTargetPct: 35,
+        nextTargetPct: 30,
         progressPct: progress
       };
     }
@@ -247,7 +247,9 @@ export default function StudentDashboard() {
   let predictedGradeInfo = null;
   let predictionScore = 0;
   let predictionTotalMarks = 100;
-  const lessonPredictions = prediction?.lessonPredictions || [];
+  const lessonPredictions = (prediction?.lessonPredictions || []).filter(lp =>
+    ['1', '2'].includes(String(lp.lessonNumber || lp.lessonId))
+  );
 
   if (prediction && prediction.predictionStatus !== 'INSUFFICIENT_DATA' && prediction.predictedMarks != null) {
     predictionScore = prediction.predictedPercentage || (prediction.prediction && prediction.prediction.predictedScore) || 0;
