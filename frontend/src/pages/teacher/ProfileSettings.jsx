@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
 import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiAward, FiPlus, FiBell } from 'react-icons/fi';
@@ -26,6 +26,8 @@ export default function TeacherProfileSettings() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
+  const [showPicModal, setShowPicModal] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Courses state
   const [courses, setCourses] = useState(['Advanced Mathematics', 'Computer Science 101', 'Calculus 101']);
@@ -142,24 +144,22 @@ export default function TeacherProfileSettings() {
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col items-center pb-6">
                 <div className="w-full h-24 bg-indigo-100/70"></div>
                 <div className="relative -mt-12 mb-4">
-                  <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden bg-white shadow-md relative group">
+                  <div
+                    onClick={() => setShowPicModal(true)}
+                    className="w-24 h-24 rounded-full border-4 border-white overflow-hidden bg-white shadow-md relative group cursor-pointer"
+                    title="Click to view or change profile photo"
+                  >
                     <img
                       src={profilePicture || propic}
                       alt={fullName}
                       className="w-full h-full object-cover"
                     />
-                    <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
                         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                         <circle cx="12" cy="13" r="4" />
                       </svg>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageUpload}
-                      />
-                    </label>
+                    </div>
                   </div>
                 </div>
 
@@ -296,6 +296,98 @@ export default function TeacherProfileSettings() {
           </div>
         </main>
       </div>
+
+      {/* Profile Picture Popup Modal */}
+      {showPicModal && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity"
+          onClick={() => setShowPicModal(false)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 sm:p-7 shadow-2xl max-w-sm w-full border border-slate-100 flex flex-col items-center relative animate-scaleUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setShowPicModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full p-2 transition-colors cursor-pointer"
+              aria-label="Close"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+
+            {/* Header */}
+            <h3 className="text-lg font-bold text-slate-900 mb-1">
+              Profile Picture
+            </h3>
+            <p className="text-xs text-slate-400 font-medium mb-5">
+              Preview and update your photo
+            </p>
+
+            {/* Large Image Preview */}
+            <div className="w-48 h-48 sm:w-52 sm:h-52 rounded-full border-4 border-slate-100 shadow-lg overflow-hidden bg-slate-100 mb-6 relative">
+              <img
+                src={profilePicture || propic}
+                alt={fullName}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            {/* Hidden file input triggered by button */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageUpload}
+            />
+
+            {/* Action Buttons */}
+            <div className="w-full space-y-2.5">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full bg-[#3b28cc] hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-xl text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+                <span>Update Profile Picture</span>
+              </button>
+
+              {profilePicture && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfilePicture('');
+                    setShowPicModal(false);
+                  }}
+                  className="w-full py-2.5 text-xs font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                >
+                  Remove Photo
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowPicModal(false)}
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-400 mt-4 text-center">
+              Supports JPG, PNG, WEBP (Max 2MB)
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
