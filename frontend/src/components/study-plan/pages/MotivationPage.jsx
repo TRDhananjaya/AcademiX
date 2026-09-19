@@ -2,8 +2,8 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { FaGraduationCap, FaPlay, FaCheckCircle, FaSpinner, FaChartBar } from 'react-icons/fa';
 
-const MotivationPage = ({ 
-  motivationText, 
+const MotivationPage = ({
+  motivationText,
   user,
   followUpQuizData,
   followUpCompleted,
@@ -14,10 +14,10 @@ const MotivationPage = ({
 }) => {
   return (
     <div className="flex flex-col items-center justify-center min-h-full text-center px-4 animate-fade-in py-4 space-y-4">
-      
+
       <div className="pb-2 border-b border-slate-100 w-full text-center">
         <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider block mb-1">
-          Chapter 5 of 5 · Mastery Verification
+          Chapter 6 of 6 · Mastery Verification
         </span>
         <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 tracking-tight">
           Adaptive Follow-Up Assessment
@@ -27,14 +27,14 @@ const MotivationPage = ({
       <div className="w-16 h-16 my-2 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-3xl shadow-xs">
         🚀
       </div>
-      
+
       <h3 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
         You've Got This, {user?.name?.split(' ')[0] || user?.firstName || 'Student'}!
       </h3>
-      
+
       <div className="text-slate-600 max-w-lg mx-auto text-sm leading-relaxed bg-slate-50/70 p-4 rounded-xl border border-slate-200/60 font-normal">
         {motivationText ? (
-           <ReactMarkdown>{motivationText}</ReactMarkdown>
+          <ReactMarkdown>{motivationText}</ReactMarkdown>
         ) : (
           <p>
             "Every expert was once a beginner. Consistent practice and addressing specific misconceptions will turn your weak topics into your greatest strengths."
@@ -44,7 +44,7 @@ const MotivationPage = ({
 
       {/* --- END OF STUDY PLAN FOLLOW-UP QUIZ ACTION BANNER --- */}
       <div className="w-full max-w-2xl bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl shadow-indigo-950/20 text-left relative overflow-hidden my-6 border border-indigo-700/50">
-        
+
         <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5 border-b border-indigo-700/60 pb-5">
@@ -104,11 +104,10 @@ const MotivationPage = ({
           <button
             onClick={onStartFollowUpQuiz}
             disabled={isLoadingFollowUp}
-            className={`w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-black text-sm transition-all cursor-pointer border-none shadow-lg ${
-              followUpCompleted
+            className={`w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-black text-sm transition-all cursor-pointer border-none shadow-lg ${followUpCompleted
                 ? 'bg-indigo-700/80 text-white hover:bg-indigo-600 border border-indigo-500/50'
                 : 'bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 hover:from-emerald-300 hover:to-teal-300 shadow-emerald-500/20'
-            }`}
+              }`}
           >
             {isLoadingFollowUp ? (
               <>
