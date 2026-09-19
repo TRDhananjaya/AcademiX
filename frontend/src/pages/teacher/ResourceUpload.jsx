@@ -152,6 +152,103 @@ export default function LessonManagement() {
     fetchData();
   }, []);
 
+  // Browser History & Navigation Stack Handlers
+  const navigateToLessons = (push = true) => {
+    setCurrentView('lessons');
+    setActiveLesson(null);
+    setActiveModule(null);
+    setSearchQuery('');
+    if (push) {
+      window.history.pushState({ view: 'lessons' }, '', window.location.pathname);
+    }
+  };
+
+  const navigateToModules = (lesson, push = true) => {
+    const lIdStr = String(lesson._id || lesson.id);
+    setActiveLesson(lesson);
+    setActiveModule(null);
+    setCurrentView('modules');
+    setSearchQuery('');
+    if (push) {
+      window.history.pushState(
+        { view: 'modules', lessonId: lIdStr },
+        '',
+        `${window.location.pathname}?lessonId=${lIdStr}`
+      );
+    }
+  };
+
+  const navigateToResources = (module, push = true) => {
+    const activeLId = activeLesson?._id || activeLesson?.id;
+    const lIdStr = activeLId ? String(activeLId) : '';
+    const mIdStr = String(module._id || module.id);
+    setActiveModule(module);
+    setCurrentView('resources');
+    setResourceFilter('All');
+    if (push) {
+      window.history.pushState(
+        { view: 'resources', lessonId: lIdStr, moduleId: mIdStr },
+        '',
+        `${window.location.pathname}?lessonId=${lIdStr}&moduleId=${mIdStr}`
+      );
+    }
+  };
+
+  const handleGoBack = () => {
+    if (window.history.state && window.history.state.view) {
+      window.history.back();
+    } else {
+      if (currentView === 'resources') {
+        if (activeLesson) navigateToModules(activeLesson, false);
+        else navigateToLessons(false);
+      } else if (currentView === 'modules') {
+        navigateToLessons(false);
+      }
+    }
+  };
+
+  // Sync state with Browser History and URL Query Params
+  useEffect(() => {
+    const syncStateFromUrl = (stateFromEvent) => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const lessonIdParam = urlParams.get('lessonId') || stateFromEvent?.lessonId;
+      const moduleIdParam = urlParams.get('moduleId') || stateFromEvent?.moduleId;
+      const viewParam = stateFromEvent?.view || (moduleIdParam ? 'resources' : lessonIdParam ? 'modules' : 'lessons');
+
+      if (viewParam === 'resources' && moduleIdParam && lessons.length > 0 && modules.length > 0) {
+        const foundLesson = lessons.find(l => String(l._id || l.id) === String(lessonIdParam));
+        const foundModule = modules.find(m => String(m._id || m.id) === String(moduleIdParam));
+        if (foundLesson) setActiveLesson(foundLesson);
+        if (foundModule) setActiveModule(foundModule);
+        setCurrentView('resources');
+      } else if (viewParam === 'modules' && lessonIdParam && lessons.length > 0) {
+        const foundLesson = lessons.find(l => String(l._id || l.id) === String(lessonIdParam));
+        if (foundLesson) setActiveLesson(foundLesson);
+        setActiveModule(null);
+        setCurrentView('modules');
+      } else if (!lessonIdParam && !moduleIdParam) {
+        setCurrentView('lessons');
+        setActiveLesson(null);
+        setActiveModule(null);
+      }
+    };
+
+    const handlePopState = (e) => {
+      syncStateFromUrl(e.state);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    // Initial sync when lessons or modules data is loaded
+    if (lessons.length > 0 || modules.length > 0) {
+      syncStateFromUrl(window.history.state);
+    }
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [lessons, modules]);
+
   async function fetchData() {
     if (!sessionStorage.getItem('academiX_lessons')) {
       setIsLoading(true);
@@ -909,6 +1006,108 @@ export default function LessonManagement() {
     }
   };
 
+  // Helper classification functions for section rules
+  const isMcqResource = (r) => {
+    const titleLower = (r.title || '').toLowerCase();
+    const descLower = (r.description || '').toLowerCase();
+    return r.type === 'MCQ' || titleLower.includes('mcq') || titleLower.includes('question') || titleLower.includes('paper') || titleLower.includes('quiz') || descLower.includes('mcq');
+  };
+
+  const isLessonMainPdf = (r) => {
+    return !isMcqResource(r) && r.lessonId && !r.moduleId && ['PDF', 'Document', 'Presentation'].includes(r.type);
+  };
+
+  const isModulePdf = (r) => {
+    return !isMcqResource(r) && r.moduleId && ['PDF', 'Document', 'Presentation'].includes(r.type);
+  };
+
+  const isResourceVideoOrLink = (r) => {
+    return r.type === 'Video' || r.type === 'Link' || /youtube\.com|youtu\.be/i.test(r.url || '');
+  };
+
+  const renderSingleTeacherResourceCard = (res) => {
+    const style = getResourceDetails(res.type);
+    const resourceIdStr = res._id || res.id;
+
+    return (
+      <div
+        key={resourceIdStr}
+        className="bg-white rounded-2xl p-3.5 border border-slate-100 shadow-sm flex items-center justify-between gap-3 hover:border-slate-200 transition-all group"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${style.colorClass}`}>
+            {style.icon}
+          </div>
+          <div className="min-w-0">
+            <h4 className="font-bold text-slate-800 text-xs sm:text-sm truncate pr-2" title={res.title}>
+              {res.title}
+            </h4>
+            {res.description && (
+              <p className="text-[11px] text-slate-500 mt-0.5 leading-snug line-clamp-1">{res.description}</p>
+            )}
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-md ${style.badge}`}>
+                {res.type}
+              </span>
+              {res.lessonId && !res.moduleId && (
+                <span className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-100 text-indigo-700 flex items-center gap-0.5">
+                  <FiGlobe className="w-2.5 h-2.5" />
+                  Shared (Lesson-wide)
+                </span>
+              )}
+              {res.size && (
+                <span className="text-[9px] font-semibold text-slate-400">
+                  {res.size}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {res.url && (
+            res.type === 'Link' ? (
+              <a
+                href={/^https?:\/\//i.test(res.url) ? res.url : `https://${res.url}`}
+                target="_blank"
+                rel="noreferrer"
+                className="bg-[#3b28cc] hover:bg-indigo-700 text-white font-bold py-1.5 px-3 rounded-lg text-[11px] transition-colors shrink-0 flex items-center gap-1 shadow-sm cursor-pointer"
+              >
+                Open Link
+                <FiExternalLink className="w-3 h-3" />
+              </a>
+            ) : res.type === 'Video' || /youtube\.com|youtu\.be/i.test(res.url || '') ? (
+              <a
+                href={/^https?:\/\//i.test(res.url) ? res.url : `https://${res.url}`}
+                target="_blank"
+                rel="noreferrer"
+                className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1.5 px-3 rounded-lg text-[11px] transition-colors shrink-0 flex items-center gap-1 shadow-sm cursor-pointer"
+              >
+                Resource Video
+                <FiVideo className="w-3 h-3" />
+              </a>
+            ) : (
+              <button
+                onClick={() => handleDownloadResource(res)}
+                className="bg-[#3b28cc] hover:bg-indigo-700 text-white font-bold py-1.5 px-3 rounded-lg text-[11px] transition-colors shrink-0 flex items-center gap-1 shadow-sm cursor-pointer border-none"
+              >
+                Download
+                <FiExternalLink className="w-3 h-3" />
+              </button>
+            )
+          )}
+          <button
+            onClick={() => handleDeleteResource(resourceIdStr)}
+            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer shrink-0"
+            title="Remove Resource"
+          >
+            <FiTrash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // Rendering Helpers
   const renderLessonsView = () => {
     const filteredLessons = lessons.filter(l => {
@@ -1037,11 +1236,7 @@ export default function LessonManagement() {
 
                     <div className="flex gap-3 mt-auto">
                       <button
-                        onClick={() => {
-                          setActiveLesson(lesson);
-                          setCurrentView('modules');
-                          setSearchQuery('');
-                        }}
+                        onClick={() => navigateToModules(lesson)}
                         className="flex-1 text-center bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-150 text-slate-700 hover:text-indigo-600 font-bold py-2.5 rounded-xl text-xs transition-all duration-200 cursor-pointer"
                       >
                         View Modules &rarr;
@@ -1080,8 +1275,8 @@ export default function LessonManagement() {
         {/* Navigation Breadcrumb & Back */}
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-400">
           <button
-            onClick={() => { setCurrentView('lessons'); setSearchQuery(''); }}
-            className="hover:text-indigo-600 transition-colors"
+            onClick={() => navigateToLessons()}
+            className="hover:text-indigo-600 transition-colors cursor-pointer"
           >
             Lessons
           </button>
@@ -1130,7 +1325,7 @@ export default function LessonManagement() {
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
-              onClick={() => { setCurrentView('lessons'); setSearchQuery(''); }}
+              onClick={handleGoBack}
               className="flex items-center justify-center gap-1.5 border border-slate-200 hover:border-slate-350 text-slate-600 bg-white font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors cursor-pointer shadow-sm"
             >
               <FiArrowLeft className="w-4 h-4" />
@@ -1451,10 +1646,8 @@ export default function LessonManagement() {
           {activeLessonModules.map(module => {
             const moduleIdStr = module._id || module.id;
             const moduleResources = resources.filter(r => r.moduleId === moduleIdStr || r.lessonId === activeLessonIdStr);
-            const videosCount = moduleResources.filter(r => r.type === 'Video').length;
-            const pdfsCount = moduleResources.filter(r => r.type === 'PDF').length;
-            const linksCount = moduleResources.filter(r => r.type === 'Link').length;
-            const docsCount = moduleResources.filter(r => ['Document', 'Presentation'].includes(r.type)).length;
+            const pdfsCount = moduleResources.filter(r => ['PDF', 'Document', 'Presentation', 'MCQ'].includes(r.type) || (r.title && r.title.toLowerCase().includes('pdf'))).length;
+            const videosCount = moduleResources.filter(r => r.type === 'Video' || r.type === 'Link' || /youtube\.com|youtu\.be/i.test(r.url || '')).length;
 
             return (
               <div
@@ -1504,33 +1697,21 @@ export default function LessonManagement() {
                   )}
                 </div>
 
-                {/* Resource Metrics */}
-                <div className="grid grid-cols-4 gap-2 pt-4 border-t border-slate-100 text-center text-slate-500">
-                  <div className="bg-slate-50 rounded-xl p-2">
-                    <span className="block text-sm font-bold text-slate-850">{videosCount}</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Videos</span>
+                {/* Resource Metrics: Only PDFs & Videos */}
+                <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 text-center text-slate-500 mt-auto">
+                  <div className="bg-rose-50/70 border border-rose-100/70 rounded-2xl p-2.5">
+                    <span className="block text-base font-extrabold text-rose-900">{pdfsCount}</span>
+                    <span className="text-[10px] font-extrabold uppercase text-rose-700 tracking-wider">PDFs</span>
                   </div>
-                  <div className="bg-slate-50 rounded-xl p-2">
-                    <span className="block text-sm font-bold text-slate-850">{pdfsCount}</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">PDFs</span>
-                  </div>
-                  <div className="bg-slate-50 rounded-xl p-2">
-                    <span className="block text-sm font-bold text-slate-850">{docsCount}</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Docs</span>
-                  </div>
-                  <div className="bg-slate-50 rounded-xl p-2">
-                    <span className="block text-sm font-bold text-slate-850">{linksCount}</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Links</span>
+                  <div className="bg-purple-50/70 border border-purple-100/70 rounded-2xl p-2.5">
+                    <span className="block text-base font-extrabold text-purple-900">{videosCount}</span>
+                    <span className="text-[10px] font-extrabold uppercase text-purple-700 tracking-wider">Videos</span>
                   </div>
                 </div>
 
                 {/* Action button */}
                 <button
-                  onClick={() => {
-                    setActiveModule(module);
-                    setCurrentView('resources');
-                    setResourceFilter('All');
-                  }}
+                  onClick={() => navigateToResources(module)}
                   className="w-full mt-5 bg-indigo-50 hover:bg-indigo-600 border border-indigo-100 hover:border-indigo-600 text-indigo-750 hover:text-white font-bold py-2.5 rounded-2xl text-xs transition-all duration-200 cursor-pointer text-center"
                 >
                   Manage Resources &rarr;
@@ -1573,15 +1754,15 @@ export default function LessonManagement() {
         {/* Navigation Breadcrumbs */}
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-400">
           <button
-            onClick={() => { setCurrentView('lessons'); setSearchQuery(''); }}
-            className="hover:text-indigo-600 transition-colors"
+            onClick={() => navigateToLessons()}
+            className="hover:text-indigo-600 transition-colors cursor-pointer"
           >
             Lessons
           </button>
           <span>/</span>
           <button
-            onClick={() => { setCurrentView('modules'); setSearchQuery(''); }}
-            className="hover:text-indigo-600 transition-colors max-w-[120px] truncate"
+            onClick={() => navigateToModules(activeLesson)}
+            className="hover:text-indigo-600 transition-colors max-w-[120px] truncate cursor-pointer"
           >
             {activeLesson?.title}
           </button>
@@ -1599,7 +1780,7 @@ export default function LessonManagement() {
             <p className="text-xs text-slate-500 mt-1">Add or remove learning materials for this module.</p>
           </div>
           <button
-            onClick={() => { setCurrentView('modules'); setSearchQuery(''); }}
+            onClick={handleGoBack}
             className="flex items-center justify-center gap-1.5 border border-slate-200 hover:border-slate-350 text-slate-600 bg-white font-semibold py-2 px-3.5 rounded-xl text-xs transition-colors cursor-pointer shadow-sm"
           >
             <FiArrowLeft className="w-3.5 h-3.5" />
@@ -1778,119 +1959,138 @@ export default function LessonManagement() {
 
           </div>
 
-          {/* List right: Added Resources */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* List right: Categorized Sections with visual Rule Dividers */}
+          <div className="lg:col-span-2 space-y-6">
 
-            {/* Filter Selector */}
+            {/* Filter Category Tabs */}
             <div className="flex gap-1.5 overflow-x-auto pb-1">
-              {['All', 'PDF', 'Videos'].map((filter) => (
+              {[
+                { id: 'All', label: 'All Resources' },
+                { id: 'MCQ', label: '📝 MCQ Practice PDFs' },
+                { id: 'Lesson PDF', label: '📘 Lesson Main PDFs' },
+                { id: 'Module PDF', label: '📂 Module PDFs' },
+                { id: 'Videos', label: '🎥 Resource Videos & Links' }
+              ].map((tab) => (
                 <button
-                  key={filter}
-                  onClick={() => setResourceFilter(filter)}
+                  key={tab.id}
+                  onClick={() => setResourceFilter(tab.id)}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer border
-                    ${resourceFilter === filter
-                      ? 'bg-indigo-55/90 text-[#3b28cc] bg-indigo-50 border border-indigo-100'
-                      : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800'
+                    ${resourceFilter === tab.id
+                      ? 'bg-[#3b28cc] text-white border-[#3b28cc] font-bold shadow-sm'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                 >
-                  {filter}
+                  {tab.label}
                 </button>
               ))}
             </div>
 
-            {/* List of Resource Cards */}
-            {filteredResources.length > 0 ? (
-              <div className="space-y-3">
-                {filteredResources.map((res) => {
-                  const style = getResourceDetails(res.type);
-                  const resourceIdStr = res._id || res.id;
-                  return (
-                    <div
-                      key={resourceIdStr}
-                      className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center justify-between gap-4 hover:border-slate-200 transition-all group"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {/* Icon Wrapper */}
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 border ${style.colorClass}`}>
-                          {style.icon}
-                        </div>
-
-                        <div className="min-w-0">
-                          <h4 className="font-bold text-slate-855 text-xs sm:text-sm truncate pr-2">
-                            {res.title}
-                          </h4>
-                          {res.description && (
-                            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{res.description}</p>
-                          )}
-
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${style.badge}`}>
-                              {res.type}
-                            </span>
-                            {res.lessonId && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 border border-indigo-100 text-indigo-700 flex items-center gap-0.5">
-                                <FiGlobe className="w-2.5 h-2.5" />
-                                Shared (Lesson-wide)
-                              </span>
-                            )}
-                            {res.size && (
-                              <span className="text-[10px] font-semibold text-slate-400">
-                                {res.size}
-                              </span>
-                            )}
-                            {res.url && (
-                              res.type === 'Link' ? (
-                                <a
-                                  href={/^https?:\/\//i.test(res.url) ? res.url : `https://${res.url}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-[10px] font-bold text-indigo-600 hover:underline flex items-center gap-0.5"
-                                >
-                                  Open in Website
-                                  <FiExternalLink className="w-2.5 h-2.5" />
-                                </a>
-                              ) : res.type === 'Video' && (!res.size || /youtube\.com|youtu\.be/i.test(res.url)) ? (
-                                <a
-                                  href={/^https?:\/\//i.test(res.url) ? res.url : `https://${res.url}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-[10px] font-bold text-indigo-600 hover:underline flex items-center gap-0.5"
-                                >
-                                  View in YouTube
-                                  <FiExternalLink className="w-2.5 h-2.5" />
-                                </a>
-                              ) : (
-                                <button
-                                  onClick={() => handleDownloadResource(res)}
-                                  className="text-[10px] font-bold text-indigo-600 hover:underline flex items-center gap-0.5 bg-transparent border-none cursor-pointer p-0"
-                                >
-                                  Download File
-                                  <FiExternalLink className="w-2.5 h-2.5" />
-                                </button>
-                              )
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => handleDeleteResource(resourceIdStr)}
-                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer shrink-0"
-                        title="Remove Resource"
-                      >
-                        <FiTrash2 className="w-4 h-4" />
-                      </button>
+            {/* Categorized Sections with visual Rule Dividers */}
+            <div className="space-y-6">
+              {/* 1. MCQ Practice PDFs Section */}
+              {(resourceFilter === 'All' || resourceFilter === 'MCQ') && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b-2 border-amber-200/80">
+                    <div className="w-6 h-6 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold">
+                      📝
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="bg-white rounded-3xl border border-slate-100 p-12 text-center text-slate-400 shadow-sm">
-                <FiFolder className="w-12 h-12 mx-auto text-slate-200 mb-3" />
-                <p className="text-sm font-semibold">No materials found in this category.</p>
-                <p className="text-xs text-slate-350 mt-0.5">Use the panels on the left to upload docs or links.</p>
-              </div>
-            )}
+                    <div>
+                      <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">MCQ Practice PDFs</h3>
+                    </div>
+                    <span className="ml-auto text-[10px] font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200">
+                      {activeModuleResources.filter(isMcqResource).length} Items
+                    </span>
+                  </div>
+                  {activeModuleResources.filter(isMcqResource).length > 0 ? (
+                    <div className="space-y-2">
+                      {activeModuleResources.filter(isMcqResource).map(renderSingleTeacherResourceCard)}
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50/50 border border-dashed border-slate-200 rounded-xl p-4 text-center text-xs text-slate-400">
+                      No MCQ Practice PDFs in this module.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 2. Lesson Main PDFs Section */}
+              {(resourceFilter === 'All' || resourceFilter === 'Lesson PDF') && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b-2 border-indigo-200/80">
+                    <div className="w-6 h-6 rounded-md bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">
+                      📘
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">Lesson Main PDFs & Syllabus Guides</h3>
+                    </div>
+                    <span className="ml-auto text-[10px] font-bold bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
+                      {activeModuleResources.filter(isLessonMainPdf).length} Items
+                    </span>
+                  </div>
+                  {activeModuleResources.filter(isLessonMainPdf).length > 0 ? (
+                    <div className="space-y-2">
+                      {activeModuleResources.filter(isLessonMainPdf).map(renderSingleTeacherResourceCard)}
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50/50 border border-dashed border-slate-200 rounded-xl p-4 text-center text-xs text-slate-400">
+                      No general Lesson Main PDFs uploaded for this lesson.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 3. Module PDFs Section */}
+              {(resourceFilter === 'All' || resourceFilter === 'Module PDF') && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b-2 border-rose-200/80">
+                    <div className="w-6 h-6 rounded-md bg-rose-100 text-rose-700 flex items-center justify-center text-xs font-bold">
+                      📂
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">Module Chapter PDFs & Documents</h3>
+                    </div>
+                    <span className="ml-auto text-[10px] font-bold bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full border border-rose-200">
+                      {activeModuleResources.filter(isModulePdf).length} Items
+                    </span>
+                  </div>
+                  {activeModuleResources.filter(isModulePdf).length > 0 ? (
+                    <div className="space-y-2">
+                      {activeModuleResources.filter(isModulePdf).map(renderSingleTeacherResourceCard)}
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50/50 border border-dashed border-slate-200 rounded-xl p-4 text-center text-xs text-slate-400">
+                      No Module PDFs uploaded for this chapter.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 4. Resource Videos & Links Section */}
+              {(resourceFilter === 'All' || resourceFilter === 'Videos') && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b-2 border-purple-200/80">
+                    <div className="w-6 h-6 rounded-md bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold">
+                      🎥
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-extrabold text-slate-800 uppercase tracking-wide">Resource Videos & Links</h3>
+                    </div>
+                    <span className="ml-auto text-[10px] font-bold bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200">
+                      {activeModuleResources.filter(isResourceVideoOrLink).length} Items
+                    </span>
+                  </div>
+                  {activeModuleResources.filter(isResourceVideoOrLink).length > 0 ? (
+                    <div className="space-y-2">
+                      {activeModuleResources.filter(isResourceVideoOrLink).map(renderSingleTeacherResourceCard)}
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50/50 border border-dashed border-slate-200 rounded-xl p-4 text-center text-xs text-slate-400">
+                      No resource videos or web links uploaded for this module.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
           </div>
 
