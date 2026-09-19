@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Sidebar from '../../components/common/student/Sidebar';
 import StudentTopBar from '../../components/dashboard/StudentTopBar';
 import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiAward, FiPlus, FiGrid, FiBell, FiTrash2, FiBookOpen, FiPhone, FiPhoneCall, FiDownload } from 'react-icons/fi';
@@ -29,39 +29,50 @@ export default function ProfileSettings() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
-  const [studentRecord, setStudentRecord] = useState(null);
+  const [studentRecord, setStudentRecord] = useState(
+    user?.qrCode ? { qrCode: user.qrCode, studentId: user.studentId || user.username } : null
+  );
+  const [showPicModal, setShowPicModal] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const fileInputRef = useRef(null);
 
-  // Fetch student QR Code data from /api/students
+  // Fetch student QR Code data from /api/students/profile
   useEffect(() => {
     async function fetchStudentData() {
       try {
-        const res = await fetch('/api/students');
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/students/profile', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         if (res.ok) {
-          const students = await res.json();
-          const match = students.find(
-            (s) =>
-              (s.email && user?.email && s.email.toLowerCase() === user.email.toLowerCase()) ||
-              (s.studentId && user?.username && s.studentId.toLowerCase() === user.username.toLowerCase())
-          );
-          if (match) {
-            setStudentRecord(match);
+          const student = await res.json();
+          if (student && student.qrCode) {
+            setStudentRecord(student);
           }
         }
       } catch (err) {
         console.error('Error fetching student profile details:', err);
       }
     }
-    if (user) {
-      fetchStudentData();
-    }
+    fetchStudentData();
   }, [user]);
 
-  // Fetch current user details on mount to ensure studentMobile and parentMobile are up-to-date
+  // Fetch current user details on mount to ensure studentMobile, parentMobile, and QR code are up-to-date
   useEffect(() => {
     getMe().then((res) => {
       if (res.ok && res.data) {
         if (res.data.studentMobile !== undefined) setStudentMobile(res.data.studentMobile || '');
         if (res.data.parentMobile !== undefined) setParentMobile(res.data.parentMobile || '');
+        if (res.data.qrCode) {
+          setStudentRecord((prev) => ({
+            ...(prev || {}),
+            qrCode: res.data.qrCode,
+            studentId: res.data.studentId || res.data.username,
+            name: `${res.data.firstName || ''} ${res.data.lastName || ''}`.trim() || res.data.username,
+            email: res.data.email,
+            grade: res.data.grade || 'Grade 10',
+          }));
+        }
         setUser((prev) => ({ ...prev, ...res.data }));
       }
     });
@@ -203,24 +214,22 @@ export default function ProfileSettings() {
               <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col items-center pb-6">
                 <div className="w-full h-24 bg-indigo-100/70"></div>
                 <div className="relative -mt-12 mb-4">
-                  <div className="w-24 h-24 rounded-full border-4 border-white overflow-hidden bg-white shadow-md relative group">
+                  <div
+                    onClick={() => setShowPicModal(true)}
+                    className="w-24 h-24 rounded-full border-4 border-white overflow-hidden bg-white shadow-md relative group cursor-pointer"
+                    title="Click to view or change profile photo"
+                  >
                     <img
                       src={profilePicture || propic}
                       alt={fullName}
                       className="w-full h-full object-cover"
                     />
-                    <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
                         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                         <circle cx="12" cy="13" r="4" />
                       </svg>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageUpload}
-                      />
-                    </label>
+                    </div>
                   </div>
                 </div>
 
@@ -236,20 +245,44 @@ export default function ProfileSettings() {
                 {studentRecord?.qrCode && (
                   <div className="w-full px-6 pt-5 border-t border-slate-100 flex flex-col items-center">
                     <span className="text-slate-400 text-[11px] font-bold uppercase tracking-wider mb-3">Attendance QR Code</span>
-                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center">
-                      <img src={studentRecord.qrCode} alt="Attendance QR Code" className="w-36 h-36 object-contain bg-white p-2 rounded-xl border border-slate-200/80" />
+                    <div
+                      onClick={() => setShowQrModal(true)}
+                      className="group relative bg-slate-50 hover:bg-indigo-50/50 p-3 rounded-2xl border border-slate-200 hover:border-indigo-300 shadow-sm flex flex-col items-center cursor-pointer transition-all duration-200"
+                      title="Click to expand QR for scanning"
+                    >
+                      <img src={studentRecord.qrCode} alt="Attendance QR Code" className="w-36 h-36 object-contain bg-white p-2 rounded-xl border border-slate-200/80 group-hover:scale-[1.02] transition-transform" />
+                      <div className="absolute inset-0 bg-slate-900/10 opacity-0 group-hover:opacity-100 rounded-2xl flex items-center justify-center transition-opacity">
+                        <span className="bg-white/95 text-indigo-600 text-[11px] font-bold px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                          </svg>
+                          Click to Expand
+                        </span>
+                      </div>
                     </div>
                     <span className="text-xs font-mono text-slate-600 font-extrabold mt-3 bg-indigo-50 text-indigo-700 border border-indigo-100 px-3 py-1 rounded-full">
                       ID: {studentRecord.studentId}
                     </span>
-                    <button
-                      type="button"
-                      onClick={handleDownloadQR}
-                      className="mt-4 w-full py-2 px-4 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                    >
-                      <FiDownload className="w-3.5 h-3.5" />
-                      Download QR Code
-                    </button>
+                    <div className="flex gap-2 w-full mt-4">
+                      <button
+                        type="button"
+                        onClick={() => setShowQrModal(true)}
+                        className="flex-1 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs shadow-indigo-200"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
+                        </svg>
+                        Expand QR
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDownloadQR}
+                        className="py-2 px-3 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                        title="Download QR Code"
+                      >
+                        <FiDownload className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -408,6 +441,183 @@ export default function ProfileSettings() {
           </div>
         </main>
       </div>
+
+      {/* Profile Picture Popup Modal */}
+      {showPicModal && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity"
+          onClick={() => setShowPicModal(false)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 sm:p-7 shadow-2xl max-w-sm w-full border border-slate-100 flex flex-col items-center relative animate-scaleUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setShowPicModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full p-2 transition-colors cursor-pointer"
+              aria-label="Close"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+
+            {/* Header */}
+            <h3 className="text-lg font-bold text-slate-900 mb-1">
+              Profile Picture
+            </h3>
+            <p className="text-xs text-slate-400 font-medium mb-5">
+              Preview and update your photo
+            </p>
+
+            {/* Large Image Preview */}
+            <div className="w-48 h-48 sm:w-52 sm:h-52 rounded-full border-4 border-slate-100 shadow-lg overflow-hidden bg-slate-100 mb-6 relative">
+              <img
+                src={profilePicture || propic}
+                alt={fullName}
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            {/* Hidden file input triggered by button */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageUpload}
+            />
+
+            {/* Action Buttons */}
+            <div className="w-full space-y-2.5">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full bg-[#3b28cc] hover:bg-indigo-700 text-white font-bold py-3 px-5 rounded-xl text-xs sm:text-sm transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+                <span>Update Profile Picture</span>
+              </button>
+
+              {profilePicture && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setProfilePicture('');
+                    setShowPicModal(false);
+                  }}
+                  className="w-full py-2.5 text-xs font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                >
+                  Remove Photo
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowPicModal(false)}
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+
+            <p className="text-[11px] text-slate-400 mt-4 text-center">
+              Supports JPG, PNG, WEBP (Max 2MB)
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Large Popup Modal for Easy Scanning */}
+      {showQrModal && studentRecord?.qrCode && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity"
+          onClick={() => setShowQrModal(false)}
+        >
+          <div
+            className="bg-white rounded-3xl p-6 sm:p-8 shadow-2xl max-w-sm sm:max-w-md w-full border border-slate-100 flex flex-col items-center relative animate-scaleUp text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={() => setShowQrModal(false)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full p-2 transition-colors cursor-pointer"
+              aria-label="Close"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+
+            {/* Header Icon */}
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-3">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </div>
+
+            <h3 className="text-xl font-bold text-slate-900 mb-1">
+              Attendance QR Code
+            </h3>
+            <p className="text-xs text-slate-500 font-medium mb-5 max-w-xs">
+              Present this enlarged QR code to the scanner or teacher to mark your daily attendance.
+            </p>
+
+            {/* Large Crisp QR Image Card */}
+            <div className="bg-gradient-to-b from-slate-50 to-indigo-50/40 p-5 rounded-3xl border border-indigo-100 shadow-inner flex flex-col items-center mb-6 w-full">
+              <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <img
+                  src={studentRecord.qrCode}
+                  alt="Attendance QR Code"
+                  className="w-56 h-56 sm:w-64 sm:h-64 object-contain"
+                />
+              </div>
+
+              <div className="mt-4 flex flex-col items-center">
+                <span className="text-base font-bold text-slate-900">{fullName}</span>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <span className="text-xs font-mono font-extrabold bg-indigo-600 text-white px-3 py-0.5 rounded-full shadow-xs">
+                    ID: {studentRecord.studentId}
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-500 bg-white border border-slate-200 px-2.5 py-0.5 rounded-full">
+                    Grade 10
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-3 w-full">
+              <button
+                type="button"
+                onClick={handleDownloadQR}
+                className="flex-1 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm shadow-indigo-200"
+              >
+                <FiDownload className="w-4 h-4" />
+                Download QR Code
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowQrModal(false)}
+                className="py-3 px-5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

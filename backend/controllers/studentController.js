@@ -339,10 +339,42 @@ const deleteStudent = async (req, res, next) => {
     }
 };
 
+const getStudentOwnProfile = async (req, res, next) => {
+    try {
+        const student = await Student.findOne({
+            $or: [
+                { userId: req.user._id },
+                { studentId: new RegExp(`^${req.user.username}$`, 'i') },
+                { email: new RegExp(`^${req.user.email}$`, 'i') }
+            ]
+        });
+
+        if (!student) {
+            return res.status(404).json({ message: 'Student record not found' });
+        }
+
+        if (!student.qrCode) {
+            const QRCode = require('qrcode');
+            const payload = JSON.stringify({
+                studentId: student.studentId,
+                email: student.email,
+                name: student.name
+            });
+            student.qrCode = await QRCode.toDataURL(payload);
+            await student.save();
+        }
+
+        res.status(200).json(student);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getStudents,
     getStudentById,
     addStudent,
     updateStudent,
-    deleteStudent
+    deleteStudent,
+    getStudentOwnProfile
 };

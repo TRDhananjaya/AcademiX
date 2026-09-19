@@ -1,81 +1,111 @@
 import Header from '../components/landing/Header';
 import Footer from '../components/landing/Footer';
-import logoBlack from '../assets/logo_black.png';
+import { FiTarget, FiCpu, FiTrendingUp, FiUsers, FiAward } from 'react-icons/fi';
+import { BsStars } from 'react-icons/bs';
 
 export default function About() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#fcfdff] select-none">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/50 select-none relative overflow-hidden">
       <Header />
 
-      <main className="flex-grow pt-28 pb-20 relative overflow-hidden">
-        {/* Ambient background glows */}
-        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-indigo-200/30 blur-3xl animate-drift"></div>
-        <div className="absolute top-1/2 -left-40 w-80 h-80 rounded-full bg-purple-200/30 blur-3xl animate-float"></div>
+      <main className="flex-grow pt-28 pb-20 sm:pt-32 sm:pb-24 relative overflow-hidden">
+        {/* Ambient background glows matching Hero */}
+        <div className="absolute top-10 -right-20 w-[450px] h-[450px] rounded-full bg-indigo-200/35 blur-[120px] animate-drift pointer-events-none -z-10"></div>
+        <div className="absolute bottom-20 -left-20 w-[450px] h-[450px] rounded-full bg-purple-200/35 blur-[120px] animate-drift-slow pointer-events-none -z-10"></div>
+        <div className="absolute top-1/2 left-1/3 w-80 h-80 rounded-full bg-indigo-100/40 blur-[90px] pointer-events-none -z-10"></div>
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 animate-fade-in-up">
-          {/* Headline */}
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 leading-normal py-1">
-              About <span className="inline-block text-gradient px-1 py-1">AcademiX</span>
+        {/* Subtle Background Flowing Curves */}
+        <svg
+          className="absolute -top-16 -left-16 w-[560px] h-[560px] text-indigo-300/25 pointer-events-none stroke-current -z-10"
+          viewBox="0 0 600 600"
+          fill="none"
+        >
+          <path d="M-80,60 C80,140 200,240 320,440 C400,580 520,600 620,620" strokeWidth="1.5" strokeDasharray="4 6" />
+          <circle cx="180" cy="180" r="180" strokeWidth="1" opacity="0.2" />
+        </svg>
+
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 animate-fade-in-up">
+          {/* Header Section */}
+          <div className="text-center mb-12 sm:mb-16">
+
+            <h1 className="text-4xl sm:text-5xl lg:text-[52px] font-black text-slate-900 mb-4 tracking-tight">
+              About{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-indigo-600 to-purple-600">
+                AcademiX
+              </span>
             </h1>
-            <p className="text-lg text-slate-500 max-w-2xl mx-auto leading-relaxed">
-              Empowering educators and students with personalized, AI-driven learning pathways.
+            <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+              Empowering educators and students with personalized, AI-driven learning pathways for academic excellence.
             </p>
           </div>
 
-          {/* Main Info Card */}
-          <div className="bg-white/80 backdrop-blur-md rounded-3xl p-8 md:p-12 border border-slate-100 shadow-md-custom mb-10">
-            <div className="prose prose-lg text-slate-600 max-w-none space-y-6 leading-relaxed">
-              <p className="text-[17px] text-slate-600 leading-relaxed">
-                AcademiX is a next-generation AI-powered educational platform designed to transform the way we learn.
-                By combining advanced machine learning, predictive analytics, and adaptive cognitive mapping, we create
-                a learning environment that uniquely scales to every individual's needs.
+          {/* Main Card */}
+          <div className="bg-white/90 backdrop-blur-md rounded-3xl p-8 md:p-12 border border-indigo-100/80 shadow-xl shadow-indigo-950/5 mb-12">
+            <div className="space-y-8">
+              <p className="text-base sm:text-lg text-slate-700 leading-relaxed font-normal">
+                <span className="font-bold text-indigo-600">AcademiX</span> is a next-generation AI-powered educational platform designed to transform how students grasp complex subjects and how educators guide them. By combining advanced machine learning, predictive analytics, and adaptive cognitive mapping, we create a learning environment that uniquely scales to every individual's pace and potential.
               </p>
 
-              <div className="h-[1px] bg-slate-100 my-8"></div>
+              <div className="h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"></div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                    <span className="w-1.5 h-6 bg-indigo-600 rounded-full"></span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
+                {/* Our Mission */}
+                <div className="bg-slate-50/60 rounded-2xl p-6 border border-slate-100/80">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center mb-4 shadow-md shadow-indigo-200">
+                    <FiTarget className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-2">
                     Our Mission
                   </h3>
-                  <p className="text-[15px] text-slate-500 leading-relaxed">
-                    Our mission is to democratize high-quality, personalized education worldwide. We believe that
-                    technology can close the learning gap, providing students and educators with the insights they need
-                    to achieve unprecedented academic success.
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    To democratize high-quality, personalized education worldwide. We believe technology should close the learning gap, providing students and educators with actionable insights to achieve unprecedented academic success.
                   </p>
                 </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-800 mb-3 flex items-center gap-2">
-                    <span className="w-1.5 h-6 bg-indigo-600 rounded-full"></span>
+
+                {/* What We Do */}
+                <div className="bg-slate-50/60 rounded-2xl p-6 border border-slate-100/80">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center mb-4 shadow-md shadow-indigo-200">
+                    <FiCpu className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900 mb-2">
                     What We Do
                   </h3>
-                  <p className="text-[15px] text-slate-500 leading-relaxed">
-                    From intelligent study paths to real-time analytics, AcademiX empowers educators with robust tools
-                    to track progress and identify areas of improvement early on. For students, our platform guarantees
-                    an interactive, tailored experience that adjusts seamlessly to their unique learning pace.
+                  <p className="text-sm text-slate-600 leading-relaxed">
+                    From dynamic adaptive quizzes and ML exam score forecasting to frictionless attendance tracking, AcademiX equips schools and educators with modern tools that simplify teaching and accelerate student mastery.
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Stats section */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="bg-white/70 backdrop-blur-md rounded-2xl p-6 border border-slate-100 shadow-sm text-center">
-              <div className="text-3xl font-bold text-indigo-600 mb-1">99%</div>
-              <div className="text-sm font-medium text-slate-500">Accuracy Score</div>
+          {/* Core Pillars Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-indigo-100/60 shadow-sm hover:shadow-md hover:border-indigo-200 hover:-translate-y-1 transition-all duration-300">
+              <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-3">
+                <FiTrendingUp className="w-5 h-5" />
+              </div>
+              <h4 className="text-base font-bold text-slate-900 mb-1.5">Predictive Insights</h4>
+              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">Early intervention alerts and ML-driven forecasts that keep students on track for exams.</p>
             </div>
-            <div className="bg-white/70 backdrop-blur-md rounded-2xl p-6 border border-slate-100 shadow-sm text-center">
-              <div className="text-3xl font-bold text-indigo-600 mb-1">240+</div>
-              <div className="text-sm font-medium text-slate-500">Active Online Peers</div>
+
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-indigo-100/60 shadow-sm hover:shadow-md hover:border-indigo-200 hover:-translate-y-1 transition-all duration-300">
+              <div className="w-10 h-10 rounded-lg bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 mb-3">
+                <FiUsers className="w-5 h-5" />
+              </div>
+              <h4 className="text-base font-bold text-slate-900 mb-1.5">Collaborative Hub</h4>
+              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">Peer learning forums and mentor assistance fostering an active, engaging community.</p>
             </div>
-            <div className="bg-white/70 backdrop-blur-md rounded-2xl p-6 border border-slate-100 shadow-sm text-center">
-              <div className="text-3xl font-bold text-indigo-600 mb-1">100%</div>
-              <div className="text-sm font-medium text-slate-500">Personalized Analytics</div>
+
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-indigo-100/60 shadow-sm hover:shadow-md hover:border-indigo-200 hover:-translate-y-1 transition-all duration-300">
+              <div className="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 mb-3">
+                <FiAward className="w-5 h-5" />
+              </div>
+              <h4 className="text-base font-bold text-slate-900 mb-1.5">Adaptive Quizzing</h4>
+              <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">Real-time question scaling matching each learner's optimal zone of development.</p>
             </div>
           </div>
+
+
 
         </div>
       </main>

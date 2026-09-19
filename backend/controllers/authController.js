@@ -36,18 +36,38 @@ const loginUser = async (req, res) => {
 
 		let studentMobile = '';
 		let parentMobile = '';
+		let qrCode = '';
+		let studentId = '';
+		let grade = '';
 		if (user.role === 'student') {
 			const Student = require('../models/Student');
 			const student = await Student.findOne({
 				$or: [
 					{ userId: user._id },
-					{ studentId: user.username.toUpperCase() },
-					{ email: user.email }
+					{ studentId: new RegExp(`^${user.username}$`, 'i') },
+					{ email: new RegExp(`^${user.email}$`, 'i') }
 				]
 			});
 			if (student) {
 				studentMobile = student.studentMobile || '';
 				parentMobile = student.parentMobile || '';
+				studentId = student.studentId || '';
+				grade = student.grade || '';
+				if (!student.qrCode) {
+					try {
+						const QRCode = require('qrcode');
+						const payload = JSON.stringify({
+							studentId: student.studentId,
+							email: student.email,
+							name: student.name
+						});
+						student.qrCode = await QRCode.toDataURL(payload);
+						await student.save();
+					} catch (e) {
+						console.error('Error generating QR on login:', e);
+					}
+				}
+				qrCode = student.qrCode || '';
 			}
 		}
 
@@ -61,6 +81,9 @@ const loginUser = async (req, res) => {
 			profilePicture: user.profilePicture,
 			studentMobile,
 			parentMobile,
+			qrCode,
+			studentId,
+			grade,
 			token,
 		});
 	} catch (error) {
@@ -85,18 +108,38 @@ const getMe = async (req, res) => {
 
 		let studentMobile = '';
 		let parentMobile = '';
+		let qrCode = '';
+		let studentId = '';
+		let grade = '';
 		if (user.role === 'student') {
 			const Student = require('../models/Student');
 			const student = await Student.findOne({
 				$or: [
 					{ userId: user._id },
-					{ studentId: user.username.toUpperCase() },
-					{ email: user.email }
+					{ studentId: new RegExp(`^${user.username}$`, 'i') },
+					{ email: new RegExp(`^${user.email}$`, 'i') }
 				]
 			});
 			if (student) {
 				studentMobile = student.studentMobile || '';
 				parentMobile = student.parentMobile || '';
+				studentId = student.studentId || '';
+				grade = student.grade || '';
+				if (!student.qrCode) {
+					try {
+						const QRCode = require('qrcode');
+						const payload = JSON.stringify({
+							studentId: student.studentId,
+							email: student.email,
+							name: student.name
+						});
+						student.qrCode = await QRCode.toDataURL(payload);
+						await student.save();
+					} catch (e) {
+						console.error('Error generating QR on getMe:', e);
+					}
+				}
+				qrCode = student.qrCode || '';
 			}
 		}
 
@@ -110,6 +153,9 @@ const getMe = async (req, res) => {
 			profilePicture: user.profilePicture,
 			studentMobile,
 			parentMobile,
+			qrCode,
+			studentId,
+			grade,
 		});
 	} catch (error) {
 		console.error('GetMe error:', error);
@@ -124,7 +170,7 @@ const getMe = async (req, res) => {
  */
 const registerUser = async (req, res) => {
 	try {
-		const { username, email, password, role, firstName, lastName } = req.body;
+		const { username, email, password, firstName, lastName } = req.body;
 
 		// Validate required fields
 		if (!username || !email || !password) {
@@ -138,12 +184,12 @@ const registerUser = async (req, res) => {
 			return res.status(400).json({ message: 'User already exists' });
 		}
 
-		// Create user
+		// Security: role is always 'student' — teacher accounts are created by admins only
 		const user = await User.create({
 			username,
 			email,
 			password,
-			role: role || 'student',
+			role: 'student',
 			firstName: firstName || '',
 			lastName: lastName || '',
 		});
