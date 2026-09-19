@@ -90,7 +90,8 @@ export default function CommunityMonitor() {
     if (!deletePostId) return;
     try {
       const res = await fetch(`/api/community/${deletePostId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: authHeaders()
       });
       if (res.ok) {
         setQuestions(prev => prev.filter(q => q._id !== deletePostId));
