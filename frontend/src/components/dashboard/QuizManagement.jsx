@@ -82,25 +82,25 @@ export default function QuizManagement() {
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
-  const handleDownloadExcel = async () => {
+  const handleDownloadCSV = async () => {
     try {
       setIsExporting(true);
-      const response = await fetch('/api/quiz-results/export-excel');
+      const response = await fetch('/api/quiz-results/export-csv');
       if (!response.ok) {
-        throw new Error('Failed to generate Excel file');
+        throw new Error('Failed to generate CSV file');
       }
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'Quiz_Results.xlsx';
+      a.download = 'quiz_results.csv';
       document.body.appendChild(a);
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Error downloading Excel:', err);
-      alert('Failed to download Quiz Results Excel file.');
+      console.error('Error downloading CSV:', err);
+      alert('Failed to download Quiz Results CSV file.');
     } finally {
       setIsExporting(false);
     }
@@ -117,7 +117,7 @@ export default function QuizManagement() {
         <div className="flex flex-col sm:flex-row gap-3">
           <button 
             className="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white px-5 py-3 rounded-lg border-none font-semibold text-[14.5px] cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-50"
-            onClick={handleDownloadExcel}
+            onClick={handleDownloadCSV}
             disabled={isExporting}
           >
             {isExporting ? (
@@ -129,7 +129,7 @@ export default function QuizManagement() {
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
             )}
-            {isExporting ? 'Generating...' : 'Download Quiz Results Excel'}
+            {isExporting ? 'Generating...' : 'Download Quiz Results CSV'}
           </button>
           <button 
             className="inline-flex items-center gap-2 bg-indigo-900 text-white px-5 py-3 rounded-lg border-none font-semibold text-[14.5px] cursor-pointer transition-opacity hover:opacity-90"
