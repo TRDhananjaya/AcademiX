@@ -7,9 +7,11 @@ const {
   getStudentAttendanceHistory
 } = require('../controllers/attendanceController');
 
-// Only teachers can mark and view class attendance
+// Teachers can mark attendance
 router.post('/mark', roleMiddleware('teacher'), markAttendance);
-router.get('/today', roleMiddleware('teacher'), getTodayAttendance);
+
+// Both teachers and students can check today's attendance
+router.get('/today', getTodayAttendance);
 router.get('/history', roleMiddleware('teacher'), getTodayAttendance);
 
 // Both teachers and students can view a student's attendance history
