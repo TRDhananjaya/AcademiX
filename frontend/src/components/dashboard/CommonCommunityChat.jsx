@@ -12,7 +12,7 @@ export default function CommonCommunityChat() {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const chatContainerRef = useRef(null);
 
   // Auth helper for protected API calls
@@ -39,7 +39,7 @@ export default function CommonCommunityChat() {
       const data = await res.json();
       if (Array.isArray(data)) {
         setMessages(prev => {
-          const hasChanged = prev.length !== data.length || 
+          const hasChanged = prev.length !== data.length ||
             (prev.length > 0 && data.length > 0 && prev[prev.length - 1]._id !== data[data.length - 1]._id);
 
           if (hasChanged || isInitial) {
@@ -108,7 +108,7 @@ export default function CommonCommunityChat() {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col h-[650px] font-sans">
-      
+
       {/* Platform Chat Header */}
       <div className="p-4 bg-gradient-to-r from-indigo-900 to-slate-900 text-white flex items-center justify-between shadow-md shrink-0">
         <div className="flex items-center gap-3.5">
@@ -131,7 +131,7 @@ export default function CommonCommunityChat() {
       </div>
 
       {/* Message Feed Stream (Scoped Scroll Container) */}
-      <div 
+      <div
         ref={chatContainerRef}
         className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 bg-slate-50/60 scroll-smooth"
       >
@@ -149,9 +149,9 @@ export default function CommonCommunityChat() {
 
             return (
               <div key={msg._id} className={`flex items-start gap-3 max-w-[85%] md:max-w-[75%] ${isMe ? 'ml-auto flex-row-reverse' : 'mr-auto'}`}>
-                <img 
-                  src={msg.senderAvatar || (msg.senderRole === 'teacher' ? propic : propic)} 
-                  alt={msg.senderName} 
+                <img
+                  src={msg.senderAvatar || (msg.senderRole === 'teacher' ? propic : propic)}
+                  alt={msg.senderName}
                   className="w-9 h-9 rounded-full border border-slate-200 shrink-0 mt-0.5 shadow-sm"
                   onError={(e) => { e.target.src = propic; }}
                 />
@@ -185,7 +185,7 @@ export default function CommonCommunityChat() {
           <FiPaperclip className="w-5 h-5" />
         </button>
 
-        <input 
+        <input
           type="text"
           placeholder="Send a message to all students and teachers in the common platform..."
           value={inputText}
@@ -193,7 +193,7 @@ export default function CommonCommunityChat() {
           className="flex-1 bg-slate-100 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border focus:border-indigo-500 transition-all"
         />
 
-        <button 
+        <button
           type="submit"
           disabled={!inputText.trim()}
           className="bg-[#3b28cc] hover:bg-indigo-700 disabled:opacity-40 text-white px-5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 shrink-0 shadow-sm transition-colors cursor-pointer"

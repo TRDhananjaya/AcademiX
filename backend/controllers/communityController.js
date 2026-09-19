@@ -153,7 +153,7 @@ const getPosts = async (req, res) => {
     }
 
     const posts = await CommunityPost.find(query).sort(sortOptions);
-    
+
     // Fetch all users to map names/usernames to their latest profile pictures
     const users = await User.find({}, 'firstName lastName username profilePicture');
     const profilePicMap = new Map();
@@ -171,13 +171,13 @@ const getPosts = async (req, res) => {
 
     const enrichedPosts = posts.map(post => {
       const postObj = post.toObject();
-      
+
       const authorKey = (postObj.authorName || '').toLowerCase();
       const dbProfilePic = profilePicMap.get(authorKey);
       if (dbProfilePic) {
         postObj.authorAvatar = dbProfilePic;
       }
-      
+
       if (postObj.replies && postObj.replies.length > 0) {
         postObj.replies = postObj.replies.map(reply => {
           const replyAuthorKey = (reply.authorName || '').toLowerCase();
@@ -188,7 +188,7 @@ const getPosts = async (req, res) => {
           return reply;
         });
       }
-      
+
       return postObj;
     });
 
@@ -245,7 +245,7 @@ const addReply = async (req, res) => {
 
     const user = req.user;
     const replyAuthorRole = authorRole || (user ? user.role : 'student');
-    const replyAuthorName = authorName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Peer Contributor');
+    const replyAuthorName = authorName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Kavindu Perera');
 
     post.replies.push({
       authorName: replyAuthorName,
@@ -352,11 +352,27 @@ const dismissFlag = async (req, res) => {
   }
 };
 
+// @desc    Delete a post
+// @route   DELETE /api/community/:id
+const deletePost = async (req, res) => {
+  try {
+    const post = await CommunityPost.findByIdAndDelete(req.params.id);
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' });
+    }
+    res.status(200).json({ message: 'Post deleted successfully', id: req.params.id });
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    res.status(500).json({ message: 'Server error deleting post' });
+  }
+};
+
 module.exports = {
   getPosts,
   createPost,
   addReply,
   votePost,
   flagPost,
-  dismissFlag
+  dismissFlag,
+  deletePost
 };

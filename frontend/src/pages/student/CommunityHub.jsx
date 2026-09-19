@@ -150,7 +150,7 @@ export default function CommunityHub() {
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           text: text.trim(),
-          authorName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Peer Student',
+          authorName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Kavindu Perera',
           authorRole: 'student',
           authorAvatar: user?.profilePicture || ''
         })
@@ -188,10 +188,10 @@ export default function CommunityHub() {
   return (
     <div className="flex min-h-screen font-sans bg-[#f8f9fb]" id="student-dashboard-layout">
       <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
-      
+
       <div className="flex-1 flex flex-col min-w-0 ml-0 md:ml-[72px] lg:ml-[240px]">
         <StudentTopBar />
-        
+
         <main className="flex-1 p-[20px_16px] md:p-[32px_40px_40px] overflow-y-auto">
           {/* Header */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
@@ -202,7 +202,7 @@ export default function CommunityHub() {
               </p>
             </div>
             {hubMode === 'discussions' && (
-              <button 
+              <button
                 onClick={() => setShowNewPostModal(true)}
                 className="bg-[#3b28cc] text-white px-5 py-2.5 rounded-full font-semibold hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm shrink-0 cursor-pointer"
               >
@@ -236,10 +236,10 @@ export default function CommunityHub() {
             <CommonCommunityChat />
           ) : (
             <div className="flex flex-col lg:flex-row gap-6">
-              
+
               {/* Left Column (Main Content) */}
               <div className="flex-1 space-y-6">
-                
+
                 {/* Feed List */}
                 {isLoading ? (
                   <div className="bg-white rounded-2xl p-12 text-center text-slate-500 font-medium border border-slate-100">
@@ -254,12 +254,6 @@ export default function CommunityHub() {
                     <div key={post._id} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative transition-all">
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
-                          <img 
-                            src={post.authorAvatar || (post.authorRole === 'teacher' ? 'https://i.pravatar.cc/150?img=47' : propic)} 
-                            alt={post.authorName} 
-                            className="w-10 h-10 rounded-full border border-slate-100" 
-                            onError={(e) => { e.target.src = post.authorRole === 'teacher' ? 'https://i.pravatar.cc/150?img=47' : propic; }} 
-                          />
                           <div>
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-semibold text-slate-900 text-[15px]">{post.authorName}</span>
@@ -267,7 +261,7 @@ export default function CommunityHub() {
                                 ${post.authorRole === 'teacher' ? 'bg-teal-600 text-white flex items-center gap-1' : 'bg-indigo-50 text-indigo-600'}`}
                               >
                                 {post.authorRole === 'teacher' && (
-                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>
+                                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5" /></svg>
                                 )}
                                 {post.authorRole === 'teacher' ? 'Instructor' : 'Student'}
                               </span>
@@ -277,21 +271,11 @@ export default function CommunityHub() {
                             </p>
                           </div>
                         </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <button 
-                            onClick={() => handleFlagPost(post._id)}
-                            title="Flag for faculty review"
-                            className="text-slate-300 hover:text-red-500 transition-colors p-1 cursor-pointer"
-                          >
-                            <FiFlag className="w-4 h-4" />
-                          </button>
-                        </div>
                       </div>
-                      
+
                       <h3 className="text-xl font-bold text-slate-900 mb-2 leading-snug">{post.title}</h3>
                       <p className="text-slate-600 text-[15px] mb-4 leading-relaxed whitespace-pre-line">{post.body}</p>
-                      
+
                       {post.tags && post.tags.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-6">
                           {post.tags.map((tag, i) => (
@@ -301,11 +285,10 @@ export default function CommunityHub() {
                           ))}
                         </div>
                       )}
-                      
+
                       <div className="flex flex-wrap items-center justify-between border-t border-slate-100 pt-4 gap-4">
                         <div className="flex items-center gap-4">
-
-                          <button 
+                          <button
                             onClick={() => setExpandedPostId(expandedPostId === post._id ? null : post._id)}
                             className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 transition-colors text-sm font-semibold cursor-pointer"
                           >
@@ -313,25 +296,20 @@ export default function CommunityHub() {
                             {post.replies ? post.replies.length : 0} Answers
                           </button>
                         </div>
-
-                        <div className="flex items-center gap-3">
-                          <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors"><FiShare2 className="w-4 h-4" /></button>
-                          <button className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-full transition-colors"><FiBookmark className="w-4 h-4" /></button>
-                        </div>
                       </div>
 
                       {/* Expandable Discussion & Replies Thread */}
                       {expandedPostId === post._id && (
                         <div className="mt-6 pt-6 border-t border-slate-100 space-y-4 bg-slate-50/50 p-4 rounded-xl">
                           <h4 className="font-bold text-slate-800 text-sm">Discussion Answers & Peer Support</h4>
-                          
+
                           {post.replies && post.replies.length > 0 ? (
                             post.replies.map((reply, index) => (
                               <div key={index} className={`p-4 rounded-xl border ${reply.authorRole === 'teacher' ? 'bg-teal-50/70 border-teal-200' : 'bg-white border-slate-200/70'} shadow-sm`}>
                                 <div className="flex items-center gap-2 mb-1.5">
-                                  <span className="font-bold text-slate-900 text-xs">{reply.authorName}</span>
-                                  <span className={`text-[9px] font-bold px-2 py-0.2 rounded-full uppercase ${reply.authorRole === 'teacher' ? 'bg-teal-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
-                                    {reply.authorRole === 'teacher' ? 'Official Guidance' : 'Peer'}
+                                  <span className="font-bold text-slate-900 text-xs">{reply.authorName || 'Kavindu Perera'}</span>
+                                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${reply.authorRole === 'teacher' ? 'bg-teal-600 text-white' : 'bg-indigo-50 text-indigo-600 border border-indigo-100'}`}>
+                                    {reply.authorRole === 'teacher' ? 'INSTRUCTOR' : 'STUDENT'}
                                   </span>
                                   <span className="text-[11px] text-slate-400 ml-auto">{new Date(reply.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                 </div>
@@ -344,15 +322,15 @@ export default function CommunityHub() {
 
                           {/* Submit Peer Answer Box */}
                           <div className="flex items-center gap-2 mt-4 pt-2">
-                            <input 
-                              type="text" 
+                            <input
+                              type="text"
                               placeholder="Write a helpful peer response..."
                               value={replyInputs[post._id] || ''}
                               onChange={(e) => setReplyInputs({ ...replyInputs, [post._id]: e.target.value })}
                               onKeyDown={(e) => e.key === 'Enter' && handleAddReply(post._id)}
                               className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2 text-xs text-slate-800 outline-none focus:border-indigo-400"
                             />
-                            <button 
+                            <button
                               onClick={() => handleAddReply(post._id)}
                               className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-1"
                             >
@@ -376,7 +354,7 @@ export default function CommunityHub() {
       {showNewPostModal && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl relative animate-scaleUp">
-            <button 
+            <button
               onClick={() => setShowNewPostModal(false)}
               className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
             >
@@ -388,21 +366,8 @@ export default function CommunityHub() {
 
             <form onSubmit={handleCreatePost} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Module Topic</label>
-                <select 
-                  value={newPostCourse} 
-                  onChange={(e) => setNewPostCourse(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 font-medium outline-none focus:border-indigo-500"
-                >
-                  {systemModules.map((topic, i) => (
-                    <option key={i} value={topic}>{topic}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Question Title</label>
-                <input 
+                <input
                   type="text"
                   required
                   placeholder="e.g. Help understanding derivative limits..."
@@ -414,7 +379,7 @@ export default function CommunityHub() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Details / Context</label>
-                <textarea 
+                <textarea
                   required
                   rows="4"
                   placeholder="Explain your question or thought process in detail..."
@@ -426,7 +391,7 @@ export default function CommunityHub() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Tags (comma separated)</label>
-                <input 
+                <input
                   type="text"
                   placeholder="Calculus, Homework, Help Needed"
                   value={newPostTags}
@@ -436,14 +401,14 @@ export default function CommunityHub() {
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
-                <button 
+                <button
                   type="button"
                   onClick={() => setShowNewPostModal(false)}
                   className="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="submit"
                   disabled={isSubmitting}
                   className="bg-[#3b28cc] hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-50"

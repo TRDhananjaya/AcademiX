@@ -6,7 +6,8 @@ const {
   addReply,
   votePost,
   flagPost,
-  dismissFlag
+  dismissFlag,
+  deletePost
 } = require('../controllers/communityController');
 
 router.get('/', getPosts);
@@ -15,5 +16,6 @@ router.post('/:id/reply', addReply);
 router.post('/:id/vote', votePost);
 router.post('/:id/flag', flagPost);
 router.post('/:id/dismiss-flag', dismissFlag);
+router.delete('/:id', deletePost);
 
 module.exports = router;
