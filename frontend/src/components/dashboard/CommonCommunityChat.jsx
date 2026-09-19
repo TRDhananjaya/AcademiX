@@ -15,6 +15,12 @@ export default function CommonCommunityChat() {
   
   const chatContainerRef = useRef(null);
 
+  // Auth helper for protected API calls
+  const authHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const scrollToBottom = () => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
@@ -29,7 +35,7 @@ export default function CommonCommunityChat() {
 
   const fetchMessages = async (isInitial = false) => {
     try {
-      const res = await fetch('/api/common-messages');
+      const res = await fetch('/api/common-messages', { headers: authHeaders() });
       const data = await res.json();
       if (Array.isArray(data)) {
         setMessages(prev => {
@@ -82,7 +88,7 @@ export default function CommonCommunityChat() {
     try {
       const res = await fetch('/api/common-messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           text: textToSend,
           senderId: currentUserId,
