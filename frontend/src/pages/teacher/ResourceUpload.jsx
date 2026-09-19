@@ -2,8 +2,47 @@ import { useState, useEffect, useRef } from 'react';
 import {
   FiFileText, FiVideo, FiFile, FiPlus, FiArrowLeft, FiEdit2,
   FiTrash2, FiSearch, FiExternalLink, FiUploadCloud, FiBookOpen,
-  FiFolder, FiLink, FiGlobe
+  FiFolder, FiLink, FiGlobe, FiCheckCircle, FiAlertCircle, FiX
 } from 'react-icons/fi';
+
+// Helper: URL Validator to ensure string is a valid web address (e.g. domain.com, youtube.com, etc.)
+const isValidUrl = (urlStr) => {
+  if (!urlStr || typeof urlStr !== 'string') return false;
+  let raw = urlStr.trim();
+  if (!raw) return false;
+
+  // Reject pure numbers (e.g. "123", "99999")
+  if (/^\d+$/.test(raw)) return false;
+
+  let formatted = raw;
+  if (!/^https?:\/\//i.test(formatted)) {
+    formatted = `https://${formatted}`;
+  }
+
+  try {
+    const parsed = new URL(formatted);
+    if (!['http:', 'https:'].includes(parsed.protocol)) return false;
+
+    // Get the hostname part from raw input before any path or port
+    const hostPart = raw.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0].trim();
+    if (!hostPart) return false;
+
+    if (hostPart === 'localhost' || hostPart === '127.0.0.1') return true;
+
+    // Must contain at least one dot '.' in the hostname
+    if (!hostPart.includes('.')) return false;
+
+    // Strict IPv4 dotted quad check (0-255 per octet)
+    const isIp = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(hostPart);
+
+    // Domain name check (must end with a valid alphabetic TLD of >=2 characters)
+    const isDomain = /^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,63}$/.test(hostPart);
+
+    return isIp || isDomain;
+  } catch (err) {
+    return false;
+  }
+};
 
 // Beautiful Cover presets for Lesson cards (used for styling previews or fallbacks)
 const PRESET_COVERS = [
@@ -20,10 +59,38 @@ export default function LessonManagement() {
   const [activeLesson, setActiveLesson] = useState(null);
   const [activeModule, setActiveModule] = useState(null);
 
-  // Data State
-  const [lessons, setLessons] = useState([]);
-  const [modules, setModules] = useState([]);
-  const [resources, setResources] = useState([]);
+  // Data State with Instant Cache for 0ms Page Refresh
+  const [lessons, setLessons] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('academiX_lessons');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [modules, setModules] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('academiX_modules');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [resources, setResources] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('academiX_resources');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem('academiX_lessons');
+    } catch {
+      return true;
+    }
+  });
 
   // UX & Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,9 +107,21 @@ export default function LessonManagement() {
   const [moduleForm, setModuleForm] = useState({ title: '', description: '', topics: '' });
 
   const [linkForm, setLinkForm] = useState({ title: '', description: '', url: '' });
+  const [linkUrlError, setLinkUrlError] = useState('');
   const [isFileShared, setIsFileShared] = useState(false);
   const [isLinkShared, setIsLinkShared] = useState(false);
   const [sharedLinkForm, setSharedLinkForm] = useState({ title: '', description: '', url: '' });
+  const [sharedLinkUrlError, setSharedLinkUrlError] = useState('');
+
+  // Toast Notification State
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast({ show: false, message: '', type: 'success' });
+    }, 4500);
+  };
 
   const fileInputRef = useRef(null);
 
@@ -68,36 +147,52 @@ export default function LessonManagement() {
     message: ''
   });
 
-  // Fetch all data from database on mount
+  // Fetch all data from database on mount (parallel fetch for maximum speed)
   useEffect(() => {
     fetchData();
   }, []);
 
   async function fetchData() {
+    if (!sessionStorage.getItem('academiX_lessons')) {
+      setIsLoading(true);
+    }
     try {
-      // 1. Fetch Lessons
-      const lessonsRes = await fetch('/api/lessons');
-      const lessonsData = await lessonsRes.json();
+      const [lessonsRes, modulesRes, resourcesRes] = await Promise.all([
+        fetch('/api/lessons'),
+        fetch('/api/modules'),
+        fetch('/api/resources')
+      ]);
 
-      // Seed if database has 0 lessons
-      if (!lessonsData || lessonsData.length === 0) {
-        console.log('Database empty, seeding curriculum...');
-        await seedDatabase();
-        return;
+      if (lessonsRes.ok) {
+        const lessonsData = await lessonsRes.json();
+        if (Array.isArray(lessonsData) && lessonsData.length > 0) {
+          setLessons(lessonsData);
+          try { sessionStorage.setItem('academiX_lessons', JSON.stringify(lessonsData)); } catch (_) {}
+        } else {
+          console.log('Database empty, seeding curriculum...');
+          await seedDatabase();
+        }
       }
-      setLessons(lessonsData);
 
-      // 2. Fetch Modules
-      const modulesRes = await fetch('/api/modules');
-      const modulesData = await modulesRes.json();
-      setModules(modulesData);
+      if (modulesRes.ok) {
+        const modulesData = await modulesRes.json();
+        if (Array.isArray(modulesData)) {
+          setModules(modulesData);
+          try { sessionStorage.setItem('academiX_modules', JSON.stringify(modulesData)); } catch (_) {}
+        }
+      }
 
-      // 3. Fetch Resources
-      const resourcesRes = await fetch('/api/resources');
-      const resourcesData = await resourcesRes.json();
-      setResources(resourcesData);
+      if (resourcesRes.ok) {
+        const resourcesData = await resourcesRes.json();
+        if (Array.isArray(resourcesData)) {
+          setResources(resourcesData);
+          try { sessionStorage.setItem('academiX_resources', JSON.stringify(resourcesData)); } catch (_) {}
+        }
+      }
     } catch (err) {
-      console.error('Error fetching database values:', err);
+      console.error('Error fetching lessons:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -238,38 +333,70 @@ export default function LessonManagement() {
     setShowLessonModal(true);
   };
 
+  const [isSavingLesson, setIsSavingLesson] = useState(false);
+  const [isSavingModule, setIsSavingModule] = useState(false);
+
   const handleSaveLesson = async (e) => {
     e.preventDefault();
+    if (isSavingLesson) return;
     if (!lessonForm.title.trim()) return;
+    const saveTitle = lessonForm.title.trim();
 
+    setIsSavingLesson(true);
     try {
       const payload = {
-        title: lessonForm.title,
+        title: saveTitle,
         description: lessonForm.description,
         lessonNumber: Number(lessonForm.lessonNumber),
         image: lessonForm.image,
         term: Number(lessonForm.term)
       };
 
-      if (editingLesson) {
-        await fetch(`/api/lessons/${editingLesson._id || editingLesson.id}`, {
+      const targetId = editingLesson ? (editingLesson._id || editingLesson.id) : null;
+      let res;
+      if (targetId) {
+        res = await fetch(`/api/lessons/${targetId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
       } else {
-        await fetch('/api/lessons', {
+        res = await fetch('/api/lessons', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
       }
 
+      if (!res.ok) throw new Error('Failed to save lesson');
+      const savedLesson = await res.json();
+      const savedIdStr = String(savedLesson._id || savedLesson.id);
+
+      setLessons(prev => {
+        const existingIdx = prev.findIndex(l => String(l._id || l.id) === savedIdStr || (targetId && String(l._id || l.id) === String(targetId)));
+        let nextList;
+        if (existingIdx !== -1) {
+          nextList = [...prev];
+          nextList[existingIdx] = savedLesson;
+        } else {
+          nextList = [...prev, savedLesson];
+        }
+        try { sessionStorage.setItem('academiX_lessons', JSON.stringify(nextList)); } catch (_) {}
+        return nextList;
+      });
+
+      if (activeLesson && (String(activeLesson._id || activeLesson.id) === savedIdStr || (targetId && String(activeLesson._id || activeLesson.id) === String(targetId)))) {
+        setActiveLesson(savedLesson);
+      }
+
       setShowLessonModal(false);
       setEditingLesson(null);
-      await fetchData();
+      showToast(targetId ? `Successfully updated lesson: "${saveTitle}"` : `Successfully added lesson: "${saveTitle}"`, 'success');
     } catch (err) {
       console.error('Save lesson failed:', err);
+      showToast(editingLesson ? `Failed to update lesson: "${saveTitle}"` : `Failed to add lesson: "${saveTitle}"`, 'error');
+    } finally {
+      setIsSavingLesson(false);
     }
   };
 
@@ -283,14 +410,18 @@ export default function LessonManagement() {
     reader.readAsDataURL(file);
   };
 
-  const handleDeleteLesson = (lessonId, e) => {
-    e.stopPropagation();
+  const handleDeleteLesson = (lessonItem, e) => {
+    if (e) e.stopPropagation();
+    const lessonObj = typeof lessonItem === 'object' ? lessonItem : lessons.find(l => (l._id || l.id) === lessonItem);
+    const lessonIdStr = lessonObj ? (lessonObj._id || lessonObj.id) : lessonItem;
+    const lessonTitle = lessonObj ? lessonObj.title : 'this lesson';
     setDeleteConfirm({
       show: true,
       type: 'lesson',
-      id: lessonId,
-      title: 'Delete Lesson Card',
-      message: 'Are you sure you want to delete this Lesson? All its modules and resources will be permanently removed.'
+      id: lessonIdStr,
+      itemName: lessonTitle,
+      title: 'Delete Lesson Confirmation',
+      message: `Are you sure you want to permanently delete "${lessonTitle}"? All nested modules and resources will be removed.`
     });
   };
 
@@ -301,7 +432,7 @@ export default function LessonManagement() {
       setModuleForm({
         title: module.title,
         description: module.description || '',
-        topics: module.topics.join(', ')
+        topics: Array.isArray(module.topics) ? module.topics.join(', ') : (module.topics || '')
       });
     } else {
       setEditingModule(null);
@@ -316,51 +447,84 @@ export default function LessonManagement() {
 
   const handleSaveModule = async (e) => {
     e.preventDefault();
+    if (isSavingModule) return;
     const activeLId = activeLesson?._id || activeLesson?.id;
     if (!moduleForm.title.trim() || !activeLId) return;
+    const saveTitle = moduleForm.title.trim();
 
     const parsedTopics = moduleForm.topics
       ? moduleForm.topics.split(',').map(t => t.trim()).filter(Boolean)
       : [];
 
+    setIsSavingModule(true);
     try {
       const payload = {
-        title: moduleForm.title,
+        title: saveTitle,
         description: moduleForm.description || '',
         topics: parsedTopics,
-        lessonId: activeLId
+        lessonId: String(activeLId)
       };
 
-      if (editingModule) {
-        await fetch(`/api/modules/${editingModule._id || editingModule.id}`, {
+      const targetId = editingModule ? (editingModule._id || editingModule.id) : null;
+      let res;
+      if (targetId) {
+        res = await fetch(`/api/modules/${targetId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
       } else {
-        await fetch('/api/modules', {
+        res = await fetch('/api/modules', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
       }
 
+      if (!res.ok) throw new Error('Failed to save module');
+      const savedModule = await res.json();
+      const savedIdStr = String(savedModule._id || savedModule.id);
+
+      setModules(prev => {
+        const existingIdx = prev.findIndex(m => String(m._id || m.id) === savedIdStr || (targetId && String(m._id || m.id) === String(targetId)));
+        let nextList;
+        if (existingIdx !== -1) {
+          nextList = [...prev];
+          nextList[existingIdx] = savedModule;
+        } else {
+          nextList = [...prev, savedModule];
+        }
+        try { sessionStorage.setItem('academiX_modules', JSON.stringify(nextList)); } catch (_) {}
+        return nextList;
+      });
+
+      if (activeModule && (String(activeModule._id || activeModule.id) === savedIdStr || (targetId && String(activeModule._id || activeModule.id) === String(targetId)))) {
+        setActiveModule(savedModule);
+      }
+
       setShowModuleModal(false);
       setEditingModule(null);
-      await fetchData();
+      showToast(targetId ? `Successfully updated module: "${saveTitle}"` : `Successfully added module: "${saveTitle}"`, 'success');
     } catch (err) {
       console.error('Save module failed:', err);
+      showToast(editingModule ? `Failed to update module: "${saveTitle}"` : `Failed to add module: "${saveTitle}"`, 'error');
+    } finally {
+      setIsSavingModule(false);
     }
   };
 
-  const handleDeleteModule = (moduleId, e) => {
-    e.stopPropagation();
+  const handleDeleteModule = (moduleItem, e) => {
+    if (e) e.stopPropagation();
+    const moduleObj = typeof moduleItem === 'object' ? moduleItem : modules.find(m => (m._id || m.id) === moduleItem);
+    const moduleIdStr = moduleObj ? (moduleObj._id || moduleObj.id) : moduleItem;
+    const moduleTitle = moduleObj ? moduleObj.title : 'this module';
     setDeleteConfirm({
       show: true,
       type: 'module',
-      id: moduleId,
-      title: 'Delete Module Card',
-      message: 'Are you sure you want to delete this Module? All its uploaded resources will be lost.'
+      id: moduleIdStr,
+      itemName: moduleTitle,
+      title: 'Delete Module Confirmation',
+      message: `Are you sure you want to delete "${moduleTitle}"? All its uploaded resources will be lost.`
     });
   };
 
@@ -371,6 +535,12 @@ export default function LessonManagement() {
     const activeLId = activeLesson?._id || activeLesson?.id;
     if (!linkForm.title.trim() || !linkForm.url.trim() || !activeMId) return;
 
+    if (!isValidUrl(linkForm.url)) {
+      setLinkUrlError('Invalid URL. Please enter a valid website address (e.g. youtube.com or https://example.com)');
+      return;
+    }
+    setLinkUrlError('');
+
     let formattedUrl = linkForm.url.trim();
     if (!/^https?:\/\//i.test(formattedUrl)) {
       formattedUrl = `https://${formattedUrl}`;
@@ -380,9 +550,10 @@ export default function LessonManagement() {
     const isVideoUrl = /youtube\.com|youtu\.be|vimeo\.com|streamable\.com|\.(mp4|webm|ogg|mov|avi|mkv)$/i.test(formattedUrl);
     const resolvedType = isVideoUrl ? 'Video' : 'Link';
 
+    const saveTitle = linkForm.title.trim();
     try {
       const payload = {
-        title: linkForm.title.trim(),
+        title: saveTitle,
         description: linkForm.description ? linkForm.description.trim() : '',
         type: resolvedType,
         size: '',
@@ -391,17 +562,24 @@ export default function LessonManagement() {
         lessonId: isLinkShared ? activeLId : null
       };
 
-      await fetch('/api/resources', {
+      const res = await fetch('/api/resources', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
+      if (!res.ok) throw new Error('Failed to add resource');
+      const createdResource = await res.json();
+
+      setResources(prev => [...prev, createdResource]);
+
       setLinkForm({ title: '', description: '', url: '' });
+      setLinkUrlError('');
       setIsLinkShared(false);
-      await fetchData();
+      showToast(`Successfully added resource: "${saveTitle}"`, 'success');
     } catch (err) {
       console.error('Create link resource failed:', err);
+      showToast(`Failed to add resource: "${saveTitle}"`, 'error');
     }
   };
 
@@ -437,18 +615,12 @@ export default function LessonManagement() {
 
     setPendingModuleFile(null);
     setModuleUploadingFile(saveTitle);
-    setModuleProgress(5);
+    setModuleProgress(10);
 
-    // Simulate progress updates
+    // Fast progress animation
     const interval = setInterval(() => {
-      setModuleProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(interval);
-          return 90;
-        }
-        return prev + 10;
-      });
-    }, 150);
+      setModuleProgress(prev => (prev >= 90 ? 90 : prev + 5));
+    }, 40);
 
     const extension = file.name.split('.').pop().toLowerCase();
 
@@ -474,30 +646,44 @@ export default function LessonManagement() {
           lessonId: isFileShared ? activeLId : null
         };
 
-        await fetch('/api/resources', {
+        const res = await fetch('/api/resources', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
 
+        if (!res.ok) throw new Error('File upload failed');
+        const createdData = await res.json();
+        const newResourceObj = {
+          ...createdData,
+          url: createdData.url && createdData.url.startsWith('data:') ? '#' : createdData.url
+        };
+
         clearInterval(interval);
         setModuleProgress(100);
 
-        setTimeout(async () => {
+        setResources(prev => {
+          const nextList = [...prev, newResourceObj];
+          try { sessionStorage.setItem('academiX_resources', JSON.stringify(nextList)); } catch (_) {}
+          return nextList;
+        });
+
+        setTimeout(() => {
           setModuleUploadingFile(null);
           setModuleProgress(0);
-          setIsFileShared(false);
-          setCustomModuleTitle('');
-          setCustomModuleDescription('');
-          await fetchData();
-        }, 500);
+        }, 200);
+
+        setIsFileShared(false);
+        setCustomModuleTitle('');
+        setCustomModuleDescription('');
+        showToast(`Successfully added resource: "${saveTitle}"`, 'success');
 
       } catch (err) {
         clearInterval(interval);
         setModuleUploadingFile(null);
         setModuleProgress(0);
         console.error('File upload failed:', err);
-        alert('File upload failed. Please try again.');
+        showToast(`Failed to upload resource: "${saveTitle}"`, 'error');
       }
     };
     reader.readAsDataURL(file);
@@ -514,18 +700,12 @@ export default function LessonManagement() {
 
     setPendingSharedFile(null);
     setSharedUploadingFile(saveTitle);
-    setSharedProgress(5);
+    setSharedProgress(10);
 
-    // Simulate progress
+    // Fast progress animation
     const interval = setInterval(() => {
-      setSharedProgress(prev => {
-        if (prev >= 90) {
-          clearInterval(interval);
-          return 90;
-        }
-        return prev + 10;
-      });
-    }, 150);
+      setSharedProgress(prev => (prev >= 90 ? 90 : prev + 5));
+    }, 40);
 
     const extension = file.name.split('.').pop().toLowerCase();
     let type = 'Document';
@@ -549,78 +729,133 @@ export default function LessonManagement() {
           moduleId: null,
           lessonId: activeLessonIdStr
         };
-        await fetch('/api/resources', {
+        const res = await fetch('/api/resources', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
 
+        if (!res.ok) throw new Error('Shared file upload failed');
+        const createdData = await res.json();
+        const newResourceObj = {
+          ...createdData,
+          url: createdData.url && createdData.url.startsWith('data:') ? '#' : createdData.url
+        };
+
         clearInterval(interval);
         setSharedProgress(100);
 
-        setTimeout(async () => {
+        setResources(prev => {
+          const nextList = [...prev, newResourceObj];
+          try { sessionStorage.setItem('academiX_resources', JSON.stringify(nextList)); } catch (_) {}
+          return nextList;
+        });
+
+        setTimeout(() => {
           setSharedUploadingFile(null);
           setSharedProgress(0);
-          setCustomSharedTitle('');
-          setCustomSharedDescription('');
-          await fetchData();
-        }, 500);
+        }, 200);
+
+        setCustomSharedTitle('');
+        setCustomSharedDescription('');
+        showToast(`Successfully added resource: "${saveTitle}"`, 'success');
 
       } catch (err) {
         clearInterval(interval);
         setSharedUploadingFile(null);
         setSharedProgress(0);
         console.error('Error uploading shared file:', err);
-        alert('Upload failed. Please try again.');
+        showToast(`Failed to upload resource: "${saveTitle}"`, 'error');
       }
     };
     reader.readAsDataURL(file);
   };
 
-  const handleDeleteResource = (resourceId) => {
+  const handleDeleteResource = (resourceItem) => {
+    const resObj = typeof resourceItem === 'object' ? resourceItem : resources.find(r => (r._id || r.id) === resourceItem);
+    const resourceIdStr = resObj ? (resObj._id || resObj.id) : resourceItem;
+    const resourceTitle = resObj ? resObj.title : 'this resource';
     setDeleteConfirm({
       show: true,
       type: 'resource',
-      id: resourceId,
-      title: 'Remove Learning Resource',
-      message: 'Are you sure you want to delete this resource?'
+      id: resourceIdStr,
+      itemName: resourceTitle,
+      title: 'Remove Resource Confirmation',
+      message: `Are you sure you want to remove "${resourceTitle}"?`
     });
   };
 
   async function executeDelete() {
-    const { type, id } = deleteConfirm;
+    const { type, id, itemName } = deleteConfirm;
     if (!id) return;
+    const targetIdStr = String(id);
 
-    // Close the modal instantly so it disappears immediately
-    setDeleteConfirm({ show: false, type: '', id: null, title: '', message: '' });
+    // Close the modal instantly
+    setDeleteConfirm({ show: false, type: '', id: null, itemName: '', title: '', message: '' });
 
-    try {
-      if (type === 'lesson') {
-        await fetch(`/api/lessons/${id}`, {
-          method: 'DELETE'
-        });
-        await fetchData();
-        if (activeLesson?._id === id || activeLesson?.id === id) {
-          setCurrentView('lessons');
-          setActiveLesson(null);
-        }
-      } else if (type === 'module') {
-        await fetch(`/api/modules/${id}`, {
-          method: 'DELETE'
-        });
-        await fetchData();
-        if (activeModule?._id === id || activeModule?.id === id) {
-          setCurrentView('modules');
-          setActiveModule(null);
-        }
-      } else if (type === 'resource') {
-        await fetch(`/api/resources/${id}`, {
-          method: 'DELETE'
-        });
-        await fetchData();
+    if (type === 'lesson') {
+      // Optimistic UI update (instant 0ms deletion)
+      setLessons(prev => {
+        const nextList = prev.filter(l => String(l._id || l.id) !== targetIdStr);
+        try { sessionStorage.setItem('academiX_lessons', JSON.stringify(nextList)); } catch (_) {}
+        return nextList;
+      });
+      showToast(`Successfully deleted lesson "${itemName || ''}"`, 'success');
+
+      if (activeLesson && String(activeLesson._id || activeLesson.id) === targetIdStr) {
+        setCurrentView('lessons');
+        setActiveLesson(null);
       }
-    } catch (err) {
-      console.error(`Delete ${type} failed:`, err);
+
+      try {
+        const res = await fetch(`/api/lessons/${targetIdStr}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Delete failed');
+      } catch (err) {
+        console.error('Delete lesson failed:', err);
+        showToast(`Failed to delete lesson "${itemName || ''}"`, 'error');
+        fetchData();
+      }
+
+    } else if (type === 'module') {
+      // Optimistic UI update (instant 0ms deletion)
+      setModules(prev => {
+        const nextList = prev.filter(m => String(m._id || m.id) !== targetIdStr);
+        try { sessionStorage.setItem('academiX_modules', JSON.stringify(nextList)); } catch (_) {}
+        return nextList;
+      });
+      showToast(`Successfully deleted module "${itemName || ''}"`, 'success');
+
+      if (activeModule && String(activeModule._id || activeModule.id) === targetIdStr) {
+        setCurrentView('modules');
+        setActiveModule(null);
+      }
+
+      try {
+        const res = await fetch(`/api/modules/${targetIdStr}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Delete failed');
+      } catch (err) {
+        console.error('Delete module failed:', err);
+        showToast(`Failed to delete module "${itemName || ''}"`, 'error');
+        fetchData();
+      }
+
+    } else if (type === 'resource') {
+      // Optimistic UI update (instant 0ms deletion)
+      setResources(prev => {
+        const nextList = prev.filter(r => String(r._id || r.id) !== targetIdStr);
+        try { sessionStorage.setItem('academiX_resources', JSON.stringify(nextList)); } catch (_) {}
+        return nextList;
+      });
+      showToast(`Successfully deleted resource "${itemName || ''}"`, 'success');
+
+      try {
+        const res = await fetch(`/api/resources/${targetIdStr}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Delete failed');
+      } catch (err) {
+        console.error('Delete resource failed:', err);
+        showToast(`Failed to delete resource "${itemName || ''}"`, 'error');
+        fetchData();
+      }
     }
   };
 
@@ -724,98 +959,112 @@ export default function LessonManagement() {
         </div>
 
         {/* Lessons Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredLessons.map(lesson => {
-            const lessonIdStr = lesson._id || lesson.id;
-            const moduleCount = modules.filter(m => m.lessonId === lessonIdStr).length;
-            return (
-              <div
-                key={lessonIdStr}
-                className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex flex-col group"
-              >
-                {/* Cover Photo */}
-                <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
-                  {lesson.image ? (
-                    <img
-                      src={lesson.image}
-                      alt={lesson.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white/20 font-extrabold text-5xl">
-                      <FiBookOpen className="w-16 h-16 opacity-30 text-white" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
-
-                  {/* Lesson Number Tag */}
-                  <span className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm text-indigo-750 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
-                    Lesson {String(lesson.lessonNumber).padStart(2, '0')}
-                  </span>
-
-                  {/* Term Tag */}
-                  <span className="absolute bottom-4 left-4 bg-slate-900/60 backdrop-blur-sm text-white text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider">
-                    Term {lesson.term || 1}
-                  </span>
-
-                  {/* Actions overlay */}
-                  <div className="absolute top-4 right-4 flex items-center gap-2">
-                    <button
-                      onClick={() => handleOpenLessonModal(lesson)}
-                      className="p-2 bg-white/90 backdrop-blur-sm hover:bg-white text-slate-700 rounded-lg shadow-sm transition-colors cursor-pointer"
-                      title="Edit Lesson"
-                    >
-                      <FiEdit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={(e) => handleDeleteLesson(lessonIdStr, e)}
-                      className="p-2 bg-red-50/90 backdrop-blur-sm hover:bg-red-100 hover:text-red-700 text-red-600 rounded-lg shadow-sm transition-colors cursor-pointer"
-                      title="Delete Lesson"
-                    >
-                      <FiTrash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Lesson Info */}
-                <div className="p-6 flex flex-col flex-grow">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">{moduleCount} Modules</span>
-                  <h3 className="text-lg font-bold text-slate-800 line-clamp-1 mb-2 leading-tight group-hover:text-indigo-600 transition-colors">
-                    {lesson.title}
-                  </h3>
-                  <p className="text-xs text-slate-500 mb-6 leading-relaxed line-clamp-3 flex-grow">
-                    {lesson.description || 'No description available for this lesson.'}
-                  </p>
-
-                  <div className="flex gap-3 mt-auto">
-                    <button
-                      onClick={() => {
-                        setActiveLesson(lesson);
-                        setCurrentView('modules');
-                        setSearchQuery('');
-                      }}
-                      className="flex-1 text-center bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-150 text-slate-700 hover:text-indigo-600 font-bold py-2.5 rounded-xl text-xs transition-all duration-200 cursor-pointer"
-                    >
-                      View Modules &rarr;
-                    </button>
-                  </div>
-                </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm animate-pulse space-y-4">
+                <div className="w-full h-40 bg-slate-200 rounded-2xl"></div>
+                <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+                <div className="h-6 bg-slate-200 rounded w-3/4"></div>
+                <div className="h-4 bg-slate-100 rounded w-full"></div>
+                <div className="h-10 bg-slate-100 rounded-xl w-full"></div>
               </div>
-            );
-          })}
-
-          {/* Quick Add Card */}
-          <div
-            onClick={() => handleOpenLessonModal()}
-            className="border-2 border-dashed border-slate-200 hover:border-indigo-300 rounded-3xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-indigo-50/10 min-h-[300px] transition-all group"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-slate-50 group-hover:bg-indigo-50 text-slate-400 group-hover:text-indigo-600 flex items-center justify-center transition-colors mb-4 border border-slate-100">
-              <FiPlus className="w-6 h-6 stroke-[2.5]" />
-            </div>
-            <h4 className="font-bold text-slate-750 group-hover:text-indigo-600 text-sm">Add New Lesson</h4>
-            <p className="text-xs text-slate-400 mt-1 max-w-[200px]">Create a new structural syllabus block</p>
+            ))}
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredLessons.map(lesson => {
+              const lessonIdStr = lesson._id || lesson.id;
+              const moduleCount = modules.filter(m => m.lessonId === lessonIdStr).length;
+              return (
+                <div
+                  key={lessonIdStr}
+                  className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-md hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex flex-col group"
+                >
+                  {/* Cover Photo */}
+                  <div className="relative h-44 w-full bg-slate-100 overflow-hidden">
+                    {lesson.image ? (
+                      <img
+                        src={lesson.image}
+                        alt={lesson.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white/20 font-extrabold text-5xl">
+                        <FiBookOpen className="w-16 h-16 opacity-30 text-white" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent"></div>
+
+                    {/* Lesson Number Tag */}
+                    <span className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm text-indigo-750 text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                      Lesson {String(lesson.lessonNumber).padStart(2, '0')}
+                    </span>
+
+                    {/* Term Tag */}
+                    <span className="absolute bottom-4 left-4 bg-slate-900/60 backdrop-blur-sm text-white text-[10px] font-extrabold px-2.5 py-1 rounded-md uppercase tracking-wider">
+                      Term {lesson.term || 1}
+                    </span>
+
+                    {/* Actions overlay */}
+                    <div className="absolute top-4 right-4 flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenLessonModal(lesson)}
+                        className="p-2 bg-white/90 backdrop-blur-sm hover:bg-white text-slate-700 rounded-lg shadow-sm transition-colors cursor-pointer"
+                        title="Edit Lesson"
+                      >
+                        <FiEdit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => handleDeleteLesson(lessonIdStr, e)}
+                        className="p-2 bg-red-50/90 backdrop-blur-sm hover:bg-red-100 hover:text-red-700 text-red-600 rounded-lg shadow-sm transition-colors cursor-pointer"
+                        title="Delete Lesson"
+                      >
+                        <FiTrash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Lesson Info */}
+                  <div className="p-6 flex flex-col flex-grow">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">{moduleCount} Modules</span>
+                    <h3 className="text-lg font-bold text-slate-800 line-clamp-1 mb-2 leading-tight group-hover:text-indigo-600 transition-colors">
+                      {lesson.title}
+                    </h3>
+                    <p className="text-xs text-slate-500 mb-6 leading-relaxed line-clamp-3 flex-grow">
+                      {lesson.description || 'No description available for this lesson.'}
+                    </p>
+
+                    <div className="flex gap-3 mt-auto">
+                      <button
+                        onClick={() => {
+                          setActiveLesson(lesson);
+                          setCurrentView('modules');
+                          setSearchQuery('');
+                        }}
+                        className="flex-1 text-center bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-150 text-slate-700 hover:text-indigo-600 font-bold py-2.5 rounded-xl text-xs transition-all duration-200 cursor-pointer"
+                      >
+                        View Modules &rarr;
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* Quick Add Card */}
+            <div
+              onClick={() => handleOpenLessonModal()}
+              className="border-2 border-dashed border-slate-200 hover:border-indigo-300 rounded-3xl p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-indigo-50/10 min-h-[300px] transition-all group"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-slate-50 group-hover:bg-indigo-50 text-slate-400 group-hover:text-indigo-600 flex items-center justify-center transition-colors mb-4 border border-slate-100">
+                <FiPlus className="w-6 h-6 stroke-[2.5]" />
+              </div>
+              <h4 className="font-bold text-slate-750 group-hover:text-indigo-600 text-sm">Add New Lesson</h4>
+              <p className="text-xs text-slate-400 mt-1 max-w-[200px]">Create a new structural syllabus block</p>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -1022,6 +1271,13 @@ export default function LessonManagement() {
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!sharedLinkForm.title.trim() || !sharedLinkForm.url.trim() || !activeLessonIdStr) return;
+
+                    if (!isValidUrl(sharedLinkForm.url)) {
+                      setSharedLinkUrlError('Invalid URL. Please enter a valid website address (e.g. youtube.com or https://example.com)');
+                      return;
+                    }
+                    setSharedLinkUrlError('');
+
                     let url = sharedLinkForm.url.trim();
                     if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
 
@@ -1039,13 +1295,19 @@ export default function LessonManagement() {
                         moduleId: null,
                         lessonId: activeLessonIdStr
                       };
-                      await fetch('/api/resources', {
+                      const res = await fetch('/api/resources', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                       });
+                      if (!res.ok) throw new Error('Shared link creation failed');
+                      const createdResource = await res.json();
+
+                      setResources(prev => [...prev, createdResource]);
+
                       setSharedLinkForm({ title: '', description: '', url: '' });
-                      await fetchData();
+                      setSharedLinkUrlError('');
+                      showToast(`Successfully added resource: "${sharedLinkForm.title.trim()}"`, 'success');
                     } catch (err) {
                       console.error('Error adding shared link:', err);
                     }
@@ -1077,12 +1339,18 @@ export default function LessonManagement() {
                     <label className="block text-[9px] font-bold text-slate-400 uppercase mb-0.5">Link URL</label>
                     <input
                       type="text"
-                      placeholder="e.g. https://logic.ly"
+                      placeholder="e.g. https://logic.ly or youtube.com"
                       value={sharedLinkForm.url}
-                      onChange={(e) => setSharedLinkForm({ ...sharedLinkForm, url: e.target.value })}
-                      className="w-full text-xs p-2.5 rounded-lg border border-slate-200 outline-none focus:border-indigo-300 bg-white"
+                      onChange={(e) => {
+                        setSharedLinkForm({ ...sharedLinkForm, url: e.target.value });
+                        if (sharedLinkUrlError) setSharedLinkUrlError('');
+                      }}
+                      className={`w-full text-xs p-2.5 rounded-lg border outline-none bg-white ${sharedLinkUrlError ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-slate-200 focus:border-indigo-300'}`}
                       required
                     />
+                    {sharedLinkUrlError && (
+                      <p className="text-[10px] text-red-500 font-bold mt-1">{sharedLinkUrlError}</p>
+                    )}
                   </div>
                   <button
                     type="submit"
@@ -1292,10 +1560,8 @@ export default function LessonManagement() {
     const filteredResources = resourceFilter === 'All'
       ? activeModuleResources
       : activeModuleResources.filter(r => {
-        if (resourceFilter === 'Documents') return ['PDF', 'Document'].includes(r.type);
+        if (resourceFilter === 'PDF') return ['PDF', 'Document'].includes(r.type);
         if (resourceFilter === 'Videos') return r.type === 'Video';
-        if (resourceFilter === 'Presentations') return r.type === 'Presentation';
-        if (resourceFilter === 'Links') return r.type === 'Link';
         return true;
       });
 
@@ -1476,12 +1742,18 @@ export default function LessonManagement() {
                   <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1">URL / Link Address</label>
                   <input
                     type="text"
-                    placeholder="e.g. https://domain.com/notes"
+                    placeholder="e.g. https://youtube.com/watch?v=... or domain.com"
                     value={linkForm.url}
-                    onChange={(e) => setLinkForm({ ...linkForm, url: e.target.value })}
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-300 bg-slate-50/50"
+                    onChange={(e) => {
+                      setLinkForm({ ...linkForm, url: e.target.value });
+                      if (linkUrlError) setLinkUrlError('');
+                    }}
+                    className={`w-full text-xs p-2.5 rounded-xl border outline-none bg-slate-50/50 ${linkUrlError ? 'border-red-400 focus:border-red-500 bg-red-50/20' : 'border-slate-200 focus:border-indigo-300'}`}
                     required
                   />
+                  {linkUrlError && (
+                    <p className="text-[10px] text-red-500 font-bold mt-1">{linkUrlError}</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 py-1 select-none">
                   <input
@@ -1511,7 +1783,7 @@ export default function LessonManagement() {
 
             {/* Filter Selector */}
             <div className="flex gap-1.5 overflow-x-auto pb-1">
-              {['All', 'Documents', 'Videos', 'Presentations', 'Links'].map((filter) => (
+              {['All', 'PDF', 'Videos'].map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setResourceFilter(filter)}
@@ -1628,7 +1900,28 @@ export default function LessonManagement() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Toast Notification Banner */}
+      {toast.show && (
+        <div className={`fixed top-5 right-5 z-[9999] max-w-md px-4 py-3.5 rounded-2xl shadow-xl border flex items-center gap-3 transition-all duration-300 ${toast.type === 'error'
+            ? 'bg-red-900/95 text-white border-red-700 backdrop-blur-md shadow-red-900/20'
+            : 'bg-emerald-900/95 text-white border-emerald-700 backdrop-blur-md shadow-emerald-900/20'
+          }`}>
+          {toast.type === 'error' ? (
+            <FiAlertCircle className="w-5 h-5 text-red-300 shrink-0" />
+          ) : (
+            <FiCheckCircle className="w-5 h-5 text-emerald-300 shrink-0" />
+          )}
+          <span className="text-xs font-semibold leading-relaxed flex-1">{toast.message}</span>
+          <button
+            onClick={() => setToast({ show: false, message: '', type: 'success' })}
+            className="text-white/70 hover:text-white transition-colors cursor-pointer p-1"
+          >
+            <FiX className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -1852,26 +2145,29 @@ export default function LessonManagement() {
 
       {/* Modal: DELETE CONFIRMATION */}
       {deleteConfirm.show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200 animate-in zoom-in-95 duration-200">
             <div className="p-6 text-center space-y-4">
               <div className="w-16 h-16 bg-red-50 text-red-600 rounded-full flex items-center justify-center mx-auto border border-red-100 shadow-inner">
                 <FiTrash2 className="w-7 h-7" />
               </div>
 
-              <div className="space-y-1">
-                <h3 className="font-extrabold text-slate-800 text-lg leading-tight">
+              <div className="space-y-1.5">
+                <h3 className="font-extrabold text-slate-850 text-lg leading-tight">
                   {deleteConfirm.title}
                 </h3>
                 <p className="text-xs text-slate-500 leading-relaxed px-2">
                   {deleteConfirm.message}
+                </p>
+                <p className="text-[11px] font-bold text-red-500 pt-1">
+                  This action cannot be undone.
                 </p>
               </div>
 
               <div className="flex gap-3 pt-3 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setDeleteConfirm({ show: false, type: '', id: null, title: '', message: '' })}
+                  onClick={() => setDeleteConfirm({ show: false, type: '', id: null, itemName: '', title: '', message: '' })}
                   className="flex-1 border border-slate-200 hover:border-slate-350 text-slate-600 font-bold py-2.5 rounded-xl text-xs transition-colors cursor-pointer"
                 >
                   Cancel
@@ -1881,7 +2177,7 @@ export default function LessonManagement() {
                   onClick={executeDelete}
                   className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition-colors cursor-pointer border-none shadow-sm"
                 >
-                  Delete
+                  Yes, Delete
                 </button>
               </div>
             </div>

@@ -24,8 +24,8 @@ async function authMiddleware(req, res, next) {
 		// Verify token
 		const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-		// Attach user to request (password excluded by default via select: false)
-		req.user = await User.findById(decoded.id);
+		// Attach user to request (lean query without password)
+		req.user = await User.findById(decoded.id).select('-password').lean();
 
 		if (!req.user) {
 			return res.status(401).json({ message: 'Not authorized, user not found' });

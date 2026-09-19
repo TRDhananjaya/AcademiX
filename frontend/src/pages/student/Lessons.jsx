@@ -15,36 +15,82 @@ export default function Lessons() {
   const [activeLesson, setActiveLesson] = useState(null);
   const [activeModule, setActiveModule] = useState(null);
 
-  // Live Database states
-  const [lessons, setLessons] = useState([]);
-  const [modules, setModules] = useState([]);
-  const [resources, setResources] = useState([]);
+  // Live Database states with Instant Cache for 0ms Page Refresh
+  const [lessons, setLessons] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('academiX_lessons');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [modules, setModules] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('academiX_modules');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [resources, setResources] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('academiX_resources');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isLoading, setIsLoading] = useState(() => {
+    try {
+      return !sessionStorage.getItem('academiX_lessons');
+    } catch {
+      return true;
+    }
+  });
 
   // UI state
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTermTab, setActiveTermTab] = useState('All');
   const [resourceFilter, setResourceFilter] = useState('All');
 
-  // Fetch all lessons, modules, and resources on mount
+  // Fetch all lessons, modules, and resources on mount (parallel fetch)
   useEffect(() => {
     fetchData();
   }, []);
 
   async function fetchData() {
+    if (!sessionStorage.getItem('academiX_lessons')) {
+      setIsLoading(true);
+    }
     try {
-      const lessonsRes = await fetch('/api/lessons');
-      const lessonsData = await lessonsRes.json();
-      setLessons(lessonsData || []);
+      const [lessonsRes, modulesRes, resourcesRes] = await Promise.all([
+        fetch('/api/lessons'),
+        fetch('/api/modules'),
+        fetch('/api/resources')
+      ]);
 
-      const modulesRes = await fetch('/api/modules');
-      const modulesData = await modulesRes.json();
-      setModules(modulesData || []);
-
-      const resourcesRes = await fetch('/api/resources');
-      const resourcesData = await resourcesRes.json();
-      setResources(resourcesData || []);
+      if (lessonsRes.ok) {
+        const lessonsData = await lessonsRes.json();
+        const lList = lessonsData || [];
+        setLessons(lList);
+        try { sessionStorage.setItem('academiX_lessons', JSON.stringify(lList)); } catch (_) {}
+      }
+      if (modulesRes.ok) {
+        const modulesData = await modulesRes.json();
+        const mList = modulesData || [];
+        setModules(mList);
+        try { sessionStorage.setItem('academiX_modules', JSON.stringify(mList)); } catch (_) {}
+      }
+      if (resourcesRes.ok) {
+        const resourcesData = await resourcesRes.json();
+        const rList = resourcesData || [];
+        setResources(rList);
+        try { sessionStorage.setItem('academiX_resources', JSON.stringify(rList)); } catch (_) {}
+      }
     } catch (err) {
       console.error('Error fetching student learning materials:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -158,7 +204,19 @@ export default function Lessons() {
         </div>
 
         {/* Lessons Cards Grid */}
-        {filteredLessons.length > 0 ? (
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm animate-pulse space-y-4">
+                <div className="w-full h-40 bg-slate-200 rounded-2xl"></div>
+                <div className="h-4 bg-slate-200 rounded w-1/4"></div>
+                <div className="h-6 bg-slate-200 rounded w-3/4"></div>
+                <div className="h-4 bg-slate-100 rounded w-full"></div>
+                <div className="h-10 bg-slate-100 rounded-xl w-full"></div>
+              </div>
+            ))}
+          </div>
+        ) : filteredLessons.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredLessons.map(lesson => {
               const lessonIdStr = lesson._id || lesson.id;
@@ -381,10 +439,8 @@ export default function Lessons() {
     const filteredResources = resourceFilter === 'All'
       ? activeModuleResources
       : activeModuleResources.filter(r => {
-        if (resourceFilter === 'Documents') return ['PDF', 'Document'].includes(r.type);
+        if (resourceFilter === 'PDF') return ['PDF', 'Document'].includes(r.type);
         if (resourceFilter === 'Videos') return r.type === 'Video';
-        if (resourceFilter === 'Presentations') return r.type === 'Presentation';
-        if (resourceFilter === 'Links') return r.type === 'Link';
         return true;
       });
 
@@ -430,7 +486,7 @@ export default function Lessons() {
         {/* Filter Tabs & Content grid */}
         <div className="space-y-4">
           <div className="flex gap-1.5 overflow-x-auto pb-1">
-            {['All', 'Documents', 'Videos', 'Presentations', 'Links'].map((filter) => (
+            {['All', 'PDF', 'Videos'].map((filter) => (
               <button
                 key={filter}
                 onClick={() => setResourceFilter(filter)}
