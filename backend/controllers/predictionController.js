@@ -5,15 +5,20 @@ const FollowupResult = require('../models/FollowupResult');
 const Lesson = require('../models/Lesson');
 const Quiz = require('../models/Quiz');
 
-const ALLOWED_LESSONS = ['1', '2'];
-
 const lessonMaxMarks = {
-    1: 50, 2: 50
+    1: 50, 2: 50, 3: 20, 4: 35, 5: 45, 6: 20, 7: 25, 8: 35, 9: 20
 };
 
 const defaultLessonNames = {
     1: "Information and Communication Technology",
-    2: "Fundamentals of a Computer System"
+    2: "Fundamentals of a Computer System",
+    3: "Data Representation Methods in Computer Systems",
+    4: "Logic Gates with Boolean Functions",
+    5: "Operating Systems",
+    6: "Word Processing",
+    7: "Electronic Spreadsheet",
+    8: "Electronic Presentations",
+    9: "Database"
 };
 
 const getFullLessonTitle = async (lessonNum) => {
@@ -279,10 +284,10 @@ const generatePrediction = async (req, res, next) => {
 
         const lessonNumbers = [...new Set(quizResults.map(r => {
             const match = r.quizId?.match(/^[QL](\d+)/i);
-            return match ? match[1] : null;
-        }))].filter(n => ALLOWED_LESSONS.includes(n)).sort();
+            return match ? match[1] : '1';
+        }))].sort();
 
-        if (lessonNumbers.length === 0) lessonNumbers.push(...ALLOWED_LESSONS);
+        if (lessonNumbers.length === 0) lessonNumbers.push('1');
 
         let totalPredictedPct = 0;
         let predictionCount = 0;
@@ -407,13 +412,11 @@ const getStudentAllLessonsPrediction = async (req, res, next) => {
             studentId: { $regex: new RegExp(`^${studentId}$`, 'i') } 
         });
 
-        // Extract lesson numbers (only allow Lesson 1 and 2)
+        // Extract lesson numbers (e.g. from "Q1.1" -> "1")
         const lessonNumbers = [...new Set(quizResults.map(r => {
-            const match = r.quizId?.match(/^[QL](\d+)/i);
-            return match ? match[1] : null;
-        }))].filter(n => ALLOWED_LESSONS.includes(n)).sort();
-
-        if (lessonNumbers.length === 0) lessonNumbers.push(...ALLOWED_LESSONS);
+            const match = r.quizId.match(/^[QL](\d+)/i);
+            return match ? match[1] : '1';
+        }))].sort();
 
         const lessonsData = [];
         let totalPredictedPct = 0;

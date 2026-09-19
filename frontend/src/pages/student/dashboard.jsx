@@ -247,9 +247,7 @@ export default function StudentDashboard() {
   let predictedGradeInfo = null;
   let predictionScore = 0;
   let predictionTotalMarks = 100;
-  const lessonPredictions = (prediction?.lessonPredictions || []).filter(lp =>
-    ['1', '2'].includes(String(lp.lessonNumber || lp.lessonId))
-  );
+  const lessonPredictions = prediction?.lessonPredictions || [];
 
   if (prediction && prediction.predictionStatus !== 'INSUFFICIENT_DATA' && prediction.predictedMarks != null) {
     predictionScore = prediction.predictedPercentage || (prediction.prediction && prediction.prediction.predictedScore) || 0;
