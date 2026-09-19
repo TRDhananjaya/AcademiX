@@ -85,7 +85,13 @@ export default function StudentDashboard() {
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data)) {
-            setCommunityPosts(data.slice(0, 3));
+            // Sort posts so those with responded answers appear at the top
+            const sortedData = [...data].sort((a, b) => {
+              const countA = (a.replies && Array.isArray(a.replies)) ? a.replies.length : (a.answersCount || a.repliesCount || 0);
+              const countB = (b.replies && Array.isArray(b.replies)) ? b.replies.length : (b.answersCount || b.repliesCount || 0);
+              return countB - countA;
+            });
+            setCommunityPosts(sortedData.slice(0, 3));
           }
         }
       } catch (err) {
@@ -609,7 +615,7 @@ export default function StudentDashboard() {
                   {communityPosts.map((post) => (
                     <div
                       key={post._id}
-                      onClick={() => navigate('/student/community')}
+                      onClick={() => navigate(`/student/community?postId=${post._id}`)}
                       className="p-3.5 rounded-xl border border-slate-100 hover:border-indigo-200 bg-slate-50/50 hover:bg-white transition-all cursor-pointer group"
                     >
                       <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -622,7 +628,6 @@ export default function StudentDashboard() {
                             {post.authorRole === 'teacher' ? 'Teacher' : 'Student'}
                           </span>
                         </div>
-                        <span className="text-[11px] text-slate-400 whitespace-nowrap">{formatTimeAgo(post.createdAt)}</span>
                       </div>
 
                       <h4 className="text-xs font-bold text-slate-800 group-hover:text-indigo-600 transition-colors line-clamp-1 mb-1">
@@ -637,16 +642,10 @@ export default function StudentDashboard() {
                         <span className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-500 truncate max-w-[140px]">
                           {post.course || post.tags?.[0] || 'General'}
                         </span>
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center gap-1 font-medium">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" /></svg>
-                            {post.votes || 0}
-                          </span>
-                          <span className="flex items-center gap-1 font-medium">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                            {post.replies?.length || 0}
-                          </span>
-                        </div>
+                        <span className="flex items-center gap-1 font-semibold text-slate-500">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                          {(post.replies?.length || 0)} {(post.replies?.length || 0) === 1 ? 'Response' : 'Responses'}
+                        </span>
                       </div>
                     </div>
                   ))}
