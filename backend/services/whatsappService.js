@@ -56,11 +56,8 @@ const sendAttendanceWhatsApp = async (parentMobile, studentName, arrivalTime) =>
     // Check if Meta credentials exist in .env
     if (!token || !phoneNumberId || token === 'YOUR_ACCESS_TOKEN' || phoneNumberId === 'YOUR_PHONE_NUMBER_ID') {
       console.log(`\n======================================================`);
-      console.log(`[WHATSAPP SIMULATION LOG] (Set WHATSAPP credentials in .env to send real WhatsApp msg)`);
-      console.log(`TO: +${formattedPhone} (Original: ${parentMobile})`);
-      console.log(`MESSAGE:\n${messageText}`);
-      console.log(`======================================================\n`);
-      return true; // Simulation success
+      console.warn(`[WhatsApp Service] Missing WHATSAPP_TOKEN or PHONE_NUMBER_ID in environment variables. Real message not sent.`);
+      return false;
     }
 
     // Call Meta WhatsApp Cloud API to send the custom attendance alert

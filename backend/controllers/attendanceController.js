@@ -73,6 +73,28 @@ const markAttendance = async (req, res, next) => {
     });
 
     if (existingAttendance) {
+      if (req.body.forceSend) {
+        let whatsappSuccess = false;
+        if (student.parentMobile) {
+          whatsappSuccess = await sendAttendanceWhatsApp(student.parentMobile, student.name, existingAttendance.timeArrived || timeArrived);
+          if (whatsappSuccess) {
+            existingAttendance.whatsappSent = true;
+            await existingAttendance.save();
+          }
+        }
+        return res.status(200).json({
+          success: true,
+          alreadyMarked: true,
+          whatsappSent: whatsappSuccess,
+          message: whatsappSuccess
+            ? `Parent notification sent successfully via WhatsApp to ${student.parentMobile}!`
+            : `Could not send WhatsApp notification. Please verify phone number format.`,
+          parentMobile: student.parentMobile || 'Not Provided',
+          data: existingAttendance,
+          student
+        });
+      }
+
       return res.status(400).json({
         success: false,
         alreadyMarked: true,
