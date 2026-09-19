@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import CoverPage from './pages/CoverPage';
 import PerformancePage from './pages/PerformancePage';
 import WrongQuestionAnalysisPage from './pages/WrongQuestionAnalysisPage';
@@ -22,6 +22,7 @@ const StudyPlanReport = ({ planData, user }) => {
   const [followUpResult, setFollowUpResult] = useState(null);
   const [moduleBreakdown, setModuleBreakdown] = useState([]);
   const [isLoadingFollowUp, setIsLoadingFollowUp] = useState(false);
+  const reportTopRef = useRef(null);
 
   const markdown = planData?.generatedStudyPlan || '';
   const lessonTitle = planData?.lessonId?.title || 'Unknown Lesson';
@@ -39,6 +40,13 @@ const StudyPlanReport = ({ planData, user }) => {
     if (!lessonId) return;
     fetchFollowUpQuizData();
   }, [lessonId]);
+
+  // Scroll smoothly to top when switching chapters/pages
+  useEffect(() => {
+    if (reportTopRef.current) {
+      reportTopRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [currentPage]);
 
   const fetchFollowUpQuizData = async () => {
     try {
@@ -74,7 +82,7 @@ const StudyPlanReport = ({ planData, user }) => {
     setFollowUpResult(result);
   };
 
-  // Front cover + 5 Clear, Distinct Chapters
+  // Front cover + 6 Clear, Distinct Chapters
   const pages = [
     {
       component: (
@@ -89,48 +97,59 @@ const StudyPlanReport = ({ planData, user }) => {
       title: "Cover Overview",
       isCover: true
     },
-    { 
+    {
       component: (
-        <PerformancePage 
-          score={score} 
-          summaryText={parsedData.performanceAnalysisText || parsedData.profileText} 
+        <PerformancePage
+          score={score}
+          summaryText={parsedData.performanceAnalysisText || parsedData.profileText}
           weakText={parsedData.weakConceptsText}
           lessonTitle={lessonTitle}
           user={user}
         />
-      ), 
-      title: "Learning Profile" 
+      ),
+      title: "Learning Profile"
     },
-    { 
+    {
       component: (
-        <WrongQuestionAnalysisPage 
-          questions={parsedData.mistakeQuestions} 
-          rawMistakesText={parsedData.mistakesText} 
+        <WrongQuestionAnalysisPage
+          questions={parsedData.mistakeQuestions}
+          rawMistakesText={parsedData.mistakesText}
         />
-      ), 
-      title: "My Mistakes" 
+      ),
+      title: "My Mistakes"
     },
-    { 
+    {
       component: (
-        <StudyNotesPage 
-          notesText={parsedData.studyNotesText} 
+        <StudyNotesPage
+          notesText={parsedData.studyNotesText}
           definitionsText={parsedData.definitionsText}
           definitions={parsedData.definitions}
         />
-      ), 
-      title: "Study Notes & Definitions" 
+      ),
+      title: "Study Notes & Definitions"
     },
-    { 
+    {
       component: (
-        <RevisionChecklistPage 
-          revisionText={parsedData.checklistText} 
-          checklistItems={parsedData.checklistItems} 
+        <RevisionChecklistPage
+          revisionText={parsedData.checklistText}
+          checklistItems={parsedData.checklistItems}
           scheduleText={parsedData.scheduleText}
-          studentId={studentId} 
-          lessonId={lessonId} 
+          studentId={studentId}
+          lessonId={lessonId}
         />
-      ), 
-      title: "Revision Tasks & Schedule" 
+      ),
+      title: "Revision Tasks & Schedule"
+    },
+    {
+      component: (
+        <InteractiveQuizPage
+          followUpQuizData={followUpQuizData}
+          moduleBreakdown={moduleBreakdown}
+          quizText={parsedData.quizText}
+          isLoading={isLoadingFollowUp}
+        />
+      ),
+      title: "20 Practice Questions"
     },
     {
       component: (
@@ -157,11 +176,11 @@ const StudyPlanReport = ({ planData, user }) => {
     if (currentPage > 0) setCurrentPage(currentPage - 1);
   };
 
-  const totalChapters = 5;
+  const totalChapters = 6;
   const progressPercentage = currentPage === 0 ? 0 : (currentPage / totalChapters) * 100;
 
   return (
-    <div className="w-full max-w-4xl mx-auto mb-20 relative font-sans">
+    <div ref={reportTopRef} className="w-full max-w-4xl mx-auto mb-20 relative font-sans">
 
       {/* Book Header / Progress */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
@@ -169,7 +188,7 @@ const StudyPlanReport = ({ planData, user }) => {
           <h2 className="text-xl font-bold text-slate-800 tracking-tight">Personalized Study Book</h2>
           <span className="text-xs text-slate-400 font-normal">Step-by-step diagnostic revision guide</span>
         </div>
-        
+
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <span className="text-xs font-medium text-slate-600 bg-slate-100/90 border border-slate-200/80 px-3 py-1 rounded-full">
             {currentPage === 0
@@ -200,11 +219,10 @@ const StudyPlanReport = ({ planData, user }) => {
           <button
             onClick={handlePrev}
             disabled={currentPage === 0}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all border border-slate-200 cursor-pointer ${
-              currentPage === 0
-                ? 'opacity-0 cursor-default pointer-events-none'
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 bg-white'
-            }`}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-xs sm:text-sm transition-all border border-slate-200 cursor-pointer ${currentPage === 0
+              ? 'opacity-0 cursor-default pointer-events-none'
+              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 bg-white'
+              }`}
           >
             <FaChevronLeft className="text-xs" />
             Previous: {currentPage === 1 ? 'Cover Overview' : (currentPage > 1 ? pages[currentPage - 1]?.title : '')}
@@ -217,11 +235,10 @@ const StudyPlanReport = ({ planData, user }) => {
           <button
             onClick={handleNext}
             disabled={currentPage === pages.length - 1}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all border-none cursor-pointer ${
-              currentPage === pages.length - 1
-                ? 'opacity-0 cursor-default pointer-events-none'
-                : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-200'
-            }`}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all border-none cursor-pointer ${currentPage === pages.length - 1
+              ? 'opacity-0 cursor-default pointer-events-none'
+              : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm shadow-indigo-200'
+              }`}
           >
             {currentPage === 0
               ? 'Open Chapter 1: Learning Profile'
