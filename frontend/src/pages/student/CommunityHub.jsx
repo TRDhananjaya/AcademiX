@@ -70,6 +70,19 @@ export default function CommunityHub() {
       const data = await res.json();
       if (Array.isArray(data)) {
         setPosts(data);
+
+        // Check if navigated with a specific postId
+        const params = new URLSearchParams(window.location.search);
+        const targetPostId = params.get('postId');
+        if (targetPostId) {
+          setExpandedPostId(targetPostId);
+          setTimeout(() => {
+            const el = document.getElementById(`post-${targetPostId}`);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }, 300);
+        }
       }
     } catch (err) {
       console.error('Error loading community posts:', err);
@@ -251,7 +264,15 @@ export default function CommunityHub() {
                   </div>
                 ) : (
                   posts.map(post => (
-                    <div key={post._id} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm relative transition-all">
+                    <div 
+                      key={post._id} 
+                      id={`post-${post._id}`}
+                      className={`bg-white rounded-2xl p-6 border shadow-sm relative transition-all ${
+                        expandedPostId === post._id 
+                          ? 'border-indigo-400 ring-2 ring-indigo-500/20' 
+                          : 'border-slate-100'
+                      }`}
+                    >
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex items-center gap-3">
                           <div>
