@@ -244,6 +244,7 @@ export default function StudentDashboard() {
   let predictedGradeInfo = null;
   let predictionScore = 0;
   let predictionTotalMarks = 100;
+  const lessonPredictions = prediction?.lessonPredictions || [];
 
   if (prediction && prediction.predictionStatus !== 'INSUFFICIENT_DATA' && prediction.predictedMarks != null) {
     predictionScore = prediction.predictedPercentage || (prediction.prediction && prediction.prediction.predictedScore) || 0;
@@ -289,298 +290,367 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+          {/* ROW 1: Academic & Exam Performance */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mb-6">
 
-            {/* Left / Main Column (2 columns width) */}
-            <div className="xl:col-span-2 space-y-6">
-
-              {/* Focus Areas Card */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+            {/* AI Exam Forecast Card */}
+            <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-100 flex flex-col">
+              <div>
+                <div className="w-full flex items-center justify-between mb-5">
                   <div>
-                    <h3 className="text-slate-900 font-bold text-lg">Focus Areas</h3>
-                    <p className="text-slate-500 text-xs mt-0.5">
-                      Topics that need your review based on recent quiz scores.
+                    <h3 className="text-base font-bold text-slate-900">
+                      AI Exam Forecast
+                    </h3>
+                    <p className="text-xs text-slate-400 font-medium mt-0.5">
+                      Machine learning term score projections
                     </p>
                   </div>
-                  <span className="self-start sm:self-auto text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200/60 px-3 py-1 rounded-full">
-                    Priority Practice
-                  </span>
-                </div>
 
-                <div className="space-y-4">
-                  {focusAreas.length > 0 ? (
-                    focusAreas.map((topic, i) => {
-                      const isWeak = topic.percentage < 50;
-                      const statusText = isWeak ? 'Needs Review' : 'Moderate';
-                      const badgeBg = isWeak ? 'bg-red-50 border-red-100 text-red-600' : 'bg-amber-50 border-amber-100 text-amber-700';
-                      const progressBg = isWeak ? 'bg-red-500' : 'bg-amber-500';
-
-                      return (
-                        <div key={i} className="bg-slate-50/70 border border-slate-100/80 rounded-xl p-4">
-                          <div className="flex items-center justify-between gap-3 mb-2">
-                            <span className="text-slate-800 font-semibold text-sm truncate">{topic.lesson}</span>
-                            <span className={`text-xs font-bold border px-2.5 py-0.5 rounded-full ${badgeBg}`}>
-                              {statusText} ({topic.percentage}%)
-                            </span>
-                          </div>
-                          <div className="w-full bg-slate-200/80 h-2 rounded-full overflow-hidden">
-                            <div className={`${progressBg} h-full rounded-full transition-all duration-500`} style={{ width: `${topic.percentage}%` }}></div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-center py-6 text-sm text-slate-400 font-medium">
-                      Take quizzes to analyze your topic strengths and weaknesses.
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100">
-                  <p className="text-xs text-slate-500">
-                    Target your lowest-scoring topics to quickly level up your predicted grade.
-                  </p>
-                  <button
-                    onClick={() => navigate('/student/quizzes')}
-                    className="w-full sm:w-auto px-5 py-2.5 bg-[#3b28cc] hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer shrink-0"
-                  >
-                    <span>Practice Weakest Topics</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                  </button>
-                </div>
-              </div>
-
-              {/* Performance Summary Card */}
-              <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-100 flex flex-col justify-between">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs font-semibold mb-4">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
-                    Performance Summary
-                  </div>
-
-                  <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                    Your Quiz Analytics
-                  </h2>
-
-                  <p className="text-slate-500 text-sm mb-6 leading-relaxed">
-                    {totalQuizzes > 0
-                      ? `You have completed ${totalQuizzes} quiz${totalQuizzes > 1 ? 'zes' : ''} with an overall average of ${overallAvg}%.`
-                      : 'Start taking quizzes to see your performance analytics here.'}
-                  </p>
-
-                  {totalQuizzes > 0 ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold text-slate-900">{totalQuizzes}</p>
-                        <p className="text-xs text-slate-500 font-medium mt-1">Quizzes Taken</p>
-                      </div>
-                      <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold text-slate-900">{overallAvg}%</p>
-                        <p className="text-xs text-slate-500 font-medium mt-1">Overall Average</p>
-                      </div>
-                      <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold text-emerald-600">{highestScore}%</p>
-                        <p className="text-xs text-slate-500 font-medium mt-1">Highest Score</p>
-                      </div>
-                      <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold text-red-500">{lowestScore}%</p>
-                        <p className="text-xs text-slate-500 font-medium mt-1">Lowest Score</p>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {(strongestLesson || weakestLesson) && (
-                    <div className="mt-6 flex flex-wrap gap-3">
-                      {strongestLesson && (
-                        <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100/80 rounded-xl px-3.5 py-2">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                          <span className="text-xs font-semibold text-emerald-700">Strongest: {strongestLesson}</span>
-                        </div>
-                      )}
-                      {weakestLesson && (
-                        <div className="flex items-center gap-2 bg-red-50 border border-red-100/80 rounded-xl px-3.5 py-2">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-red-500"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                          <span className="text-xs font-semibold text-red-600">Needs Review: {weakestLesson}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-8">
-                  <button
-                    onClick={() => navigate('/student/quizzes')}
-                    className="bg-[#3b28cc] text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
-                  >
-                    <span>Browse All Quizzes</span>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Right Side Column (1 column width) */}
-            <div className="xl:col-span-1 space-y-6">
-
-              {/* Final Exam Prediction Card */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col items-center justify-between min-h-[300px]">
-                <div className="w-full flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-slate-800">
-                    AI Exam Forecast
-                  </h3>
-                  <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100/60">
-                    ML Prediction
-                  </span>
                 </div>
 
                 {loadingPrediction ? (
-                  <div className="flex flex-col items-center justify-center py-8">
+                  <div className="flex flex-col items-center justify-center py-12 w-full">
                     <div className="w-10 h-10 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin mb-3"></div>
                     <span className="text-xs text-slate-400 font-medium">Predicting exam performance...</span>
                   </div>
                 ) : predictedGradeInfo ? (
-                  <div className="w-full flex flex-col items-center">
-                    {/* Circle Badge with Grade */}
-                    <div
-                      className={`w-24 h-24 rounded-full border-[3px] ${predictedGradeInfo.borderColor} ${predictedGradeInfo.bgColor} flex flex-col items-center justify-center relative z-10 mb-3`}
-                      style={{ boxShadow: `0 0 20px ${predictedGradeInfo.shadowColor}` }}
-                    >
-                      <span className={`text-4xl font-bold ${predictedGradeInfo.color} tracking-tight leading-none`}>
-                        {predictedGradeInfo.grade}
-                      </span>
-                      <span className={`text-xs font-semibold ${predictedGradeInfo.color} mt-1`}>
-                        {predictedGradeInfo.label}
-                      </span>
-                    </div>
-
-                    {/* Predicted Score Details */}
-                    <div className="text-center mb-3">
-                      <p className="text-lg font-bold text-slate-900">
-                        {predictionScore.toFixed(1)} / {predictionTotalMarks}
-                        <span className="text-xs text-slate-400 font-medium ml-1">({predictionScore.toFixed(0)}%)</span>
-                      </p>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Projected Term Examination Score
-                      </p>
-                    </div>
-
-                    {/* Target Roadmap to Next Grade */}
-                    <div className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3.5">
-                      <div className="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1.5">
-                        <span>{predictedGradeInfo.nextTargetText}</span>
+                  <div className="w-full flex flex-col">
+                    {/* Overall Average Prediction Hero Section */}
+                    <div className="flex items-center gap-4 bg-slate-50/80 border border-slate-100/90 rounded-2xl p-4 mb-5">
+                      {/* Badge with Grade */}
+                      <div
+                        className={`w-16 h-16 shrink-0 rounded-2xl border-2 ${predictedGradeInfo.borderColor} ${predictedGradeInfo.bgColor} flex flex-col items-center justify-center relative shadow-sm`}
+                      >
+                        <span className={`text-2xl font-black ${predictedGradeInfo.color} leading-none`}>
+                          {predictedGradeInfo.grade}
+                        </span>
+                        <span className={`text-[10px] font-bold ${predictedGradeInfo.color} mt-0.5`}>
+                          {predictedGradeInfo.label}
+                        </span>
                       </div>
-                      <div className="w-full bg-slate-200/80 h-2 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${predictedGradeInfo.grade === 'A' ? 'bg-emerald-500' :
-                              predictedGradeInfo.grade === 'B' ? 'bg-indigo-600' :
-                                predictedGradeInfo.grade === 'C' ? 'bg-blue-500' :
-                                  predictedGradeInfo.grade === 'S' ? 'bg-amber-500' : 'bg-red-500'
-                            }`}
-                          style={{ width: `${predictedGradeInfo.progressPct}%` }}
-                        ></div>
+
+                      {/* Average Score Details */}
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                          Overall Term Exam Forecast
+                        </span>
+                        <p className="text-2xl font-black text-slate-900 tracking-tight leading-tight mt-0.5">
+                          {predictionScore.toFixed(1)} <span className="text-sm text-slate-400 font-normal">/ {predictionTotalMarks}</span>
+                          <span className="text-xs font-bold text-indigo-700 bg-indigo-100/70 border border-indigo-200/60 ml-2 px-2 py-0.5 rounded-full">
+                            {predictionScore.toFixed(0)}% Avg
+                          </span>
+                        </p>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">
+                          Average of All Evaluated Lessons
+                        </p>
                       </div>
                     </div>
+
+                    {/* Lesson-wise Predicted Marks Section */}
+                    {lessonPredictions.length > 0 && (
+                      <div className="w-full">
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-xs font-bold text-slate-800">
+                            Lesson-wise Predicted Marks
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-400">
+                            {lessonPredictions.length} Lessons Evaluated
+                          </span>
+                        </div>
+
+                        <div className="space-y-2.5">
+                          {lessonPredictions.map((lp, idx) => {
+                            const lGrade = lp.predictedPercentage != null ? getGradeInfo(lp.predictedPercentage) : null;
+                            const isAvailable = lp.predictionStatus === 'AVAILABLE' && lp.predictedMarks != null;
+
+                            return (
+                              <div
+                                key={idx}
+                                className="bg-slate-50/70 hover:bg-slate-50/90 border border-slate-100/90 rounded-xl p-3 transition-colors"
+                              >
+                                <div className="flex items-center justify-between gap-2 mb-1.5">
+                                  <span className="text-xs font-semibold text-slate-800 truncate" title={lp.lessonName}>
+                                    {lp.lessonName}
+                                  </span>
+                                  {lGrade && (
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${lGrade.bgColor} ${lGrade.color} ${lGrade.borderColor}`}>
+                                      Grade {lGrade.grade}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {isAvailable ? (
+                                  <>
+                                    <div className="flex items-baseline justify-between mb-1.5 text-xs">
+                                      <span className="text-slate-400 font-medium text-[11px]">Predicted Mark:</span>
+                                      <span className="font-bold text-slate-900">
+                                        {lp.predictedMarks.toFixed(1)} <span className="text-slate-400 font-normal">/ {lp.totalMarks}</span>
+                                        <span className="text-slate-500 font-medium ml-1">({lp.predictedPercentage}%)</span>
+                                      </span>
+                                    </div>
+                                    <div className="w-full bg-slate-200/80 h-1.5 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full transition-all duration-500 ${lGrade?.grade === 'A' ? 'bg-emerald-500' :
+                                          lGrade?.grade === 'B' ? 'bg-indigo-600' :
+                                            lGrade?.grade === 'C' ? 'bg-blue-500' :
+                                              lGrade?.grade === 'S' ? 'bg-amber-500' : 'bg-red-500'
+                                          }`}
+                                        style={{ width: `${Math.min(100, Math.max(0, lp.predictedPercentage || 0))}%` }}
+                                      />
+                                    </div>
+                                  </>
+                                ) : (
+                                  <p className="text-[11px] text-amber-700 bg-amber-50 rounded px-2 py-1 border border-amber-100">
+                                    Quizzes pending to unlock ML prediction
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-xs text-slate-400 font-medium">
-                    Take quizzes to generate your AI exam forecast.
+                  <div className="text-center py-10 px-4 bg-slate-50/60 rounded-2xl border border-slate-100/90 my-2">
+                    <p className="text-sm font-bold text-slate-800 mb-1">
+                      Exam Forecast Pending
+                    </p>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                      Need to complete all curriculum quizzes and follow-up quizes to generate your AI exam prediction.
+                    </p>
                   </div>
                 )}
-
-
               </div>
 
-              {/* Community Hub Discussions Card */}
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>
-                    </div>
-                    <div>
-                      <h3 className="text-slate-800 font-bold text-[15px]">Community Hub</h3>
-                      <p className="text-[11px] text-slate-400">Recent student & teacher topics</p>
-                    </div>
+            </div>
+
+            {/* Quiz Performance Analytics Card */}
+            <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-100 flex flex-col">
+              <div>
+                <div className="w-full flex items-center justify-between mb-5">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">
+                      Your Quiz Analytics
+                    </h3>
+                    <p className="text-xs text-slate-400 font-medium mt-0.5">
+                      Cumulative performance across all taken quizzes
+                    </p>
                   </div>
 
-                  <button
-                    onClick={() => navigate('/student/community')}
-                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 hover:underline"
-                  >
-                    View All
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
-                  </button>
                 </div>
 
-                {loadingCommunity ? (
-                  <div className="py-8 flex flex-col items-center justify-center">
-                    <div className="w-8 h-8 rounded-full border-3 border-indigo-200 border-t-indigo-600 animate-spin mb-2"></div>
-                    <span className="text-xs text-slate-400">Loading discussions...</span>
+                <p className="text-slate-500 text-sm mb-5 leading-relaxed">
+                  {totalQuizzes > 0
+                    ? `You have completed ${totalQuizzes} quiz${totalQuizzes > 1 ? 'zes' : ''} with an overall average score of ${overallAvg}%.`
+                    : 'Start taking quizzes to view your performance metrics.'}
+                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                  <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-3.5 text-center">
+                    <p className="text-2xl font-bold text-slate-900">{totalQuizzes}</p>
+                    <p className="text-[11px] text-slate-400 font-medium mt-1">Quizzes Taken</p>
                   </div>
-                ) : communityPosts.length > 0 ? (
-                  <div className="space-y-3.5">
-                    {communityPosts.map((post) => (
-                      <div
-                        key={post._id}
-                        onClick={() => navigate('/student/community')}
-                        className="p-3.5 rounded-xl border border-slate-100 hover:border-indigo-200 bg-slate-50/50 hover:bg-white transition-all cursor-pointer group"
-                      >
-                        <div className="flex items-center justify-between gap-2 mb-1.5">
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className="text-xs font-semibold text-slate-800 truncate">{post.authorName || 'Anonymous'}</span>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${post.authorRole === 'teacher'
-                                ? 'bg-indigo-100 text-indigo-700'
-                                : 'bg-slate-200/80 text-slate-600'
-                              }`}>
-                              {post.authorRole === 'teacher' ? 'Teacher' : 'Student'}
-                            </span>
-                          </div>
-                          <span className="text-[11px] text-slate-400 whitespace-nowrap">{formatTimeAgo(post.createdAt)}</span>
-                        </div>
+                  <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-3.5 text-center">
+                    <p className="text-2xl font-bold text-slate-900">{totalQuizzes > 0 ? `${overallAvg}%` : '-'}</p>
+                    <p className="text-[11px] text-slate-400 font-medium mt-1">Overall Average</p>
+                  </div>
+                  <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-3.5 text-center">
+                    <p className="text-2xl font-bold text-emerald-600">{totalQuizzes > 0 ? `${highestScore}%` : '-'}</p>
+                    <p className="text-[11px] text-slate-400 font-medium mt-1">Highest Score</p>
+                  </div>
+                  <div className="bg-slate-50/80 border border-slate-100 rounded-xl p-3.5 text-center">
+                    <p className="text-2xl font-bold text-red-500">{totalQuizzes > 0 ? `${lowestScore}%` : '-'}</p>
+                    <p className="text-[11px] text-slate-400 font-medium mt-1">Lowest Score</p>
+                  </div>
+                </div>
 
-                        <h4 className="text-xs font-bold text-slate-800 group-hover:text-indigo-600 transition-colors line-clamp-1 mb-1">
-                          {post.title}
-                        </h4>
-
-                        <p className="text-[11px] text-slate-500 line-clamp-1 mb-2.5">
-                          {post.body}
-                        </p>
-
-                        <div className="flex items-center justify-between text-[11px] text-slate-400">
-                          <span className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-500 truncate max-w-[140px]">
-                            {post.course || post.tags?.[0] || 'General'}
-                          </span>
-                          <div className="flex items-center gap-3">
-                            <span className="flex items-center gap-1 font-medium">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" /></svg>
-                              {post.votes || 0}
-                            </span>
-                            <span className="flex items-center gap-1 font-medium">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                              {post.replies?.length || 0}
-                            </span>
-                          </div>
-                        </div>
+                {(strongestLesson || weakestLesson) && (
+                  <div className="flex flex-col sm:flex-row gap-2.5 mb-5">
+                    {strongestLesson && (
+                      <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100/80 rounded-xl px-3.5 py-2 flex-1 min-w-0">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600 shrink-0"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        <span className="text-xs font-semibold text-emerald-700 truncate">Strongest: {strongestLesson}</span>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 text-xs text-slate-400">
-                    No community posts yet. Start the conversation!
+                    )}
+                    {weakestLesson && (
+                      <div className="flex items-center gap-2 bg-amber-50 border border-amber-100/80 rounded-xl px-3.5 py-2 flex-1 min-w-0">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber-600 shrink-0"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <span className="text-xs font-semibold text-amber-700 truncate">Needs Review: {weakestLesson}</span>
+                      </div>
+                    )}
                   </div>
                 )}
+              </div>
 
+              <div className="pt-2">
+                <button
+                  onClick={() => navigate('/student/quizzes')}
+                  className="w-full bg-[#3b28cc] hover:bg-indigo-700 text-white px-5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <span>Browse All Quizzes</span>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          {/* ROW 2: Activity & Resources */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+            {/* Quick Learning Hub Card */}
+            <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-100 flex flex-col">
+              <div className="w-full flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Learning Hub
+                  </h3>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">
+                    Quick access to curriculum tools and materials
+                  </p>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                  Quick Access
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                <div
+                  onClick={() => navigate('/student/lessons')}
+                  className="p-3.5 rounded-xl border border-slate-100/90 hover:border-indigo-200 bg-slate-50/50 hover:bg-indigo-50/30 transition-all cursor-pointer flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                        Curriculum Lessons & Notes
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Study chapter notes, module guides, and syllabus resources.
+                      </p>
+                    </div>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all"><path d="M9 18l6-6-6-6" /></svg>
+                </div>
+
+                <div
+                  onClick={() => navigate('/student/quizzes')}
+                  className="p-3.5 rounded-xl border border-slate-100/90 hover:border-indigo-200 bg-slate-50/50 hover:bg-indigo-50/30 transition-all cursor-pointer flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                        Interactive Quizzes
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Practice topic quizzes and test your exam readiness.
+                      </p>
+                    </div>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all"><path d="M9 18l6-6-6-6" /></svg>
+                </div>
+
+                <div
+                  onClick={() => navigate('/student/study-plans')}
+                  className="p-3.5 rounded-xl border border-slate-100/90 hover:border-indigo-200 bg-slate-50/50 hover:bg-indigo-50/30 transition-all cursor-pointer flex items-center justify-between group"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
+                        Study Plans & Schedules
+                      </h4>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Track personalized revision timetables and daily targets.
+                      </p>
+                    </div>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all"><path d="M9 18l6-6-6-6" /></svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Community Hub Discussions Card */}
+            <div className="bg-white rounded-2xl p-6 sm:p-7 shadow-sm border border-slate-100 flex flex-col">
+              <div className="w-full flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Community Hub</h3>
+                  <p className="text-xs text-slate-400 font-medium mt-0.5">Recent student & teacher discussions</p>
+                </div>
                 <button
                   onClick={() => navigate('/student/community')}
-                  className="w-full mt-4 py-2.5 bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 rounded-xl text-xs font-bold transition-colors border border-slate-200/80 flex items-center justify-center gap-1.5"
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 hover:underline cursor-pointer"
                 >
-                  <span>Open Community Hub</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                  View All
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
                 </button>
               </div>
 
+              {loadingCommunity ? (
+                <div className="py-8 flex flex-col items-center justify-center">
+                  <div className="w-8 h-8 rounded-full border-3 border-indigo-200 border-t-indigo-600 animate-spin mb-2"></div>
+                  <span className="text-xs text-slate-400">Loading discussions...</span>
+                </div>
+              ) : communityPosts.length > 0 ? (
+                <div className="space-y-3">
+                  {communityPosts.map((post) => (
+                    <div
+                      key={post._id}
+                      onClick={() => navigate('/student/community')}
+                      className="p-3.5 rounded-xl border border-slate-100 hover:border-indigo-200 bg-slate-50/50 hover:bg-white transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-xs font-semibold text-slate-800 truncate">{post.authorName || 'Anonymous'}</span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${post.authorRole === 'teacher'
+                            ? 'bg-indigo-100 text-indigo-700'
+                            : 'bg-slate-200/80 text-slate-600'
+                            }`}>
+                            {post.authorRole === 'teacher' ? 'Teacher' : 'Student'}
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-slate-400 whitespace-nowrap">{formatTimeAgo(post.createdAt)}</span>
+                      </div>
+
+                      <h4 className="text-xs font-bold text-slate-800 group-hover:text-indigo-600 transition-colors line-clamp-1 mb-1">
+                        {post.title}
+                      </h4>
+
+                      <p className="text-[11px] text-slate-500 line-clamp-1 mb-2">
+                        {post.body}
+                      </p>
+
+                      <div className="flex items-center justify-between text-[11px] text-slate-400">
+                        <span className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded text-slate-500 truncate max-w-[140px]">
+                          {post.course || post.tags?.[0] || 'General'}
+                        </span>
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center gap-1 font-medium">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" /></svg>
+                            {post.votes || 0}
+                          </span>
+                          <span className="flex items-center gap-1 font-medium">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                            {post.replies?.length || 0}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6 text-xs text-slate-400">
+                  No community posts yet. Start the conversation!
+                </div>
+              )}
             </div>
 
           </div>
