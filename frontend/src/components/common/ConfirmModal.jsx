@@ -99,7 +99,11 @@ export default function ConfirmModal({
             </button>
             <button
               onClick={onConfirm}
-              className="flex-1 py-2.5 px-4 rounded-xl border-none text-white text-sm font-semibold cursor-pointer transition-all active:scale-[0.98] bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/20"
+              className={`flex-1 py-2.5 px-4 rounded-xl border-none text-white text-sm font-semibold cursor-pointer transition-all active:scale-[0.98] ${
+                variant === 'indigo' || variant === 'purple'
+                  ? 'bg-[#6338f0] hover:bg-[#522ce0] shadow-md shadow-indigo-200'
+                  : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/20'
+              }`}
             >
               {confirmText}
             </button>

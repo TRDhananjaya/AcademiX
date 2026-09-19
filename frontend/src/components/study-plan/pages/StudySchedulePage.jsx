@@ -133,7 +133,7 @@ const StudySchedulePage = ({ scheduleText }) => {
               <div className="flex-1 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wide">Day 3 · Verification & Follow-Up Quiz</span>
-                  <span className="text-xs text-slate-400 font-normal flex items-center gap-1"><FaClock className="text-[10px]" /> 45 Mins</span>
+                  <span className="text-xs text-slate-400 font-normal flex items-center gap-1"><FaClock className="text-[10px]" /> 30 Mins</span>
                 </div>
                 <h4 className={`text-sm font-semibold ${completedDays['day3'] ? 'line-through text-slate-400' : 'text-slate-800'}`}>
                   Practice Questions & Adaptive Assessment

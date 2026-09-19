@@ -11,7 +11,7 @@ export default function CreateQuizContent() {
   const [isLoadingModules, setIsLoadingModules] = useState(true);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
   const [settings, setSettings] = useState({
-    timeLimit: 45,
+    timeLimit: 30,
     passingScore: 50,
     randomizeQuestions: false,
     showResultsImmediately: true,

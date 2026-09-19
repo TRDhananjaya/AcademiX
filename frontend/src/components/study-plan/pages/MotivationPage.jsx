@@ -98,7 +98,7 @@ const MotivationPage = ({
         {/* Start Button */}
         <div className="flex items-center justify-between gap-4 pt-1">
           <div className="text-xs font-semibold text-indigo-200/80 hidden sm:block">
-            {followUpCompleted ? 'You can retake this quiz anytime.' : '45 Minutes Time Limit'}
+            {followUpCompleted ? 'You can retake this quiz anytime.' : '30 Minutes Time Limit'}
           </div>
 
           <button
