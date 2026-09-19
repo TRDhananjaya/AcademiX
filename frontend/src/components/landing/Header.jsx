@@ -7,12 +7,22 @@ export default function Header() {
     navigate(path);
   };
 
+  const handleHomeClick = (e) => {
+    e.preventDefault();
+    if (window.location.pathname === '/' || window.location.pathname === '') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      navigate('/');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   return (
     <header className="fixed top-0 left-0 w-full bg-white/80 backdrop-blur-md border-b border-slate-100/80 z-50 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <a href="/" onClick={handleClick('/')} className="flex items-center group">
+          <a href="/" onClick={handleHomeClick} className="flex items-center group cursor-pointer">
             <img src={logoBlack} alt="AcademiX" className="h-16 w-auto object-contain py-2 group-hover:scale-105 transition-transform duration-300" />
           </a>
 
@@ -20,8 +30,8 @@ export default function Header() {
           <nav className="flex items-center gap-8">
             <a
               href="/"
-              onClick={handleClick('/')}
-              className="text-slate-600 hover:text-indigo-600 transition-colors font-semibold text-sm"
+              onClick={handleHomeClick}
+              className="text-slate-600 hover:text-indigo-600 transition-colors font-semibold text-sm cursor-pointer"
             >
               Home
             </a>

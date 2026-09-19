@@ -19,13 +19,21 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
 
   const messagesEndRef = useRef(null);
 
+  // Auth helper for protected API calls
+  const authHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const fetchConversations = async () => {
     try {
-      const res = await fetch(`/api/messages/conversations?currentUserId=${currentUserId}`);
+      const res = await fetch(`/api/messages/conversations?currentUserId=${currentUserId}`, {
+        headers: authHeaders()
+      });
       const data = await res.json();
       if (Array.isArray(data)) {
         setConversations(data);
@@ -49,7 +57,9 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
     if (!contactId) return;
     setIsLoadingMessages(true);
     try {
-      const res = await fetch(`/api/messages/thread/${contactId}?currentUserId=${currentUserId}`);
+      const res = await fetch(`/api/messages/thread/${contactId}?currentUserId=${currentUserId}`, {
+        headers: authHeaders()
+      });
       const data = await res.json();
       if (Array.isArray(data)) {
         setMessages(data);
@@ -99,7 +109,7 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
     try {
       const res = await fetch('/api/messages/send', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           receiverId: selectedContact.id,
           receiverName: selectedContact.name,

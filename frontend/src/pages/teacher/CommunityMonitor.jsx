@@ -21,11 +21,17 @@ export default function CommunityMonitor() {
   // Delete confirmation modal state
   const [deletePostId, setDeletePostId] = useState(null);
 
+  // Auth helper for protected API calls
+  const authHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const fetchCommunityData = async () => {
     setIsLoading(true);
     try {
       // Fetch flagged posts for moderation card
-      const flaggedRes = await fetch('/api/community?filter=flagged');
+      const flaggedRes = await fetch('/api/community?filter=flagged', { headers: authHeaders() });
       const flaggedData = await flaggedRes.json();
       if (Array.isArray(flaggedData)) {
         setFlaggedPosts(flaggedData);
@@ -33,7 +39,7 @@ export default function CommunityMonitor() {
 
       // Fetch questions based on active tab
       const filterParam = activeTab === 'Unanswered' ? 'unanswered' : 'new';
-      const qRes = await fetch(`/api/community?filter=${filterParam}`);
+      const qRes = await fetch(`/api/community?filter=${filterParam}`, { headers: authHeaders() });
       const qData = await qRes.json();
       if (Array.isArray(qData)) {
         setQuestions(qData);
@@ -54,7 +60,7 @@ export default function CommunityMonitor() {
     try {
       const res = await fetch(`/api/community/${id}/vote`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({ voteType, userId: 'teacher_user' })
       });
       if (res.ok) {
@@ -69,7 +75,8 @@ export default function CommunityMonitor() {
   const handleDismissFlag = async (id) => {
     try {
       const res = await fetch(`/api/community/${id}/dismiss-flag`, {
-        method: 'POST'
+        method: 'POST',
+        headers: authHeaders()
       });
       if (res.ok) {
         setFlaggedPosts(flaggedPosts.filter(p => p._id !== id));
@@ -109,7 +116,7 @@ export default function CommunityMonitor() {
     try {
       const res = await fetch(`/api/community/${guidancePost._id}/reply`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify({
           text: guidanceText.trim(),
           authorName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Mr. Akila Savinda',
