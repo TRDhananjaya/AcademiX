@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { roleMiddleware } = require('../middleware/roleMiddleware');
 const {
     getStudents,
     getStudentById,
@@ -8,13 +9,14 @@ const {
     deleteStudent
 } = require('../controllers/studentController');
 
+// Only teachers can manage student records
 router.route('/')
-    .get(getStudents)
-    .post(addStudent);
+    .get(roleMiddleware('teacher'), getStudents)
+    .post(roleMiddleware('teacher'), addStudent);
 
 router.route('/:id')
-    .get(getStudentById)
-    .put(updateStudent)
-    .delete(deleteStudent);
+    .get(roleMiddleware('teacher'), getStudentById)
+    .put(roleMiddleware('teacher'), updateStudent)
+    .delete(roleMiddleware('teacher'), deleteStudent);
 
 module.exports = router;
