@@ -98,16 +98,16 @@ const MotivationPage = ({
         {/* Start Button */}
         <div className="flex items-center justify-between gap-4 pt-1">
           <div className="text-xs font-semibold text-indigo-200/80 hidden sm:block">
-            {followUpCompleted ? 'You can retake this quiz anytime.' : '45 Minutes Time Limit'}
+            {followUpCompleted ? 'Assessment completed. Retakes are not allowed.' : '45 Minutes Time Limit · One attempt only'}
           </div>
 
           <button
             onClick={onStartFollowUpQuiz}
-            disabled={isLoadingFollowUp}
-            className={`w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-black text-sm transition-all cursor-pointer border-none shadow-lg ${
+            disabled={isLoadingFollowUp || followUpCompleted}
+            className={`w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-2xl font-black text-sm transition-all border-none shadow-lg ${
               followUpCompleted
-                ? 'bg-indigo-700/80 text-white hover:bg-indigo-600 border border-indigo-500/50'
-                : 'bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 hover:from-emerald-300 hover:to-teal-300 shadow-emerald-500/20'
+                ? 'bg-indigo-900/50 text-indigo-300 border border-indigo-700/50 cursor-not-allowed shadow-none'
+                : 'bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 hover:from-emerald-300 hover:to-teal-300 shadow-emerald-500/20 cursor-pointer'
             }`}
           >
             {isLoadingFollowUp ? (
@@ -117,8 +117,8 @@ const MotivationPage = ({
               </>
             ) : followUpCompleted ? (
               <>
-                <FaPlay className="text-xs" />
-                Retake Follow-up Quiz
+                <FaCheckCircle className="text-xs" />
+                Completed
               </>
             ) : (
               <>

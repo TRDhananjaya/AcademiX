@@ -228,7 +228,7 @@ const submitFollowUpQuiz = async (req, res) => {
       answersDetails 
     } = req.body;
 
-    if (!studentId || score === undefined) {
+    if (!studentId || score === undefined || score === null) {
       return res.status(400).json({ message: 'Missing required submission fields' });
     }
 
@@ -243,7 +243,13 @@ const submitFollowUpQuiz = async (req, res) => {
       ]
     };
 
-    const updateData = {
+    // Prevent duplicate attempts
+    const existingResult = await FollowupResult.findOne(query);
+    if (existingResult) {
+      return res.status(403).json({ message: 'Follow-up Quiz has already been completed' });
+    }
+
+    const newResult = new FollowupResult({
       quizId: quizId || `FQ_${lessonId}_${studentId.trim()}`,
       lessonId: lessonId || '',
       studentId: studentId.trim(),
@@ -255,13 +261,9 @@ const submitFollowUpQuiz = async (req, res) => {
       status,
       answersDetails: answersDetails || [],
       submittedAt: new Date()
-    };
-
-    const savedResult = await FollowupResult.findOneAndUpdate(query, updateData, {
-      upsert: true,
-      new: true,
-      setDefaultsOnInsert: true
     });
+
+    const savedResult = await newResult.save();
 
     res.status(200).json({
       message: 'Follow-up quiz submitted successfully',
