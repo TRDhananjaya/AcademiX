@@ -6,7 +6,7 @@ const Resource = require('../models/Resource');
 // @route   GET /api/lessons
 const getLessons = async (req, res) => {
   try {
-    const lessons = await Lesson.find({}).sort({ lessonNumber: 1 });
+    const lessons = await Lesson.find({}).sort({ lessonNumber: 1 }).lean();
     res.status(200).json(lessons);
   } catch (error) {
     console.error('Get lessons error:', error);

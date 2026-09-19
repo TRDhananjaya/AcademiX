@@ -114,57 +114,92 @@ const getOrGenerateFollowUpQuiz = async (req, res) => {
       targetQuestionCount: rawCounts[idx] || 5
     }));
 
-    // 6. Fetch questions from DB Question Banks (QuizQuestions & Quiz models)
+    // 6. Fetch questions from DB Teacher Question Banks (QuizQuestions & Quiz models)
     let selectedQuestions = [];
 
     for (let i = 0; i < moduleScores.length; i++) {
       const ms = moduleScores[i];
       const targetCount = rawCounts[i] || 5;
 
-      // Find question bank doc in QuizQuestions
-      let bankDoc = null;
+      // Find all teacher preadded question bank documents for this module across QuizQuestions & Quiz
+      let matchingBankDocs = [];
+
+      const queryConds = [];
       if (ms.quizCode) {
-        bankDoc = await QuizQuestions.findOne({ quizCode: ms.quizCode });
+        queryConds.push({ quizCode: ms.quizCode });
+        queryConds.push({ quizCode: { $regex: new RegExp(ms.quizCode.replace('.', '\\.'), 'i') } });
       }
-      if (!bankDoc && ms.module._id) {
-        bankDoc = await QuizQuestions.findOne({ moduleId: ms.module._id.toString() });
+      if (ms.module._id) {
+        queryConds.push({ moduleId: ms.module._id.toString() });
       }
-      if (!bankDoc && ms.quizCode) {
-        bankDoc = await Quiz.findOne({ quizCode: ms.quizCode });
+      if (ms.title) {
+        const titleMatch = ms.title.match(/Module\s+(\d+\.\d+)/i);
+        if (titleMatch) {
+          queryConds.push({ bundleTopic: { $regex: new RegExp(titleMatch[1], 'i') } });
+          queryConds.push({ title: { $regex: new RegExp(titleMatch[1], 'i') } });
+        }
       }
 
-      let available = (bankDoc && bankDoc.questions) ? bankDoc.questions : [];
+      if (queryConds.length > 0) {
+        const [quizQDocs, quizDocs] = await Promise.all([
+          QuizQuestions.find({ $or: queryConds }),
+          Quiz.find({ $or: queryConds })
+        ]);
+        matchingBankDocs = [...(quizQDocs || []), ...(quizDocs || [])];
+      }
 
-      if (available.length > 0) {
-        // Shuffle & slice
-        const shuffled = [...available].sort(() => 0.5 - Math.random());
-        const picked = shuffled.slice(0, Math.min(targetCount, shuffled.length));
-        picked.forEach(q => {
-          selectedQuestions.push({
-            text: q.text,
-            options: q.options,
-            correctOption: q.correctOption,
-            difficulty: q.difficulty || 'Medium',
-            moduleTitle: ms.title
+      // Aggregate all available teacher preadded questions for this module
+      let availableQuestions = [];
+      matchingBankDocs.forEach(b => {
+        if (b.questions && Array.isArray(b.questions)) {
+          b.questions.forEach(q => {
+            if (q.text && q.options && q.options.length > 0) {
+              availableQuestions.push({
+                text: q.text,
+                options: q.options,
+                correctOption: typeof q.correctOption === 'number' ? q.correctOption : 0,
+                difficulty: q.difficulty || 'Medium',
+                moduleTitle: ms.title
+              });
+            }
           });
-        });
+        }
+      });
+
+      if (availableQuestions.length > 0) {
+        // Filter out any duplicates already selected
+        const existingTexts = new Set(selectedQuestions.map(sq => sq.text));
+        const uniqueAvailable = availableQuestions.filter(q => !existingTexts.has(q.text));
+
+        // Shuffle & pick targetCount questions based on percentage mark weight
+        const shuffled = [...uniqueAvailable].sort(() => 0.5 - Math.random());
+        const picked = shuffled.slice(0, Math.min(targetCount, shuffled.length));
+        selectedQuestions = [...selectedQuestions, ...picked];
       }
     }
 
     // 7. Fallback if database question banks didn't provide full 20 questions
     if (selectedQuestions.length < 20) {
-      const allBanks = await QuizQuestions.find({});
+      const [allQuizQuestions, allQuizzes] = await Promise.all([
+        QuizQuestions.find({}),
+        Quiz.find({})
+      ]);
+
       let backupPool = [];
-      allBanks.forEach(b => {
-        if (b.questions) {
+      const allTeacherBanks = [...(allQuizQuestions || []), ...(allQuizzes || [])];
+
+      allTeacherBanks.forEach(b => {
+        if (b.questions && Array.isArray(b.questions)) {
           b.questions.forEach(q => {
-            backupPool.push({
-              text: q.text,
-              options: q.options,
-              correctOption: q.correctOption,
-              difficulty: q.difficulty || 'Medium',
-              moduleTitle: b.title || 'General Module'
-            });
+            if (q.text && q.options && q.options.length > 0) {
+              backupPool.push({
+                text: q.text,
+                options: q.options,
+                correctOption: typeof q.correctOption === 'number' ? q.correctOption : 0,
+                difficulty: q.difficulty || 'Medium',
+                moduleTitle: b.title || 'General Practice Module'
+              });
+            }
           });
         }
       });
@@ -179,7 +214,7 @@ const getOrGenerateFollowUpQuiz = async (req, res) => {
       selectedQuestions = [...selectedQuestions, ...extraPicked];
     }
 
-    // Ensure we have exactly 20 (or max possible)
+    // Ensure we have exactly 20 (or max available teacher questions)
     selectedQuestions = selectedQuestions.slice(0, 20);
 
     // 8. Save generated FollowupQuiz document

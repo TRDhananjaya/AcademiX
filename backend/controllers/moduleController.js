@@ -7,7 +7,7 @@ const getModules = async (req, res) => {
   try {
     const { lessonId } = req.query;
     const filter = lessonId ? { lessonId } : {};
-    const modules = await Module.find(filter).sort({ createdAt: 1 });
+    const modules = await Module.find(filter).sort({ createdAt: 1 }).lean();
     res.status(200).json(modules);
   } catch (error) {
     console.error('Get modules error:', error);

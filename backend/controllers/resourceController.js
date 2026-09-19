@@ -13,18 +13,31 @@ const getResources = async (req, res) => {
     } else if (lessonId) {
       query = { lessonId };
     }
-    const resources = await Resource.find(query).sort({ createdAt: 1 });
 
-    // Map to remove url field for heavy Base64 data (like uploaded PDFs or Videos)
-    const mappedResources = resources.map(resource => {
-      const resObj = resource.toObject();
-      if (resObj.type !== 'Link' && resObj.url && resObj.url.startsWith('data:')) {
-        resObj.url = '#'; // Placeholder to indicate download exists but not preloaded
+    const resources = await Resource.aggregate([
+      { $match: query },
+      { $sort: { createdAt: 1 } },
+      {
+        $project: {
+          title: 1,
+          type: 1,
+          size: 1,
+          moduleId: 1,
+          lessonId: 1,
+          description: 1,
+          createdAt: 1,
+          url: {
+            $cond: {
+              if: { $eq: [{ $substrCP: [{ $ifNull: ["$url", ""] }, 0, 5] }, "data:"] },
+              then: "#",
+              else: "$url"
+            }
+          }
+        }
       }
-      return resObj;
-    });
+    ]);
 
-    res.status(200).json(mappedResources);
+    res.status(200).json(resources);
   } catch (error) {
     console.error('Get resources error:', error);
     res.status(500).json({ message: 'Server error fetching resources' });
@@ -66,7 +79,11 @@ const createResource = async (req, res) => {
     });
 
     const savedResource = await newResource.save();
-    res.status(201).json(savedResource);
+    const resObj = savedResource.toObject();
+    if (resObj.type !== 'Link' && resObj.url && resObj.url.startsWith('data:')) {
+      resObj.url = '#';
+    }
+    res.status(201).json(resObj);
   } catch (error) {
     console.error('Create resource error:', error);
     res.status(500).json({ message: 'Server error creating resource' });
