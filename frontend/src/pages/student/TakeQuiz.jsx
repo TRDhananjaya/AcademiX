@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Sidebar from '../../components/common/student/Sidebar';
 import StudentTopBar from '../../components/dashboard/StudentTopBar';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { useAuth } from '../../context/AuthContext';
 
 export default function TakeQuiz() {
@@ -9,13 +10,15 @@ export default function TakeQuiz() {
   const [hasStarted, setHasStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0); 
   const [selectedAnswers, setSelectedAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(45 * 60);
+  const [timeLeft, setTimeLeft] = useState(30 * 60);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [quizzes, setQuizzes] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [finalScore, setFinalScore] = useState(null);
   const [studentResultsList, setStudentResultsList] = useState([]);
   const [selectedQuizId, setSelectedQuizId] = useState(null);
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [pendingNav, setPendingNav] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -59,7 +62,7 @@ export default function TakeQuiz() {
 
     const score = calculateScore();
     const pct = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
-    const secsTaken = (45 * 60) - timeLeft;
+    const secsTaken = (30 * 60) - timeLeft;
     const mins = Math.floor(secsTaken / 60);
     const secs = secsTaken % 60;
     const timeTakenStr = `${mins}m ${secs.toString().padStart(2, '0')}s`;
@@ -118,6 +121,56 @@ export default function TakeQuiz() {
     }
   }, [hasStarted, isSubmitted, timeLeft]);
 
+  // Intercept navigation & back actions during active quiz
+  const handleSidebarNavigate = (targetNav) => {
+    if (hasStarted && !isSubmitted) {
+      setPendingNav(() => () => setActiveNav(targetNav));
+      setShowLeaveModal(true);
+    } else {
+      setActiveNav(targetNav);
+    }
+  };
+
+  useEffect(() => {
+    if (!hasStarted || isSubmitted) return;
+
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = 'You have an active quiz in progress. Leaving will submit your quiz.';
+      return e.returnValue;
+    };
+
+    window.history.pushState({ inQuiz: true }, '', window.location.href);
+
+    const handlePopState = () => {
+      window.history.pushState({ inQuiz: true }, '', window.location.href);
+      setPendingNav(null);
+      setShowLeaveModal(true);
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [hasStarted, isSubmitted]);
+
+  const handleConfirmSubmitAndLeave = async () => {
+    setShowLeaveModal(false);
+    await handleSubmit();
+    if (pendingNav) {
+      pendingNav();
+      setPendingNav(null);
+    }
+  };
+
+  const handleCancelLeave = () => {
+    setShowLeaveModal(false);
+    setPendingNav(null);
+  };
+
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -158,7 +211,7 @@ export default function TakeQuiz() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen font-sans bg-[#fcfdff]" id="take-quiz-layout">
-        <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
+        <Sidebar activeItem={activeNav} onNavigate={handleSidebarNavigate} />
         <div className="flex-1 flex flex-col min-w-0 ml-0 md:ml-[72px] lg:ml-[240px]">
           <StudentTopBar />
           <main className="flex-1 p-[20px_16px] md:p-[40px_60px] overflow-y-auto bg-[#f8f9fb]">
@@ -177,7 +230,7 @@ export default function TakeQuiz() {
   if (selectedQuizId && (!currentQuiz || totalQuestions === 0)) {
     return (
       <div className="flex min-h-screen font-sans bg-[#fcfdff]" id="take-quiz-layout">
-        <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
+        <Sidebar activeItem={activeNav} onNavigate={handleSidebarNavigate} />
         <div className="flex-1 flex flex-col min-w-0 ml-0 md:ml-[72px] lg:ml-[240px]">
           <StudentTopBar />
           <main className="flex-1 p-[20px_16px] md:p-[40px_60px] overflow-y-auto bg-[#f8f9fb]">
@@ -200,12 +253,12 @@ export default function TakeQuiz() {
 
   return (
     <div className="flex min-h-screen font-sans bg-[#fcfdff]" id="take-quiz-layout">
-      <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
+      <Sidebar activeItem={activeNav} onNavigate={handleSidebarNavigate} />
       
       <div className="flex-1 flex flex-col min-w-0 ml-0 md:ml-[72px] lg:ml-[240px]">
         <StudentTopBar />
         
-        <main className="flex-1 p-[20px_16px] md:p-[40px_60px] overflow-y-auto bg-[#f8f9fb]">
+        <main className={`flex-1 overflow-y-auto bg-[#f8f9fb] ${hasStarted && !isSubmitted ? 'p-3 md:p-5' : 'p-[20px_16px] md:p-[40px_60px]'}`}>
           <div className="max-w-[900px] mx-auto w-full">
             
             {!selectedQuizId ? (
@@ -255,7 +308,7 @@ export default function TakeQuiz() {
                             <div className="flex gap-4 text-xs font-semibold text-slate-500">
                               <div className="flex items-center gap-1">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                                45 mins
+                                30 mins
                               </div>
                               <div className="flex items-center gap-1">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
@@ -314,7 +367,7 @@ export default function TakeQuiz() {
                 <div className="grid grid-cols-2 gap-4 w-full max-w-md mb-10">
                   <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                     <div className="text-slate-400 text-sm font-medium mb-1">Duration</div>
-                    <div className="text-slate-800 font-bold text-lg">45 Minutes</div>
+                    <div className="text-slate-800 font-bold text-lg">30 Minutes</div>
                   </div>
                   <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                     <div className="text-slate-400 text-sm font-medium mb-1">Questions</div>
@@ -331,7 +384,7 @@ export default function TakeQuiz() {
                   </button>
                   <button 
                     onClick={() => {
-                      setTimeLeft(45 * 60);
+                      setTimeLeft(30 * 60);
                       setHasStarted(true);
                     }}
                     className="flex-1 bg-indigo-600 text-white px-6 py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-md border-none cursor-pointer"
@@ -377,56 +430,56 @@ export default function TakeQuiz() {
             ) : (
               // --- Active Quiz Screen ---
               <>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                  <div>
-                    <h1 className="text-[34px] font-bold text-slate-900 leading-tight mb-1">
+                <div className="flex justify-between items-center mb-3 gap-3">
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 leading-tight truncate">
                       {currentQuiz.title}
                     </h1>
-                    <p className="text-[15px] text-slate-500 font-medium">
+                    <p className="text-xs text-slate-500 font-medium truncate">
                       {currentQuiz.bundleTopic}
                     </p>
                   </div>
-                  <div className="bg-white px-5 py-2.5 rounded-full shadow-sm border border-slate-100 flex items-center gap-2.5">
-                    <svg className="text-indigo-600" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <div className="bg-white px-3.5 py-1.5 rounded-full shadow-xs border border-slate-200/80 flex items-center gap-2 shrink-0">
+                    <svg className="text-indigo-600" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <circle cx="12" cy="12" r="10"></circle>
                       <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
-                    <span className="text-[22px] font-bold text-indigo-600 tracking-wider">
+                    <span className="text-base font-bold text-indigo-600 tracking-wider font-mono">
                       {formatTime(timeLeft)}
                     </span>
                   </div>
                 </div>
 
                 {/* Progress Bar Area */}
-                <div className="mb-10">
-                  <div className="w-full h-3 bg-[#e2e8f0] rounded-full overflow-hidden mb-3 relative">
+                <div className="mb-3">
+                  <div className="w-full h-2 bg-[#e2e8f0] rounded-full overflow-hidden mb-1.5 relative">
                     <div 
                       className="absolute left-0 top-0 h-full bg-[#6338f0] rounded-full transition-all duration-300"
                       style={{ width: `${progressPercentage}%` }}
                     ></div>
                   </div>
-                  <div className="flex justify-between items-center text-sm font-semibold text-slate-500">
+                  <div className="flex justify-between items-center text-xs font-bold text-slate-500">
                     <span>Question {currentIndex + 1} of {totalQuestions}</span>
                     <span>{progressPercentage}% Complete</span>
                   </div>
                 </div>
 
                 {/* Question Card */}
-                <div className="bg-white rounded-3xl p-8 md:p-10 shadow-sm border border-slate-100 mb-8">
-                  <h2 className="text-[20px] font-bold text-slate-900 leading-snug mb-8">
+                <div className="bg-white rounded-2xl p-4 md:p-5 shadow-sm border border-slate-100">
+                  <h2 className="text-base md:text-lg font-bold text-slate-900 leading-snug mb-4">
                     {currentQuestion.text}
                   </h2>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-2.5">
                     {currentQuestion.options.map((option, idx) => {
                       const questionId = currentQuestion._id || currentQuestion.id;
                       const isSelected = selectedAnswers[questionId] === idx;
                       return (
                         <label 
                           key={idx}
-                          className={`flex items-center p-4 rounded-xl border-2 cursor-pointer transition-all
+                          className={`flex items-center p-2.5 md:p-3 rounded-xl border-2 cursor-pointer transition-all
                             ${isSelected 
-                              ? 'border-[#6338f0] bg-indigo-50/30' 
+                              ? 'border-[#6338f0] bg-indigo-50/30 shadow-xs' 
                               : 'border-slate-200 hover:border-slate-300 bg-white'
                             }`}
                         >
@@ -436,9 +489,9 @@ export default function TakeQuiz() {
                             value={idx}
                             checked={isSelected}
                             onChange={() => handleSelectOption(idx)}
-                            className="w-5 h-5 text-[#6338f0] focus:ring-[#6338f0] border-slate-300 cursor-pointer mr-4 shrink-0"
+                            className="w-4 h-4 text-[#6338f0] focus:ring-[#6338f0] border-slate-300 cursor-pointer mr-3 shrink-0"
                           />
-                          <span className={`text-[15px] ${isSelected ? 'text-slate-900 font-medium' : 'text-slate-700'}`}>
+                          <span className={`text-xs md:text-sm leading-snug ${isSelected ? 'text-slate-900 font-semibold' : 'text-slate-700 font-medium'}`}>
                             {option}
                           </span>
                         </label>
@@ -446,47 +499,28 @@ export default function TakeQuiz() {
                     })}
                   </div>
                   
-                  <div className="w-full h-[1px] bg-slate-100 my-8"></div>
+                  <div className="w-full h-[1px] bg-slate-100 my-4"></div>
                   
-                  <div className="flex flex-wrap justify-between items-center gap-4">
-                    <button 
-                      onClick={handlePrevious}
-                      disabled={currentIndex === 0}
-                      className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-semibold border-2 transition-colors min-w-[120px]
-                        ${currentIndex === 0 
-                          ? 'border-slate-200 text-slate-400 cursor-not-allowed opacity-50' 
-                          : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50'
-                        }`}
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                      Previous
-                    </button>
-                    
+                  <div className="flex justify-end items-center gap-3">
                     {currentIndex < totalQuestions - 1 ? (
                       <button 
                         onClick={handleNext}
-                        disabled={!isCurrentQuestionAnswered}
-                        className={`flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl font-semibold transition-colors min-w-[120px]
+                        className={`flex items-center justify-center gap-1.5 px-6 py-2 rounded-xl font-bold text-xs transition-colors min-w-[120px] cursor-pointer border-none text-white
                           ${!isCurrentQuestionAnswered 
-                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' 
-                            : 'bg-[#6338f0] text-white hover:bg-[#522ce0] shadow-md shadow-indigo-200'
+                            ? 'bg-amber-500 hover:bg-amber-600 shadow-sm shadow-amber-200' 
+                            : 'bg-[#6338f0] hover:bg-[#522ce0] shadow-sm shadow-indigo-200'
                           }`}
                       >
-                        Next
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                        {isCurrentQuestionAnswered ? 'Next Question' : 'Skip Question'}
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                       </button>
                     ) : (
                       <button 
                         onClick={handleSubmit}
-                        disabled={!isCurrentQuestionAnswered}
-                        className={`flex items-center justify-center gap-2 px-8 py-2.5 rounded-xl font-semibold transition-colors min-w-[120px]
-                          ${!isCurrentQuestionAnswered 
-                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' 
-                            : 'bg-emerald-500 text-white hover:bg-emerald-600 shadow-md shadow-emerald-200'
-                          }`}
+                        className="flex items-center justify-center gap-1.5 px-6 py-2 rounded-xl font-bold text-xs transition-colors min-w-[120px] cursor-pointer border-none bg-emerald-500 text-white hover:bg-emerald-600 shadow-sm shadow-emerald-200"
                       >
                         Submit Quiz
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                       </button>
                     )}
                   </div>
@@ -497,6 +531,18 @@ export default function TakeQuiz() {
           </div>
         </main>
       </div>
+
+      {/* Standard AcademiX Pop-Up Modal: Submit Quiz before leaving */}
+      <ConfirmModal
+        isOpen={showLeaveModal}
+        onClose={handleCancelLeave}
+        onConfirm={handleConfirmSubmitAndLeave}
+        title="Submit Quiz Required"
+        message="You cannot leave an active quiz without submitting it. Submitting now will calculate your score for your current progress and mark the quiz as completed."
+        confirmText="Submit & Complete Quiz"
+        cancelText="Continue Quiz"
+        variant="indigo"
+      />
     </div>
   );
 }

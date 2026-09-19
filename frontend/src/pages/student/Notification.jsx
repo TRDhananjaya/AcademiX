@@ -45,7 +45,7 @@ export default function Notifications() {
             isQuizResult: true,
             notificationType: 'Quiz Results',
             title: `Quiz Completed: ${item.quizTitle || item.quizId}`,
-            message: `You scored ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct). Time taken: ${item.timeTaken || 'N/A'}.`,
+            message: `You scored ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct).`,
             createdAt: item.submittedAt || new Date().toISOString(),
             isRead: false,
             actionLabel: 'Quiz Details'
@@ -159,10 +159,6 @@ export default function Notifications() {
                           ${!notif.isRead ? 'text-slate-900' : 'text-slate-400'}`}>
                           {notif.title}
                         </h3>
-                        <span className={`text-xs whitespace-nowrap
-                          ${!notif.isRead ? 'text-indigo-600 font-semibold' : 'text-slate-400'}`}>
-                          {new Date(notif.createdAt).toLocaleString()}
-                        </span>
                       </div>
 
                       {notif.message && (

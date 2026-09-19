@@ -7,7 +7,7 @@ export default function FollowUpQuizModal({ quizData, studentId, studentName, le
   
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(45 * 60); // 45 minutes countdown
+  const [timeLeft, setTimeLeft] = useState(30 * 60); // 30 minutes countdown
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [finalResult, setFinalResult] = useState(null);
@@ -70,7 +70,7 @@ export default function FollowUpQuizModal({ quizData, studentId, studentName, le
     setIsSubmitting(true);
 
     const score = calculateScore();
-    const secsTaken = (45 * 60) - timeLeft;
+    const secsTaken = (30 * 60) - timeLeft;
     const mins = Math.floor(secsTaken / 60);
     const secs = secsTaken % 60;
     const timeTakenStr = `${mins}m ${secs.toString().padStart(2, '0')}s`;
@@ -157,8 +157,10 @@ export default function FollowUpQuizModal({ quizData, studentId, studentName, le
         <div className="flex items-center gap-4">
           <button 
             onClick={() => {
-              if (isSubmitted || window.confirm("Are you sure you want to leave the quiz? Your progress will be lost.")) {
+              if (isSubmitted) {
                 onClose();
+              } else {
+                handleSubmit();
               }
             }}
             className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold text-sm transition-all border-none cursor-pointer"
@@ -327,26 +329,17 @@ export default function FollowUpQuizModal({ quizData, studentId, studentName, le
               </div>
 
               {/* Navigation Footer Controls */}
-              <div className="pt-10 border-t border-slate-100 mt-8 flex justify-between items-center">
-                <button
-                  onClick={handlePrev}
-                  disabled={currentIndex === 0}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-sm transition-all border-none ${
-                    currentIndex === 0 
-                      ? 'opacity-30 cursor-not-allowed bg-slate-100 text-slate-400' 
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer'
-                  }`}
-                >
-                  <FaChevronLeft />
-                  Previous
-                </button>
-
+              <div className="pt-6 border-t border-slate-100 mt-6 flex justify-end items-center">
                 {currentIndex < totalQuestions - 1 ? (
                   <button
                     onClick={handleNext}
-                    className="flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 transition-all cursor-pointer border-none"
+                    className={`flex items-center gap-2 px-8 py-3.5 rounded-xl font-bold text-sm text-white transition-all cursor-pointer border-none ${
+                      selectedAnswers[currentIndex] === undefined
+                        ? 'bg-amber-500 hover:bg-amber-600 shadow-md shadow-amber-200'
+                        : 'bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-200'
+                    }`}
                   >
-                    Next Question
+                    {selectedAnswers[currentIndex] === undefined ? 'Skip Question' : 'Next Question'}
                     <FaChevronRight />
                   </button>
                 ) : (
