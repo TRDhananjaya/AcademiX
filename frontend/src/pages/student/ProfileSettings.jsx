@@ -29,41 +29,49 @@ export default function ProfileSettings() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [profilePicture, setProfilePicture] = useState(user?.profilePicture || '');
-  const [studentRecord, setStudentRecord] = useState(null);
+  const [studentRecord, setStudentRecord] = useState(
+    user?.qrCode ? { qrCode: user.qrCode, studentId: user.studentId || user.username } : null
+  );
   const [showPicModal, setShowPicModal] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Fetch student QR Code data from /api/students
+  // Fetch student QR Code data from /api/students/profile
   useEffect(() => {
     async function fetchStudentData() {
       try {
-        const res = await fetch('/api/students');
+        const token = localStorage.getItem('token');
+        const res = await fetch('/api/students/profile', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
         if (res.ok) {
-          const students = await res.json();
-          const match = students.find(
-            (s) =>
-              (s.email && user?.email && s.email.toLowerCase() === user.email.toLowerCase()) ||
-              (s.studentId && user?.username && s.studentId.toLowerCase() === user.username.toLowerCase())
-          );
-          if (match) {
-            setStudentRecord(match);
+          const student = await res.json();
+          if (student && student.qrCode) {
+            setStudentRecord(student);
           }
         }
       } catch (err) {
         console.error('Error fetching student profile details:', err);
       }
     }
-    if (user) {
-      fetchStudentData();
-    }
+    fetchStudentData();
   }, [user]);
 
-  // Fetch current user details on mount to ensure studentMobile and parentMobile are up-to-date
+  // Fetch current user details on mount to ensure studentMobile, parentMobile, and QR code are up-to-date
   useEffect(() => {
     getMe().then((res) => {
       if (res.ok && res.data) {
         if (res.data.studentMobile !== undefined) setStudentMobile(res.data.studentMobile || '');
         if (res.data.parentMobile !== undefined) setParentMobile(res.data.parentMobile || '');
+        if (res.data.qrCode) {
+          setStudentRecord((prev) => ({
+            ...(prev || {}),
+            qrCode: res.data.qrCode,
+            studentId: res.data.studentId || res.data.username,
+            name: `${res.data.firstName || ''} ${res.data.lastName || ''}`.trim() || res.data.username,
+            email: res.data.email,
+            grade: res.data.grade || 'Grade 10',
+          }));
+        }
         setUser((prev) => ({ ...prev, ...res.data }));
       }
     });

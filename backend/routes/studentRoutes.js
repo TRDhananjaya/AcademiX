@@ -6,10 +6,15 @@ const {
     getStudentById,
     addStudent,
     updateStudent,
-    deleteStudent
+    deleteStudent,
+    getStudentOwnProfile
 } = require('../controllers/studentController');
 
-// Only teachers can manage student records
+// Logged-in students can fetch their own student profile and QR code
+router.get('/profile', getStudentOwnProfile);
+router.get('/me', getStudentOwnProfile);
+
+// Only teachers can manage the full student list
 router.route('/')
     .get(roleMiddleware('teacher'), getStudents)
     .post(roleMiddleware('teacher'), addStudent);

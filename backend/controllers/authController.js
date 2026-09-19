@@ -36,18 +36,38 @@ const loginUser = async (req, res) => {
 
 		let studentMobile = '';
 		let parentMobile = '';
+		let qrCode = '';
+		let studentId = '';
+		let grade = '';
 		if (user.role === 'student') {
 			const Student = require('../models/Student');
 			const student = await Student.findOne({
 				$or: [
 					{ userId: user._id },
-					{ studentId: user.username.toUpperCase() },
-					{ email: user.email }
+					{ studentId: new RegExp(`^${user.username}$`, 'i') },
+					{ email: new RegExp(`^${user.email}$`, 'i') }
 				]
 			});
 			if (student) {
 				studentMobile = student.studentMobile || '';
 				parentMobile = student.parentMobile || '';
+				studentId = student.studentId || '';
+				grade = student.grade || '';
+				if (!student.qrCode) {
+					try {
+						const QRCode = require('qrcode');
+						const payload = JSON.stringify({
+							studentId: student.studentId,
+							email: student.email,
+							name: student.name
+						});
+						student.qrCode = await QRCode.toDataURL(payload);
+						await student.save();
+					} catch (e) {
+						console.error('Error generating QR on login:', e);
+					}
+				}
+				qrCode = student.qrCode || '';
 			}
 		}
 
@@ -61,6 +81,9 @@ const loginUser = async (req, res) => {
 			profilePicture: user.profilePicture,
 			studentMobile,
 			parentMobile,
+			qrCode,
+			studentId,
+			grade,
 			token,
 		});
 	} catch (error) {
@@ -85,18 +108,38 @@ const getMe = async (req, res) => {
 
 		let studentMobile = '';
 		let parentMobile = '';
+		let qrCode = '';
+		let studentId = '';
+		let grade = '';
 		if (user.role === 'student') {
 			const Student = require('../models/Student');
 			const student = await Student.findOne({
 				$or: [
 					{ userId: user._id },
-					{ studentId: user.username.toUpperCase() },
-					{ email: user.email }
+					{ studentId: new RegExp(`^${user.username}$`, 'i') },
+					{ email: new RegExp(`^${user.email}$`, 'i') }
 				]
 			});
 			if (student) {
 				studentMobile = student.studentMobile || '';
 				parentMobile = student.parentMobile || '';
+				studentId = student.studentId || '';
+				grade = student.grade || '';
+				if (!student.qrCode) {
+					try {
+						const QRCode = require('qrcode');
+						const payload = JSON.stringify({
+							studentId: student.studentId,
+							email: student.email,
+							name: student.name
+						});
+						student.qrCode = await QRCode.toDataURL(payload);
+						await student.save();
+					} catch (e) {
+						console.error('Error generating QR on getMe:', e);
+					}
+				}
+				qrCode = student.qrCode || '';
 			}
 		}
 
@@ -110,6 +153,9 @@ const getMe = async (req, res) => {
 			profilePicture: user.profilePicture,
 			studentMobile,
 			parentMobile,
+			qrCode,
+			studentId,
+			grade,
 		});
 	} catch (error) {
 		console.error('GetMe error:', error);
