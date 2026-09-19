@@ -11,6 +11,7 @@ import TeacherDashboard from './pages/teacher/dashboard';
 import CreateQuiz from './pages/teacher/create-quiz';
 
 import { useAuth } from './context/AuthContext';
+import IdleSessionManager from './components/common/IdleSessionManager';
 
 
 import Analytics from './pages/teacher/Analytics';
@@ -78,78 +79,88 @@ function App() {
     window.scrollTo(0, 0);
   }, [currentPage]);
 
-  // Route rendering guards to prevent flashing protected content before redirect
-  if (!user && (isTeacherRoute || isStudentRoute)) {
-    return <Login />;
-  }
-  if (user && user.role === 'student' && isTeacherRoute) {
-    return <StudentDashboard />;
-  }
-  if (user && user.role === 'teacher' && isStudentRoute) {
-    return <TeacherDashboard activeTab="dashboard" />;
-  }
-
-  // Route rendering
-  switch (currentPage) {
-    case 'login':
+  // Helper to render the active page component
+  const renderContent = () => {
+    // Route rendering guards to prevent flashing protected content before redirect
+    if (!user && (isTeacherRoute || isStudentRoute)) {
       return <Login />;
-    case 'forgot':
-      return <ForgotPassword />;
-    case 'about':
-      return <About />;
-    case 'contact':
-      return <Contact />;
-    case 'student/dashboard':
+    }
+    if (user && user.role === 'student' && isTeacherRoute) {
       return <StudentDashboard />;
-    case 'teacher/dashboard':
+    }
+    if (user && user.role === 'teacher' && isStudentRoute) {
       return <TeacherDashboard activeTab="dashboard" />;
-    case 'teacher/resources':
-      return <TeacherDashboard activeTab="lessons" />;
-    case 'teacher/quizzes':
-      return <TeacherDashboard activeTab="quizzes" />;
-    case 'teacher/quiz-report':
-      return <TeacherDashboard activeTab="quiz-report" />;
-    case 'create-quiz':
-    case 'teacher/create-quiz':
-      return <CreateQuiz />;
+    }
 
-    case 'analytics':
-    case 'teacher/analytics':
-      return <Analytics />;
-    case 'student/lessons':
-      return <Lessons />;
-    case 'student/quizzes':
-      return <TakeQuiz />;
-    case 'student/study-plans':
-      return <StudyPlans />;
-    case 'student/community':
-      return <CommunityHub />;
-    case 'student/notifications':
-      return <StudentNotifications activeTab="notifications" />;
-    case 'teacher/notifications':
-      return <TeacherDashboard activeTab="notifications" />;
-    case 'teacher/community':
-      return <TeacherDashboard activeTab="community" />;
-    case 'teacher/attendance':
-      return <TeacherDashboard activeTab="attendance" />;
-    case 'teacher/profile':
-      return <TeacherProfileSettings />;
-    case 'teacher/students':
-      return <StudentManagement />;
-    case 'student/profile':
-      return <ProfileSettings />;
-    case 'exam-prediction':
-    case 'teacher/exam-prediction':
-      return <ExamPrediction />;
-    default:
-      if (currentPage.startsWith('exam-prediction/student/')) {
-        const parts = currentPage.split('/');
-        if (parts.length === 3) {
-          return <ExamPredictionStudentDetail studentId={parts[2]} />;
+    // Route rendering
+    switch (currentPage) {
+      case 'login':
+        return <Login />;
+      case 'forgot':
+        return <ForgotPassword />;
+      case 'about':
+        return <About />;
+      case 'contact':
+        return <Contact />;
+      case 'student/dashboard':
+        return <StudentDashboard />;
+      case 'teacher/dashboard':
+        return <TeacherDashboard activeTab="dashboard" />;
+      case 'teacher/resources':
+        return <TeacherDashboard activeTab="lessons" />;
+      case 'teacher/quizzes':
+        return <TeacherDashboard activeTab="quizzes" />;
+      case 'teacher/quiz-report':
+        return <TeacherDashboard activeTab="quiz-report" />;
+      case 'create-quiz':
+      case 'teacher/create-quiz':
+        return <CreateQuiz />;
+
+      case 'analytics':
+      case 'teacher/analytics':
+        return <Analytics />;
+      case 'student/lessons':
+        return <Lessons />;
+      case 'student/quizzes':
+        return <TakeQuiz />;
+      case 'student/study-plans':
+        return <StudyPlans />;
+      case 'student/community':
+        return <CommunityHub />;
+      case 'student/notifications':
+        return <StudentNotifications activeTab="notifications" />;
+      case 'teacher/notifications':
+        return <TeacherDashboard activeTab="notifications" />;
+      case 'teacher/community':
+        return <TeacherDashboard activeTab="community" />;
+      case 'teacher/attendance':
+        return <TeacherDashboard activeTab="attendance" />;
+      case 'teacher/profile':
+        return <TeacherProfileSettings />;
+      case 'teacher/students':
+        return <StudentManagement />;
+      case 'student/profile':
+        return <ProfileSettings />;
+      case 'exam-prediction':
+      case 'teacher/exam-prediction':
+        return <ExamPrediction />;
+      default:
+        if (currentPage.startsWith('exam-prediction/student/')) {
+          const parts = currentPage.split('/');
+          if (parts.length === 3) {
+            return <ExamPredictionStudentDetail studentId={parts[2]} />;
+          }
         }
-      }
-      return <Home />;
-  }
+        return <Home />;
+    }
+  };
+
+  return (
+    <>
+      <IdleSessionManager />
+      {renderContent()}
+    </>
+  );
 }
 
 export default App;
