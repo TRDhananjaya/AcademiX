@@ -16,7 +16,6 @@ const getResources = async (req, res) => {
 
     const resources = await Resource.aggregate([
       { $match: query },
-      { $sort: { createdAt: 1 } },
       {
         $project: {
           title: 1,
@@ -34,8 +33,9 @@ const getResources = async (req, res) => {
             }
           }
         }
-      }
-    ]);
+      },
+      { $sort: { createdAt: 1 } }
+    ]).allowDiskUse(true);
 
     res.status(200).json(resources);
   } catch (error) {

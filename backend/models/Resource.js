@@ -8,7 +8,7 @@ const resourceSchema = new mongoose.Schema({
   size: { type: String, default: '' },
   url: { type: String, required: true }, // Base64 data or external link URL
   description: { type: String, default: '' },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now, index: true }
 });
 
 module.exports = mongoose.model('Resource', resourceSchema);
