@@ -124,7 +124,7 @@ const getMe = async (req, res) => {
  */
 const registerUser = async (req, res) => {
 	try {
-		const { username, email, password, role, firstName, lastName } = req.body;
+		const { username, email, password, firstName, lastName } = req.body;
 
 		// Validate required fields
 		if (!username || !email || !password) {
@@ -138,12 +138,12 @@ const registerUser = async (req, res) => {
 			return res.status(400).json({ message: 'User already exists' });
 		}
 
-		// Create user
+		// Security: role is always 'student' — teacher accounts are created by admins only
 		const user = await User.create({
 			username,
 			email,
 			password,
-			role: role || 'student',
+			role: 'student',
 			firstName: firstName || '',
 			lastName: lastName || '',
 		});

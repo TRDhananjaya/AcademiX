@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const { connectDb } = require('./config/db');
 const { errorMiddleware } = require('./middleware/errorMiddleware');
 require('dotenv').config();
@@ -25,8 +27,24 @@ const followUpRoutes = require('./routes/followUpRoutes');
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Security: HTTP headers hardening
+app.use(helmet());
+
+// Security: CORS — restrict to frontend origin
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true,
+}));
+
+// Security: Rate limiting on authentication endpoints
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 15,                   // max 15 attempts per window
+    message: { message: 'Too many attempts. Please try again after 15 minutes.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 app.use(express.json({ limit: '50mb' })); // Increased limit for Base64 PDF uploads!
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -39,8 +57,14 @@ app.get('/', (req, res) => {
 
 const { authMiddleware } = require('./middleware/authMiddleware');
 
-// Routes
+// Routes — Public (with rate limiting on sensitive endpoints)
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api/auth/reset-password', authLimiter);
 app.use('/api/auth', authRoutes);
+
+// Routes — Protected (require authentication)
 app.use('/api/quizzes', authMiddleware, quizRoutes);
 app.use('/api/quiz-results', authMiddleware, quizResultRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
@@ -55,9 +79,9 @@ app.use('/api/resources', authMiddleware, resourceRoutes);
 app.use('/api/notifications', authMiddleware, notificationRoutes);
 app.use('/api/study-plans', authMiddleware, studyPlanRoutes);
 app.use('/api/followup', authMiddleware, followUpRoutes);
-app.use('/api/community', communityRoutes);
-app.use('/api/messages', messageRoutes);
-app.use('/api/common-messages', commonMessageRoutes);
+app.use('/api/community', authMiddleware, communityRoutes);
+app.use('/api/messages', authMiddleware, messageRoutes);
+app.use('/api/common-messages', authMiddleware, commonMessageRoutes);
 
 // Error handling middleware (must be after routes)
 app.use(errorMiddleware);
