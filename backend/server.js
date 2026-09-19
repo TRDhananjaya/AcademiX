@@ -28,19 +28,46 @@ const followUpRoutes = require('./routes/followUpRoutes');
 const app = express();
 
 // Security: HTTP headers hardening
-app.use(helmet());
+app.use(helmet({
+    crossOriginResourcePolicy: false,
+}));
 
-// Security: CORS — restrict to frontend origin(s)
-const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
+// Security: CORS — allow configured frontend origin(s), deployed domain, and local dev
+const envOrigins = (process.env.FRONTEND_URL || '')
     .split(',')
-    .map(o => o.trim());
+    .map(o => o.trim())
+    .filter(Boolean);
+
+const defaultOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:5000',
+    'http://academix.dpdns.org',
+    'https://academix.dpdns.org'
+];
+
+const allowedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
+
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (e.g. Postman, server-to-server)
+        // Allow requests with no origin (e.g. Postman, mobile apps, same-origin)
         if (!origin) return callback(null, true);
-        // In development, allow any localhost port
-        if (origin.match(/^http:\/\/localhost:\d+$/)) return callback(null, true);
-        if (allowedOrigins.includes(origin)) return callback(null, true);
+
+        // In development, allow any localhost or 127.0.0.1 port
+        if (/^https?:\/\/localhost(:\d+)?$/.test(origin) || /^https?:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)) {
+            return callback(null, true);
+        }
+
+        // Allow any academix or dpdns subdomain (http and https)
+        if (/^https?:\/\/([a-zA-Z0-9-]+\.)*dpdns\.org(:\d+)?$/.test(origin)) {
+            return callback(null, true);
+        }
+
+        // Allow explicitly listed origins from FRONTEND_URL
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
         return callback(new Error('Not allowed by CORS'));
     },
     credentials: true,
