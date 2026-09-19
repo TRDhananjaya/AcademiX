@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { FiMessageSquare, FiTrendingUp, FiPlus, FiFileText, FiLink, FiPlay, FiSend, FiX, FiCheckCircle, FiMessageCircle } from 'react-icons/fi';
+import { FiMessageSquare, FiTrendingUp, FiPlus, FiFileText, FiLink, FiPlay, FiSend, FiX, FiCheckCircle, FiMessageCircle, FiTrash2 } from 'react-icons/fi';
 import { TbMessageReport, TbFlag, TbSpeakerphone } from 'react-icons/tb';
 import CommonCommunityChat from '../../components/dashboard/CommonCommunityChat';
+import ConfirmModal from '../../components/common/ConfirmModal';
 import { useAuth } from '../../context/AuthContext';
 
 export default function CommunityMonitor() {
@@ -16,6 +17,9 @@ export default function CommunityMonitor() {
   const [guidancePost, setGuidancePost] = useState(null);
   const [guidanceText, setGuidanceText] = useState('');
   const [isSubmittingGuidance, setIsSubmittingGuidance] = useState(false);
+
+  // Delete confirmation modal state
+  const [deletePostId, setDeletePostId] = useState(null);
 
   const fetchCommunityData = async () => {
     setIsLoading(true);
@@ -69,10 +73,26 @@ export default function CommunityMonitor() {
       });
       if (res.ok) {
         setFlaggedPosts(flaggedPosts.filter(p => p._id !== id));
-        alert('Flag cleared and post reviewed.');
       }
     } catch (err) {
       console.error('Error dismissing flag:', err);
+    }
+  };
+
+  const confirmDeletePost = async () => {
+    if (!deletePostId) return;
+    try {
+      const res = await fetch(`/api/community/${deletePostId}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setQuestions(prev => prev.filter(q => q._id !== deletePostId));
+        setFlaggedPosts(prev => prev.filter(p => p._id !== deletePostId));
+      }
+    } catch (err) {
+      console.error('Error deleting post:', err);
+    } finally {
+      setDeletePostId(null);
     }
   };
 
@@ -99,7 +119,6 @@ export default function CommunityMonitor() {
       });
 
       if (res.ok) {
-        alert('Official academic guidance published successfully!');
         setGuidancePost(null);
         setGuidanceText('');
         fetchCommunityData();
@@ -113,7 +132,7 @@ export default function CommunityMonitor() {
 
   return (
     <div className="space-y-6">
-      
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-0">
         <div>
@@ -148,10 +167,10 @@ export default function CommunityMonitor() {
         <CommonCommunityChat />
       ) : (
         <div className="flex flex-col lg:flex-row gap-6">
-          
+
           {/* Left Column (Main Moderation & Q&A) */}
           <div className="flex-1 space-y-6">
-            
+
             {/* Needs Moderation Card */}
             {flaggedPosts.length > 0 && (
               <div className="bg-white rounded-2xl p-6 border-l-4 border-l-red-500 border border-slate-100 shadow-sm flex items-start gap-4">
@@ -175,16 +194,23 @@ export default function CommunityMonitor() {
                           <p className="text-[11px] text-slate-500 truncate mt-0.5">Reason: {post.flagReason || 'User flag'}</p>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                         <span className="bg-slate-200 text-slate-600 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
                           {post.course}
                         </span>
-                        <button 
+                        <button
                           onClick={() => handleDismissFlag(post._id)}
                           className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
                         >
                           <FiCheckCircle className="w-3.5 h-3.5" /> Dismiss Flag
+                        </button>
+                        <button
+                          onClick={() => setDeletePostId(post._id)}
+                          className="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                          title="Delete Post"
+                        >
+                          <FiTrash2 className="w-3.5 h-3.5" /> Delete
                         </button>
                       </div>
                     </div>
@@ -197,13 +223,13 @@ export default function CommunityMonitor() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-bold text-slate-900">Academic Q&A & Peer Support</h2>
-                
+
                 <div className="flex bg-slate-100/70 p-1 rounded-xl border border-slate-200/40 gap-1">
                   <button
                     onClick={() => setActiveTab('Recent')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer
-                      ${activeTab === 'Recent' 
-                        ? 'bg-white text-slate-700 shadow-sm' 
+                      ${activeTab === 'Recent'
+                        ? 'bg-white text-slate-700 shadow-sm'
                         : 'text-slate-400 hover:text-slate-600'
                       }`}
                   >
@@ -212,8 +238,8 @@ export default function CommunityMonitor() {
                   <button
                     onClick={() => setActiveTab('Unanswered')}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer
-                      ${activeTab === 'Unanswered' 
-                        ? 'bg-indigo-50 text-[#3b28cc] shadow-sm' 
+                      ${activeTab === 'Unanswered'
+                        ? 'bg-indigo-50 text-[#3b28cc] shadow-sm'
                         : 'text-slate-400 hover:text-slate-600'
                       }`}
                   >
@@ -270,13 +296,22 @@ export default function CommunityMonitor() {
                             <FiMessageSquare className="w-4 h-4 text-slate-400" />
                             {q.replies ? q.replies.length : 0} Answers
                           </div>
-                          
-                          <button 
-                            onClick={() => handleOpenGuidanceModal(q)}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
-                          >
-                            <FiSend className="w-3.5 h-3.5" /> Provide Guidance
-                          </button>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setDeletePostId(q._id)}
+                              className="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold px-3 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                              title="Delete Post"
+                            >
+                              <FiTrash2 className="w-3.5 h-3.5" /> Delete
+                            </button>
+                            <button
+                              onClick={() => handleOpenGuidanceModal(q)}
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                            >
+                              <FiSend className="w-3.5 h-3.5" /> Provide Guidance
+                            </button>
+                          </div>
                         </div>
                       </div>
 
@@ -293,7 +328,7 @@ export default function CommunityMonitor() {
       {guidancePost && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl relative animate-scaleUp">
-            <button 
+            <button
               onClick={() => setGuidancePost(null)}
               className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
             >
@@ -312,7 +347,7 @@ export default function CommunityMonitor() {
             <form onSubmit={handleSubmitGuidance} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1.5 uppercase tracking-wider">Instructor Response</label>
-                <textarea 
+                <textarea
                   required
                   rows="5"
                   placeholder="Type your official guidance or explanation for student..."
@@ -323,14 +358,14 @@ export default function CommunityMonitor() {
               </div>
 
               <div className="flex justify-end gap-3 pt-2">
-                <button 
+                <button
                   type="button"
                   onClick={() => setGuidancePost(null)}
                   className="px-5 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="submit"
                   disabled={isSubmittingGuidance}
                   className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
@@ -342,6 +377,18 @@ export default function CommunityMonitor() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal using AcademiX ConfirmModal design */}
+      <ConfirmModal
+        isOpen={Boolean(deletePostId)}
+        onClose={() => setDeletePostId(null)}
+        onConfirm={confirmDeletePost}
+        title="Delete Discussion Post?"
+        message="Are you sure you want to delete this post? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        variant="danger"
+      />
 
     </div>
   );

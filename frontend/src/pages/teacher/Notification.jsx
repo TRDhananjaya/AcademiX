@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { FiCheck, FiArrowRight } from 'react-icons/fi';
-import { TbAlertTriangle, TbFileText, TbMessageShare, TbCalendarStats, TbBrain } from 'react-icons/tb';
+import { TbAlertTriangle, TbFileText, TbMessageShare, TbBrain } from 'react-icons/tb';
 import { navigate } from '../../App';
 
 export default function TeacherNotifications() {
-  const [activeFilter, setActiveFilter] = useState('All');
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedNotifs, setExpandedNotifs] = useState({});
@@ -28,7 +27,7 @@ export default function TeacherNotifications() {
           notifs1 = await res1.json();
         }
 
-        // Fetch dynamic quiz results (from main branch)
+        // Fetch dynamic quiz results
         let notifs2 = [];
         const res2 = await fetch('/api/quiz-results');
         if (res2.ok) {
@@ -38,13 +37,10 @@ export default function TeacherNotifications() {
               _id: `quiz-result-${item._id}`,
               isQuizResult: true,
               notificationType: 'Quiz Results',
-              badgeLabel: 'Quiz Result',
-              badgeClass: item.percentage >= 50 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600',
+              title: `Quiz Completed: ${item.quizTitle || item.quizId}`,
+              message: `Student: ${item.studentName} (${item.studentId}) • Score: ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct). Time taken: ${item.timeTaken || 'N/A'}.`,
               createdAt: item.submittedAt || new Date().toISOString(),
-              title: `${item.studentName} completed ${item.quizTitle || item.quizId}`,
-              message: `Student ID: ${item.studentId} • Score: ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct) • Time: ${item.timeTaken || 'N/A'}`,
               actionLabel: 'Quiz Details',
-              actionPath: '/teacher/quiz-report',
               isRead: false
             }));
           }
@@ -64,7 +60,7 @@ export default function TeacherNotifications() {
   const handleMarkAllRead = async () => {
     try {
       const token = localStorage.getItem('token');
-      const unread = notifications.filter(n => !n.isRead && !n.isQuizResult && !n._id.startsWith('static-'));
+      const unread = notifications.filter(n => !n.isRead && !n.isQuizResult && !n._id?.startsWith('static-'));
       for (const notif of unread) {
         if (notif._id) {
           await fetch(`/api/notifications/${notif._id}/read`, {
@@ -79,18 +75,16 @@ export default function TeacherNotifications() {
     }
   };
 
-
-
   const getIconForType = (type) => {
     switch(type) {
       case 'StudyPlanApproval':
+      case 'StudyPlanGenerated':
         return <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center shrink-0"><TbBrain className="w-5 h-5" /></div>;
       case 'Academic Alerts':
         return <div className="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center shrink-0"><TbAlertTriangle className="w-5 h-5" /></div>;
       case 'Student Activity':
         return <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0"><TbMessageShare className="w-5 h-5" /></div>;
       case 'Quiz Results':
-        return <div className="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0"><TbFileText className="w-5 h-5" /></div>;
       default:
         return <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center shrink-0"><TbFileText className="w-5 h-5" /></div>;
     }
@@ -101,18 +95,18 @@ export default function TeacherNotifications() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 sm:gap-0">
         <div>
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">Notification Center</h1>
-          <p className="text-slate-500 text-base">
-            Manage your notifications and system updates.
+          <h1 className="text-4xl font-bold text-slate-900 mb-2">Notifications</h1>
+          <p className="text-slate-500 text-base max-w-2xl">
+            Stay updated with your latest academic progress and alerts.
           </p>
         </div>
         
         {notifications.some((n) => !n.isRead) && (
           <button 
             onClick={handleMarkAllRead}
-            className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-xl text-xs transition-colors shadow-sm cursor-pointer flex items-center gap-1.5 shrink-0"
+            className="text-[#3b28cc] hover:text-indigo-800 text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 border-none bg-transparent"
           >
-            <FiCheck className="w-3.5 h-3.5" />
+            <FiCheck className="w-4 h-4" />
             Mark all as read
           </button>
         )}
@@ -126,50 +120,46 @@ export default function TeacherNotifications() {
           notifications.map((notif) => (
             <div
               key={notif._id}
-              className={`relative rounded-2xl p-6 border transition-all duration-200 bg-white shadow-sm
+              className={`relative rounded-2xl p-6 border transition-all duration-200 bg-white
                 ${!notif.isRead
-                  ? 'border-indigo-100 shadow-sm bg-indigo-50/5'
-                  : 'border-slate-100/70'
+                  ? 'border-indigo-100 shadow-sm border-l-4 border-l-indigo-600'
+                  : 'border-slate-100/70 shadow-sm opacity-90'
                 }`}
             >
-              {/* Blue dot for unread status */}
+              {/* Unread indicator dot */}
               {!notif.isRead && (
-                <span className="absolute top-6 right-6 w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                <span className="absolute top-6 right-6 w-2 h-2 rounded-full bg-cyan-500"></span>
               )}
 
               <div className="flex items-start gap-4">
+                {/* Icon container */}
                 {getIconForType(notif.notificationType)}
 
-                <div className="flex-1 pr-6">
-                  {/* Badge & Time Row */}
-                  <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${notif.badgeClass || 'bg-indigo-50 text-indigo-600'}`}>
-                      {notif.badgeLabel || notif.notificationType}
+                <div className="flex-1 min-w-0 pr-6">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1 mb-1">
+                    <h3 className={`text-base font-bold leading-snug truncate
+                      ${!notif.isRead ? 'text-slate-900' : 'text-slate-400'}`}>
+                      {notif.title}
+                    </h3>
+                    <span className={`text-xs whitespace-nowrap pr-4
+                      ${!notif.isRead ? 'text-indigo-600 font-semibold' : 'text-slate-400'}`}>
+                      {new Date(notif.createdAt).toLocaleString()}
                     </span>
-                    <span className="text-slate-400 text-xs">{new Date(notif.createdAt).toLocaleString()}</span>
                   </div>
 
-                  {/* Title & Body */}
-                  <h3 className={`text-xl font-bold mb-2 leading-snug
-                    ${!notif.isRead ? 'text-slate-900' : 'text-slate-700'}`}>
-                    {notif.title}
-                  </h3>
-                  
                   {notif.message && (
-                    <p className="text-slate-500 text-sm leading-relaxed mb-3">
+                    <p className={`text-sm leading-relaxed mb-4
+                      ${!notif.isRead ? 'text-slate-600' : 'text-slate-400/90'}`}>
                       {notif.message}
                     </p>
                   )}
 
-                  {/* Actions */}
-
-
-                  {/* Action Link / Details Toggle */}
+                  {/* Action Button / Details Toggle */}
                   {notif.isQuizResult ? (
                     <div className="mt-3 space-y-3">
                       <button 
                         onClick={() => toggleExpand(notif._id)}
-                        className="text-indigo-600 hover:text-indigo-800 text-xs font-bold flex items-center gap-1 group transition-colors cursor-pointer bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100"
+                        className="border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold py-2 px-4 rounded-lg transition-colors cursor-pointer flex items-center gap-1 bg-white"
                       >
                         {expandedNotifs[notif._id] ? 'Hide Quiz Details' : 'Quiz Details'}
                         <FiArrowRight className={`w-3.5 h-3.5 transition-transform ${expandedNotifs[notif._id] ? 'rotate-90' : ''}`} />
@@ -180,7 +170,7 @@ export default function TeacherNotifications() {
                           <p className="text-sm font-semibold text-slate-700">{notif.message}</p>
                           <button
                             onClick={() => navigate('/teacher/quiz-report')}
-                            className="text-xs text-indigo-600 font-bold hover:underline cursor-pointer inline-block mt-1"
+                            className="text-xs text-indigo-600 font-bold hover:underline cursor-pointer inline-block mt-1 bg-transparent border-none p-0"
                           >
                             View Full Quiz Report &rarr;
                           </button>
@@ -191,10 +181,9 @@ export default function TeacherNotifications() {
                     notif.actionLabel && (
                       <button 
                         onClick={() => notif.actionPath && navigate(notif.actionPath)}
-                        className="text-indigo-600 hover:text-indigo-800 text-xs font-bold flex items-center gap-1 group transition-colors cursor-pointer mt-2"
+                        className="bg-[#3b28cc] hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors inline-block cursor-pointer border-none"
                       >
                         {notif.actionLabel}
-                        <FiArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                       </button>
                     )
                   )}

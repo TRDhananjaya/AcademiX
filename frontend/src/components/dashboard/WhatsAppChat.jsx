@@ -126,16 +126,16 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col md:flex-row h-[680px] font-sans">
-      
+
       {/* Left Sidebar (Contacts & Recent Chats) */}
       <div className="w-full md:w-[320px] lg:w-[360px] border-r border-slate-100 flex flex-col bg-slate-50/50 shrink-0">
-        
+
         {/* User Profile Header */}
         <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img 
-              src={user?.profilePicture || propic} 
-              alt={currentUserName} 
+            <img
+              src={user?.profilePicture || propic}
+              alt={currentUserName}
               className="w-10 h-10 rounded-full border border-slate-200"
             />
             <div>
@@ -149,8 +149,8 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
         <div className="p-3 bg-white border-b border-slate-100">
           <div className="relative">
             <FiSearch className="absolute left-3.5 top-3 text-slate-400 w-4 h-4" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Search chat or start new message..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -167,7 +167,7 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
             <div className="p-8 text-center text-xs text-slate-400">No contacts found</div>
           ) : (
             filteredConversations.map(conv => (
-              <div 
+              <div
                 key={conv.contact.id}
                 onClick={() => setSelectedContact(conv.contact)}
                 className={`p-4 flex items-center gap-3.5 cursor-pointer transition-colors hover:bg-slate-100/70
@@ -187,7 +187,7 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
                       </span>
                     )}
                   </div>
-                  
+
                   <div className="flex justify-between items-center">
                     <p className="text-xs text-slate-500 truncate pr-2">{conv.lastMessage}</p>
                     {conv.unreadCount > 0 && (
@@ -207,7 +207,7 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
       {/* Right Pane (WhatsApp Main Chat Box) */}
       {selectedContact ? (
         <div className="flex-1 flex flex-col bg-[#efeae2]/30 relative">
-          
+
           {/* Chat Header */}
           <div className="p-4 bg-white border-b border-slate-100 flex items-center justify-between shadow-sm shrink-0 z-10">
             <div className="flex items-center gap-3.5">
@@ -244,8 +244,8 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
               messages.map(msg => {
                 const isSentByMe = msg.senderId === currentUserId;
                 return (
-                  <div 
-                    key={msg._id} 
+                  <div
+                    key={msg._id}
                     className={`flex flex-col max-w-[80%] md:max-w-[70%] ${isSentByMe ? 'ml-auto items-end' : 'mr-auto items-start'}`}
                   >
                     <div className={`p-3.5 rounded-2xl text-xs sm:text-sm shadow-sm relative leading-relaxed whitespace-pre-line
@@ -276,7 +276,7 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
               <FiPaperclip className="w-5 h-5" />
             </button>
 
-            <input 
+            <input
               type="text"
               placeholder={`Type a message to ${selectedContact.name}...`}
               value={inputText}
@@ -284,7 +284,7 @@ export default function WhatsAppChat({ defaultSelectedContactId = null }) {
               className="flex-1 bg-slate-100 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-slate-800 placeholder-slate-400 outline-none focus:bg-white focus:border focus:border-indigo-400 transition-all"
             />
 
-            <button 
+            <button
               type="submit"
               disabled={!inputText.trim()}
               className="bg-[#3b28cc] hover:bg-indigo-700 disabled:opacity-40 text-white w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-colors cursor-pointer"

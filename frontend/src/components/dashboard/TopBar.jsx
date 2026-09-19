@@ -175,7 +175,7 @@ export default function TopBar() {
             </svg>
           </button>
 
-          <div 
+          <div
             onClick={() => navigate('/teacher/dashboard')}
             className="flex items-center gap-2 cursor-pointer select-none"
           >
@@ -192,10 +192,10 @@ export default function TopBar() {
         {/* Right Side Actions */}
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Notifications */}
-          <button 
+          <button
             onClick={() => navigate('/teacher/notifications')}
-            className="flex items-center justify-center w-[38px] h-[38px] rounded-full border-none bg-slate-50 text-slate-600 cursor-pointer transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 relative" 
-            id="btn-notifications" 
+            className="flex items-center justify-center w-[38px] h-[38px] rounded-full border-none bg-slate-50 text-slate-600 cursor-pointer transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 relative"
+            id="btn-notifications"
             aria-label="Notifications"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -206,15 +206,15 @@ export default function TopBar() {
           </button>
 
           {/* User Avatar */}
-          <button 
+          <button
             onClick={() => navigate('/teacher/profile')}
-            className="flex items-center justify-center w-[38px] h-[38px] rounded-full border-2 border-slate-200 bg-slate-50 text-slate-500 cursor-pointer transition-all duration-200 hover:border-indigo-500 hover:ring-4 hover:ring-indigo-100 p-0 overflow-hidden active:scale-95" 
-            id="btn-user-profile" 
+            className="flex items-center justify-center w-[38px] h-[38px] rounded-full border-2 border-slate-200 bg-slate-50 text-slate-500 cursor-pointer transition-all duration-200 hover:border-indigo-500 hover:ring-4 hover:ring-indigo-100 p-0 overflow-hidden active:scale-95"
+            id="btn-user-profile"
             aria-label="User profile"
           >
             <img src={avatarSrc} alt="User Profile" className="w-full h-full object-cover" />
           </button>
-          
+
           {/* Logout */}
           <button
             onClick={() => setShowLogoutModal(true)}
@@ -233,7 +233,7 @@ export default function TopBar() {
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           {/* Backdrop */}
-          <div 
+          <div
             className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity duration-300"
             onClick={() => setIsMobileMenuOpen(false)}
           />
@@ -262,7 +262,7 @@ export default function TopBar() {
             </div>
 
             {/* User Profile Card */}
-            <div 
+            <div
               onClick={() => {
                 navigate('/teacher/profile');
                 setIsMobileMenuOpen(false);
@@ -288,11 +288,10 @@ export default function TopBar() {
                       navigate(item.path);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[14.5px] font-medium transition-all text-left cursor-pointer border-none ${
-                      isActive 
-                        ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200 font-semibold' 
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[14.5px] font-medium transition-all text-left cursor-pointer border-none ${isActive
+                        ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-200 font-semibold'
                         : 'text-slate-600 hover:bg-slate-100/80 hover:text-slate-900 bg-transparent'
-                    }`}
+                      }`}
                   >
                     <span className={`w-5 h-5 flex items-center justify-center shrink-0 ${isActive ? 'text-white' : 'text-slate-500'}`}>
                       {item.icon}
