@@ -299,6 +299,7 @@ export default function StudentDashboard() {
             </div>
           </div>
 
+
           {/* ROW 1: Academic & Exam Performance */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mb-6">
 

@@ -8,7 +8,9 @@ const {
     getStudentPerformance,
     getAllStudents,
     getIndividualStudentAnalytics,
-    getTeacherDashboardStats
+    getTeacherDashboardStats,
+    getAdminInterventionAlerts,
+    getStudentInterventionAlerts
 } = require('../controllers/analyticsController');
 
 // Teacher-only analytics
@@ -21,5 +23,9 @@ router.get('/', roleMiddleware('teacher'), getAnalytics);
 
 // Both students (own data) and teachers can access individual student analytics
 router.get('/student/:studentId', getIndividualStudentAnalytics);
+
+// Intervention routes
+router.get('/intervention', roleMiddleware('teacher'), getAdminInterventionAlerts);
+router.get('/intervention/student/:studentId', getStudentInterventionAlerts);
 
 module.exports = router;

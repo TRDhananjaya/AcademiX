@@ -13,6 +13,24 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
   const [activeNav, setActiveNav] = useState(activeTab);
   const [loading, setLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState(null);
+  const [showInterventionModal, setShowInterventionModal] = useState(false);
+  const [interventionData, setInterventionData] = useState(null);
+
+  const handleViewInterventions = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/analytics/intervention', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setInterventionData(data);
+        setShowInterventionModal(true);
+      }
+    } catch (err) {
+      console.error('Error fetching intervention data:', err);
+    }
+  };
 
   useEffect(() => {
     setActiveNav(activeTab);
@@ -221,7 +239,13 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                               </span>
                             ) : (
                               <button
-                                onClick={() => setActiveNav('notifications')}
+                                onClick={() => {
+                                  if (insight.type === 'intervention-alert') {
+                                    handleViewInterventions();
+                                  } else {
+                                    setActiveNav('notifications');
+                                  }
+                                }}
                                 className="text-red-600 hover:text-red-800 text-xs font-bold transition-colors"
                               >
                                 {insight.actionText || 'Message Students'}
@@ -305,6 +329,60 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
           {renderContent()}
         </main>
       </div>
+
+      {showInterventionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900">Intervention Details</h2>
+                <p className="text-sm text-slate-500">Students with predicted term test &lt; 50% in one or more lessons</p>
+              </div>
+              <button onClick={() => setShowInterventionModal(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1">
+              {!interventionData ? (
+                <div className="flex justify-center py-12">
+                   <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+                </div>
+              ) : interventionData.students?.length === 0 ? (
+                <div className="text-center py-12 bg-slate-50 rounded-xl border border-slate-100">
+                  <p className="text-slate-500 font-medium">No underperforming students found.</p>
+                </div>
+              ) : (
+                <div className="border border-slate-200 rounded-xl overflow-hidden">
+                  <table className="w-full text-left border-collapse">
+                    <thead className="bg-slate-50 border-b border-slate-200">
+                      <tr>
+                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Student</th>
+                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Student ID</th>
+                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Lesson</th>
+                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Predicted</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {interventionData.students.flatMap(student => 
+                        student.lessons.map((lesson, idx) => (
+                          <tr key={`${student.studentId}-${lesson.lessonId}`} className="hover:bg-slate-50 transition-colors">
+                            <td className="py-3 px-4 text-sm font-semibold text-slate-800">{student.studentName}</td>
+                            <td className="py-3 px-4 text-sm text-slate-500 font-mono font-medium">{student.studentId}</td>
+                            <td className="py-3 px-4 text-sm text-slate-700">{lesson.lessonName}</td>
+                            <td className="py-3 px-4 text-sm font-bold text-red-600 text-right">
+                              {Number(lesson.predictedPercentage).toFixed(2)}%
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
