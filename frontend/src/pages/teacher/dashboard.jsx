@@ -283,68 +283,63 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
             {/* Middle Columns (Predictive Insights & Community Activity) */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-              {/* Predictive Insights */}
+              {/* Academic Performance Overview */}
               <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col">
                 <div className="flex justify-between items-start mb-6">
                   <div>
                     <h3 className="text-lg font-bold text-slate-900 flex items-center gap-1.5">
-                      <span className="text-indigo-600">✨</span> Predictive Insights
+                      <span className="text-indigo-600">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20v-6M6 20V10M18 20V4"></path><path d="M4 10h4v10H4z"></path><path d="M16 4h4v16h-4z"></path></svg>
+                      </span> Academic Performance Overview
                     </h3>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Data-driven forecasts based on recent quiz performance.
+                      Quick overview of student academic performance.
                     </p>
                   </div>
                 </div>
 
-                <div className="space-y-4 flex-1">
-                  {dashboardData?.insights && dashboardData.insights.length > 0 ? (
-                    dashboardData.insights.map((insight, idx) => {
-                      const isMidterm = insight.type === 'midterm-projection';
-                      const iconBg = isMidterm ? 'bg-indigo-50' : 'bg-red-50';
-                      const iconColor = isMidterm ? 'text-indigo-600' : 'text-red-500';
-                      const alertBg = isMidterm ? 'bg-slate-50/70 border border-slate-100' : 'bg-red-50/30 border border-red-100/60';
-
-                      return (
-                        <div key={idx} className={`${alertBg} rounded-2xl p-5 flex items-start gap-4`}>
-                          <div className={`w-10 h-10 rounded-full ${iconBg} flex items-center justify-center shrink-0`}>
-                            {isMidterm ? (
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={iconColor}><path d="M22 10v6M2 10l10-5 10 5-10 5z" /><path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" /></svg>
-                            ) : (
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={iconColor}><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                            )}
-                          </div>
-                          <div className="space-y-2.5">
-                            <h4 className="font-bold text-slate-800 text-sm">{insight.title}</h4>
-                            <p className="text-xs text-slate-600 leading-relaxed">
-                              {insight.description}
-                            </p>
-                            {insight.actionRecommended ? (
-                              <span className="inline-block bg-[#e0f7fa] text-[#00838f] text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wider">
-                                Action Recommended
-                              </span>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  if (insight.type === 'intervention-alert') {
-                                    handleViewInterventions();
-                                  } else {
-                                    setActiveNav('notifications');
-                                  }
-                                }}
-                                className="text-red-600 hover:text-red-800 text-xs font-bold transition-colors"
-                              >
-                                {insight.actionText || 'Message Students'}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-center py-10 text-xs text-slate-400 font-medium">
-                      No analytical projections available.
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
+                  
+                  {/* Top Performing Lesson */}
+                  <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md hover:border-emerald-300 flex flex-col justify-between relative overflow-hidden transition-all duration-200 group">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 pr-3">
+                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider group-hover:text-emerald-600 transition-colors">Top Performing</span>
+                        <h3 className="text-3xl font-extrabold text-slate-900 mt-2">
+                          {metrics?.strongestLessonAvg !== undefined ? `${metrics.strongestLessonAvg}%` : '--'}
+                        </h3>
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                      </div>
                     </div>
-                  )}
+                    <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between text-xs font-semibold text-emerald-600">
+                      <span className="truncate pr-2" title={metrics?.strongestLesson || '--'}>
+                        {metrics?.strongestLesson || '--'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Most Challenging Lesson */}
+                  <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md hover:border-rose-300 flex flex-col justify-between relative overflow-hidden transition-all duration-200 group">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 pr-3">
+                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider group-hover:text-rose-600 transition-colors">Most Challenging</span>
+                        <h3 className="text-3xl font-extrabold text-slate-900 mt-2">
+                          {metrics?.weakestLessonAvg !== undefined ? `${metrics.weakestLessonAvg}%` : '--'}
+                        </h3>
+                      </div>
+                      <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                      </div>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between text-xs font-semibold text-rose-600">
+                      <span className="truncate pr-2" title={metrics?.weakestLesson || '--'}>
+                        {metrics?.weakestLesson || '--'}
+                      </span>
+                    </div>
+                  </div>
+
                 </div>
               </div>
 

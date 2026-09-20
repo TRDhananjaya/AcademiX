@@ -108,7 +108,7 @@ export default function Contact() {
                       name="firstName"
                       required
                       className="w-full px-4 py-3 bg-slate-50/80 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 text-sm text-slate-800 placeholder-slate-400 transition-all"
-                      placeholder="e.g. Alex"
+                      placeholder="e.g. Yohan"
                     />
                   </div>
                   <div>
@@ -136,7 +136,7 @@ export default function Contact() {
                     name="email"
                     required
                     className="w-full px-4 py-3 bg-slate-50/80 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 text-sm text-slate-800 placeholder-slate-400 transition-all"
-                    placeholder="name@school.lk"
+                    placeholder="yohan@gmail.com"
                   />
                 </div>
 
@@ -150,7 +150,7 @@ export default function Contact() {
                     rows="5"
                     required
                     className="w-full px-4 py-3 bg-slate-50/80 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 text-sm text-slate-800 placeholder-slate-400 resize-none transition-all"
-                    placeholder="How can our team help your institution or studies?"
+                    placeholder="How can I help you?"
                   ></textarea>
                 </div>
 
@@ -181,7 +181,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-800 text-sm mb-0.5">Email Us</h4>
-                  <p className="text-sm text-indigo-600 font-semibold">support@academix.lk</p>
+                  <p className="text-sm text-indigo-600 font-semibold">academix.akila@gmail.com</p>
                   <p className="text-xs text-slate-400 mt-0.5">Response within 24 hours</p>
                 </div>
               </div>
@@ -193,7 +193,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <h4 className="font-bold text-slate-800 text-sm mb-0.5">Call Us</h4>
-                  <p className="text-sm text-slate-700 font-medium">+94 11 234 5678</p>
+                  <p className="text-sm text-slate-700 font-medium">+94 76 927 8308</p>
                   <p className="text-xs text-slate-400 mt-0.5">Mon - Fri: 8:00 AM - 5:00 PM</p>
                 </div>
               </div>
