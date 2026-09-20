@@ -762,7 +762,7 @@ const getAdminInterventionAlerts = async (req, res, next) => {
             }
         ]);
 
-        const predictions = await Prediction.populate(latestPredictions, { path: 'studentId' });
+        const predictions = await Prediction.populate(latestPredictions, { path: 'studentId', select: 'studentId name' });
 
         const defaultLessonNames = {
             1: "Information and Communication Technology",
@@ -775,6 +775,14 @@ const getAdminInterventionAlerts = async (req, res, next) => {
             8: "Electronic Presentations",
             9: "Database"
         };
+
+        const allLessons = await Lesson.find({}).select('title lessonNumber _id').lean().catch(() => []);
+        const lessonMap = {};
+        for (const l of allLessons) {
+            const formatted = l.title.toLowerCase().startsWith('lesson') ? l.title : `Lesson ${l.lessonNumber} - ${l.title}`;
+            lessonMap[l.lessonNumber] = formatted;
+            if (l._id) lessonMap[l._id.toString()] = formatted;
+        }
 
         const studentMap = {};
 
@@ -790,19 +798,13 @@ const getAdminInterventionAlerts = async (req, res, next) => {
             }
 
             let lName = `Lesson ${pred.lessonId}`;
-            if (!isNaN(num) && defaultLessonNames[num]) {
+            if (!isNaN(num) && lessonMap[num]) {
+                lName = lessonMap[num];
+            } else if (pred.lessonId && lessonMap[pred.lessonId.toString()]) {
+                lName = lessonMap[pred.lessonId.toString()];
+            } else if (!isNaN(num) && defaultLessonNames[num]) {
                 lName = `Lesson ${num} - ${defaultLessonNames[num]}`;
             }
-            try {
-                 const queryOps = [];
-                 if (!isNaN(num)) queryOps.push({ lessonNumber: num });
-                 if (pred.lessonId && mongoose.Types.ObjectId.isValid(pred.lessonId)) queryOps.push({ _id: pred.lessonId });
-                 
-                 if (queryOps.length > 0) {
-                     const lessonDoc = await Lesson.findOne({ $or: queryOps });
-                     if (lessonDoc) lName = lessonDoc.title.toLowerCase().startsWith('lesson') ? lessonDoc.title : `Lesson ${lessonDoc.lessonNumber} - ${lessonDoc.title}`;
-                 }
-            } catch (e) {}
             
             if (!studentMap[sId]) {
                 studentMap[sId] = {
@@ -881,6 +883,14 @@ const getStudentInterventionAlerts = async (req, res, next) => {
             9: "Database"
         };
 
+        const allLessons = await Lesson.find({}).select('title lessonNumber _id').lean().catch(() => []);
+        const lessonMap = {};
+        for (const l of allLessons) {
+            const formatted = l.title.toLowerCase().startsWith('lesson') ? l.title : `Lesson ${l.lessonNumber} - ${l.title}`;
+            lessonMap[l.lessonNumber] = formatted;
+            if (l._id) lessonMap[l._id.toString()] = formatted;
+        }
+
         const alerts = [];
         for (const pred of predictions) {
             let num = parseInt(pred.lessonId, 10);
@@ -890,19 +900,13 @@ const getStudentInterventionAlerts = async (req, res, next) => {
             }
 
             let lName = `Lesson ${pred.lessonId}`;
-            if (!isNaN(num) && defaultLessonNames[num]) {
+            if (!isNaN(num) && lessonMap[num]) {
+                lName = lessonMap[num];
+            } else if (pred.lessonId && lessonMap[pred.lessonId.toString()]) {
+                lName = lessonMap[pred.lessonId.toString()];
+            } else if (!isNaN(num) && defaultLessonNames[num]) {
                 lName = `Lesson ${num} - ${defaultLessonNames[num]}`;
             }
-            try {
-                 const queryOps = [];
-                 if (!isNaN(num)) queryOps.push({ lessonNumber: num });
-                 if (pred.lessonId && mongoose.Types.ObjectId.isValid(pred.lessonId)) queryOps.push({ _id: pred.lessonId });
-                 
-                 if (queryOps.length > 0) {
-                     const lessonDoc = await Lesson.findOne({ $or: queryOps });
-                     if (lessonDoc) lName = lessonDoc.title.toLowerCase().startsWith('lesson') ? lessonDoc.title : `Lesson ${lessonDoc.lessonNumber} - ${lessonDoc.title}`;
-                 }
-            } catch (e) {}
             
             alerts.push({
                 lessonId: pred.lessonId,

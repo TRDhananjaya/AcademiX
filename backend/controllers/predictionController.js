@@ -24,13 +24,13 @@ const defaultLessonNames = {
 const getFullLessonTitle = async (lessonNum) => {
     const num = parseInt(lessonNum);
     try {
-        const lessonDoc = await Lesson.findOne({ lessonNumber: num });
+        const lessonDoc = await Lesson.findOne({ lessonNumber: num }).select('title lessonNumber').lean();
         if (lessonDoc && lessonDoc.title) {
             return lessonDoc.title.toLowerCase().startsWith('lesson')
                 ? lessonDoc.title
                 : `Lesson ${num}: ${lessonDoc.title}`;
         }
-        const quizDoc = await Quiz.findOne({ quizCode: new RegExp(`^Q${num}\\.`, 'i') });
+        const quizDoc = await Quiz.findOne({ quizCode: new RegExp(`^Q${num}\\.`, 'i') }).select('bundleTopic').lean();
         if (quizDoc && quizDoc.bundleTopic) {
             return quizDoc.bundleTopic;
         }
