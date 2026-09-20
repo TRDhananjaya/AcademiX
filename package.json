@@ -6,6 +6,10 @@
     "ml": "cd ml_service && .\\.venv\\Scripts\\python app.py",
     "rag": "cd rag_service && .\\.venv\\Scripts\\uvicorn main:app --host 0.0.0.0 --port 8000"
   },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "devDependencies": {
     "concurrently": "^10.0.3"
   },

@@ -123,16 +123,9 @@ export default function QuizReportContent() {
                 <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
-            <select
-              value={selectedQuizId}
-              onChange={(e) => setSelectedQuizId(e.target.value)}
-              className="text-[24px] sm:text-[28px] font-extrabold text-slate-800 m-0 bg-transparent border-none outline-none cursor-pointer hover:bg-slate-50 transition-colors rounded-lg py-1 px-2 appearance-none pr-8 relative -ml-2"
-              style={{ backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right center', backgroundSize: '20px' }}
-            >
-              {quizzes.map(q => (
-                <option key={q._id} value={q._id}>{q.quizCode} - {q.title}</option>
-              ))}
-            </select>
+            <h1 className="text-[24px] sm:text-[28px] font-extrabold text-slate-800 m-0 py-1 px-2">
+              {selectedQuiz ? (selectedQuiz.title.startsWith(selectedQuiz.quizCode) ? selectedQuiz.title : `${selectedQuiz.quizCode} - ${selectedQuiz.title}`) : ''}
+            </h1>
           </div>
           <p className="text-[15px] text-slate-500 m-0 sm:ml-10 ml-0 px-2 sm:px-0">{selectedQuiz.bundleTopic} • {maxScore} Questions</p>
         </div>
