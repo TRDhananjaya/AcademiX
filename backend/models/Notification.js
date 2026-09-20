@@ -10,7 +10,9 @@ const notificationSchema = new mongoose.Schema({
   relatedStudentId: { type: String }, // Can be studentId string or ObjectId, let's keep it String for STU-xxxx compatibility
   isRead: { type: Boolean, default: false },
   status: { type: String, enum: ['Pending', 'Approved', 'Rejected', 'N/A'], default: 'N/A' },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now, index: true }
 });
+
+notificationSchema.index({ recipientId: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Notification', notificationSchema);

@@ -61,6 +61,9 @@ export default function CommonCommunityChat() {
           }
           return prev;
         });
+        const currentToken = localStorage.getItem('token');
+        const currentAuth = currentToken ? `Bearer ${currentToken}` : '';
+        setCachedData('/api/common-messages', data, currentAuth);
       }
     } catch (err) {
       console.error('Error loading common community messages:', err);

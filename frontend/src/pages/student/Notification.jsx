@@ -4,13 +4,19 @@ import StudentTopBar from '../../components/dashboard/StudentTopBar';
 import { useAuth } from '../../context/AuthContext';
 import { FiCheck, FiArrowRight, FiPlay, FiBookOpen } from 'react-icons/fi';
 import { TbRobot, TbFileText, TbCalendarEvent, TbBrain } from 'react-icons/tb';
+import { getCachedData, setCachedData } from '../../utils/apiCache';
+import { navigate } from '../../App';
 
 export default function Notifications() {
   const { user } = useAuth();
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const authHeader = token ? `Bearer ${token}` : '';
+  const cachedNotifs = getCachedData('/api/notifications/student_combined', authHeader);
+
   const [activeNav, setActiveNav] = useState('notifications');
   const [activeFilter, setActiveFilter] = useState('All');
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState(cachedNotifs || []);
+  const [loading, setLoading] = useState(!cachedNotifs);
   const [expandedNotifs, setExpandedNotifs] = useState({});
 
   const toggleExpand = (id) => {
@@ -22,39 +28,41 @@ export default function Notifications() {
   }, [user]);
 
   const fetchNotifications = async () => {
+    const currentToken = localStorage.getItem('token');
+    const currentAuth = currentToken ? `Bearer ${currentToken}` : '';
+    if (!notifications.length && !getCachedData('/api/notifications/student_combined', currentAuth)) {
+      setLoading(true);
+    }
     try {
-      const token = localStorage.getItem('token');
-      // Fetch dynamic notifications from /api/notifications
-      const res1 = await fetch('/api/notifications', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      let notifs1 = [];
-      if (res1.ok) {
-        notifs1 = await res1.json();
-      }
-
-      // Fetch dynamic quiz results (from main branch)
-      let notifs2 = [];
       const studentId = user?.username || 'student1';
-      const res2 = await fetch(`/api/quiz-results/student/${studentId}`);
-      if (res2.ok) {
-        const data = await res2.json();
-        if (Array.isArray(data) && data.length > 0) {
-          notifs2 = data.map(item => ({
-            _id: `quiz-res-${item._id}`,
-            isQuizResult: true,
-            notificationType: 'Quiz Results',
-            title: `Quiz Completed: ${item.quizTitle || item.quizId}`,
-            message: `You scored ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct).`,
-            createdAt: item.submittedAt || new Date().toISOString(),
-            isRead: false,
-            actionLabel: 'Quiz Details'
-          }));
-        }
-      }
+      // Fetch dynamic notifications and quiz results in parallel
+      const [res1, res2] = await Promise.all([
+        fetch('/api/notifications', {
+          headers: currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {}
+        }),
+        fetch(`/api/quiz-results/student/${studentId}`)
+      ]);
 
-      // Combine them
-      setNotifications([...notifs1, ...notifs2].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      const [data1, data2] = await Promise.all([
+        res1.ok ? res1.json() : [],
+        res2.ok ? res2.json() : []
+      ]);
+
+      const notifs1 = Array.isArray(data1) ? data1 : [];
+      const notifs2 = Array.isArray(data2) ? data2.map(item => ({
+        _id: `quiz-res-${item._id}`,
+        isQuizResult: true,
+        notificationType: 'Quiz Results',
+        title: `Quiz Completed: ${item.quizTitle || item.quizId}`,
+        message: `You scored ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct).`,
+        createdAt: item.submittedAt || new Date().toISOString(),
+        isRead: false,
+        actionLabel: 'Quiz Details'
+      })) : [];
+
+      const combined = [...notifs1, ...notifs2].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setNotifications(combined);
+      setCachedData('/api/notifications/student_combined', combined, currentAuth);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -132,9 +140,7 @@ export default function Notifications() {
           </div>
 
           <div className="space-y-4">
-            {loading ? (
-              <p className="text-slate-500">Loading notifications...</p>
-            ) : notifications.length > 0 ? (
+            {notifications.length > 0 ? (
               notifications.map((notif) => (
                 <div
                   key={notif._id}
@@ -199,15 +205,24 @@ export default function Notifications() {
                         </div>
                       ) : (
                         notif.notificationType === 'StudyPlanGenerated' && (
-                          <a href="/student/study-plans" className="bg-[#3b28cc] hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors inline-block">
+                          <button
+                            type="button"
+                            onClick={() => navigate('/student/study-plans')}
+                            className="bg-[#3b28cc] hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors inline-block cursor-pointer border-none"
+                          >
                             Review Plan
-                          </a>
+                          </button>
                         )
                       )}
                     </div>
                   </div>
                 </div>
               ))
+            ) : loading ? (
+              <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="w-10 h-10 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin mb-3"></div>
+                <p className="text-slate-500 font-medium">Loading notifications...</p>
+              </div>
             ) : (
               <div className="bg-white rounded-2xl p-12 border border-slate-100 text-center shadow-sm">
                 <p className="text-slate-500 text-sm">No notifications found in this category.</p>

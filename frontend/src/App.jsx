@@ -27,10 +27,46 @@ import TeacherProfileSettings from './pages/teacher/ProfileSettings';
 import StudentManagement from './pages/teacher/StudentManagement';
 import ForgotPassword from './pages/forgot-password';
 
+const rawPushState = typeof window !== 'undefined' ? window.history.pushState.bind(window.history) : null;
+const rawReplaceState = typeof window !== 'undefined' ? window.history.replaceState.bind(window.history) : null;
+
+let currentAuthDepth = 0;
+
+if (typeof window !== 'undefined' && !window.__academiX_history_wrapped) {
+  window.__academiX_history_wrapped = true;
+
+  window.history.pushState = function(state, unused, url) {
+    const authSession = sessionStorage.getItem('academiX_auth_session');
+    if (authSession) {
+      currentAuthDepth += 1;
+      const taggedState = {
+        ...(state && typeof state === 'object' ? state : {}),
+        _authSession: authSession,
+        _authDepth: currentAuthDepth
+      };
+      return rawPushState(taggedState, unused, url);
+    }
+    return rawPushState(state, unused, url);
+  };
+
+  window.history.replaceState = function(state, unused, url) {
+    const authSession = sessionStorage.getItem('academiX_auth_session');
+    if (authSession) {
+      const taggedState = {
+        ...(state && typeof state === 'object' ? state : {}),
+        _authSession: authSession,
+        _authDepth: currentAuthDepth
+      };
+      return rawReplaceState(taggedState, unused, url);
+    }
+    return rawReplaceState(state, unused, url);
+  };
+}
+
 // Shared navigate helper — use this instead of <a href>
 export function navigate(path, state = {}) {
   window.history.pushState(state, '', path);
-  window.dispatchEvent(new PopStateEvent('popstate'));
+  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
 }
 
 function App() {
@@ -58,56 +94,86 @@ function App() {
   const isTeacherRoute = teacherRoutes.includes(currentPage);
   const isStudentRoute = studentRoutes.includes(currentPage);
 
-  // Maintain a guard history entry while logged in so browser Back can be intercepted
+  // Initialize and synchronize session history depth tracking
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      sessionStorage.removeItem('academiX_auth_session');
+      currentAuthDepth = 0;
+      return;
+    }
 
-    // Push initial guard
-    window.history.pushState({ appGuard: true }, '', window.location.pathname);
-
-    // Re-push on user interaction so Chromium attaches user activation to the history entry
-    let armed = false;
-    const armOnGesture = () => {
-      if (!armed) {
-        armed = true;
-        window.history.pushState({ appGuard: true }, '', window.location.pathname);
+    let sessionId = sessionStorage.getItem('academiX_auth_session');
+    if (!sessionId) {
+      sessionId = 'ax_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+      sessionStorage.setItem('academiX_auth_session', sessionId);
+      currentAuthDepth = 0;
+      if (rawReplaceState) {
+        rawReplaceState({ ...window.history.state, _authSession: sessionId, _authDepth: 0 }, '', window.location.pathname);
       }
-    };
-
-    window.addEventListener('pointerdown', armOnGesture, { capture: true, passive: true });
-    window.addEventListener('keydown', armOnGesture, { capture: true, passive: true });
-    window.addEventListener('click', armOnGesture, { capture: true, passive: true });
-
-    return () => {
-      window.removeEventListener('pointerdown', armOnGesture, { capture: true });
-      window.removeEventListener('keydown', armOnGesture, { capture: true });
-      window.removeEventListener('click', armOnGesture, { capture: true });
-    };
-  }, [user, currentPage]);
+    } else {
+      if (window.history.state && window.history.state._authSession === sessionId && typeof window.history.state._authDepth === 'number') {
+        currentAuthDepth = window.history.state._authDepth;
+      } else {
+        currentAuthDepth = 0;
+        if (rawReplaceState) {
+          rawReplaceState({ ...window.history.state, _authSession: sessionId, _authDepth: 0 }, '', window.location.pathname);
+        }
+      }
+    }
+  }, [user]);
 
   useEffect(() => {
     const onRouteChange = (e) => {
-      // If user is logged in and presses browser Back or Forward button, ask confirmation
-      if (e.isTrusted && userRef.current) {
-        window.history.pushState({ appGuard: true }, '', window.location.pathname);
-        setShowLogoutConfirm(true);
-        return;
+      const state = e?.state || window.history.state;
+      const currentUser = userRef.current;
+      const session = sessionStorage.getItem('academiX_auth_session');
+
+      if (currentUser && session) {
+        const isSessionEntry = state && state._authSession === session && typeof state._authDepth === 'number';
+
+        if (isSessionEntry) {
+          // Valid in-app navigation (routes or internal component views like Lessons/Modules)
+          currentAuthDepth = state._authDepth;
+          setCurrentPage(getPage());
+          return;
+        }
+
+        // Trusted event leaving the active session (e.g. browser Back to /login or external site)
+        if (e.isTrusted) {
+          const fallbackPath = currentUser.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
+          const currentPath = window.location.pathname;
+          const safePath = (currentPath.startsWith('/teacher') || currentPath.startsWith('/student'))
+            ? currentPath
+            : fallbackPath;
+
+          currentAuthDepth = 0;
+          if (rawPushState) {
+            rawPushState({ _authSession: session, _authDepth: 0 }, '', safePath);
+          }
+          setCurrentPage(getPage());
+          setShowLogoutConfirm(true);
+          return;
+        }
       }
+
       setCurrentPage(getPage());
     };
+
     window.addEventListener('popstate', onRouteChange);
     return () => window.removeEventListener('popstate', onRouteChange);
   }, []);
 
   const handleLogoutConfirm = () => {
     setShowLogoutConfirm(false);
+    sessionStorage.removeItem('academiX_auth_session');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     if (setUser) setUser(null);
     window.location.href = '/login';
   };
 
   const handleLogoutCancel = () => {
     setShowLogoutConfirm(false);
-    window.history.pushState({ appGuard: true }, '', window.location.pathname);
   };
 
   useEffect(() => {

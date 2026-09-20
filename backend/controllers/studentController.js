@@ -116,8 +116,9 @@ const syncStudentsAndUsers = async () => {
 const getStudents = async (req, res, next) => {
     try {
         const students = await Student.find()
-            .populate('userId', 'firstName lastName profilePicture username email')
-            .sort({ createdAt: -1 });
+            .populate('userId', 'firstName lastName username email')
+            .sort({ createdAt: -1 })
+            .lean();
         res.status(200).json(students);
     } catch (error) {
         next(error);

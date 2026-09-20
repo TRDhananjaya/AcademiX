@@ -26,7 +26,7 @@ async function authMiddleware(req, res, next) {
 		// Verify token
 		const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-		// Attach user to request (lean query without password and profilePicture)
+		// Attach user to request (lean query without password and heavy base64 profilePicture)
 		req.user = await User.findById(decoded.id).select('-password -profilePicture').lean();
 
 		if (!req.user) {

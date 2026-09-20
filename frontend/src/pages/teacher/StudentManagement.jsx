@@ -34,6 +34,19 @@ export default function StudentManagement() {
   const [updateSuccessMessage, setUpdateSuccessMessage] = useState('');
   const [isUsernameTaken, setIsUsernameTaken] = useState(false);
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [copiedCredentials, setCopiedCredentials] = useState(false);
+  const [touchedFields, setTouchedFields] = useState({});
+
+  const isEmailValid = !newStudent.email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newStudent.email.trim());
+  const isStudentPhoneValid = !newStudent.studentMobile.trim() || isValidSriLankanPhone(newStudent.studentMobile, false);
+  const isParentPhoneValid = !newStudent.parentMobile.trim() || isValidSriLankanPhone(newStudent.parentMobile, false);
+  const isPwdLengthValid = newStudent._id || !newStudent.password.trim() || newStudent.password.trim().length >= 6;
+
+  const markTouched = (field) => {
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
+  };
 
   useEffect(() => {
     if (newStudent._id || !newStudent.username.trim()) {
@@ -109,25 +122,74 @@ export default function StudentManagement() {
       password: '',
       _id: student._id
     });
+    setFormError('');
+    setTouchedFields({});
     setIsModalOpen(true);
   };
 
   const handleAddStudent = async (e) => {
     e.preventDefault();
-    if (!newStudent.name.trim() || !newStudent.email.trim() || !newStudent.studentMobile.trim() || !newStudent.parentMobile.trim()) return;
+    setTouchedFields({
+      name: true,
+      email: true,
+      studentMobile: true,
+      parentMobile: true,
+      username: true,
+      password: true
+    });
 
-    if (newStudent.studentMobile && !isValidSriLankanPhone(newStudent.studentMobile)) {
-      alert('Student mobile number must be a valid 10-digit Sri Lankan phone number starting with 07 (e.g., 077 123 4567)');
+    if (!newStudent.name.trim()) {
+      setFormError('Student full name is required.');
       return;
     }
 
-    if (newStudent.parentMobile && !isValidSriLankanPhone(newStudent.parentMobile)) {
-      alert('Parent mobile number must be a valid 10-digit Sri Lankan phone number starting with 07 (e.g., 077 123 4567)');
+    if (!newStudent.email.trim()) {
+      setFormError('Email address is required.');
       return;
     }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newStudent.email.trim())) {
+      setFormError('Please enter a valid email address.');
+      return;
+    }
+
+    if (!newStudent.studentMobile.trim()) {
+      setFormError('Student mobile number is required.');
+      return;
+    }
+
+    if (!isValidSriLankanPhone(newStudent.studentMobile, false)) {
+      setFormError('Student mobile number must be a valid Sri Lankan phone number (e.g. 077 123 4567).');
+      return;
+    }
+
+    if (!newStudent.parentMobile.trim()) {
+      setFormError('Parent mobile number is required.');
+      return;
+    }
+
+    if (!isValidSriLankanPhone(newStudent.parentMobile, false)) {
+      setFormError('Parent mobile number must be a valid Sri Lankan phone number (e.g. 077 123 4567).');
+      return;
+    }
+
+    if (!newStudent._id && newStudent.password.trim() && newStudent.password.trim().length < 6) {
+      setFormError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    if (!newStudent._id && (isUsernameTaken || isCheckingUsername)) {
+      setFormError('Username is already taken. Please choose another username.');
+      return;
+    }
+
+    setFormError('');
+    setIsSubmitting(true);
 
     const studentPayload = {
       ...newStudent,
+      name: newStudent.name.trim(),
+      email: newStudent.email.trim(),
       studentMobile: formatSriLankanPhone(newStudent.studentMobile),
       parentMobile: formatSriLankanPhone(newStudent.parentMobile)
     };
@@ -179,13 +241,25 @@ export default function StudentManagement() {
           password: '',
           _id: null
         });
+        setTouchedFields({});
+        setFormError('');
       } else {
-        const errorData = await response.json();
-        alert(errorData.message || 'Error saving student');
+        const errorData = await response.json().catch(() => ({}));
+        let msg = errorData.message || 'Error saving student. Please try again.';
+        if (msg.includes('Password must be at least 6 characters')) {
+          msg = 'Password must be at least 6 characters.';
+        } else if (msg.includes('email already exists') || (msg.includes('duplicate key') && msg.includes('email'))) {
+          msg = 'A student or user account with this email address already exists.';
+        } else if (msg.includes('Username is already taken') || msg.includes('Student ID / Username is already taken')) {
+          msg = 'This username is already taken. Please choose another username.';
+        }
+        setFormError(msg);
       }
     } catch (error) {
       console.error('Error saving student:', error);
-      alert('Error connecting to server');
+      setFormError('Unable to connect to the server. Please check your network connection and try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -219,7 +293,8 @@ export default function StudentManagement() {
     if (!successStudentDetails) return;
     const text = `Student ID / Username: ${successStudentDetails.username}\nPassword: ${successStudentDetails.password}`;
     navigator.clipboard.writeText(text);
-    alert('Credentials copied to clipboard!');
+    setCopiedCredentials(true);
+    setTimeout(() => setCopiedCredentials(false), 3000);
   };
 
   return (
@@ -243,6 +318,8 @@ export default function StudentManagement() {
             <button
               onClick={() => {
                 setNewStudent({ name: '', email: '', studentMobile: '', parentMobile: '', grade: 'Grade 10', status: 'Active', username: '', password: '', _id: null });
+                setFormError('');
+                setTouchedFields({});
                 setIsModalOpen(true);
               }}
               className="bg-[#3b28cc] hover:bg-indigo-700 text-white font-semibold py-2.5 px-5 rounded-xl text-sm transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer self-start sm:self-auto"
@@ -462,12 +539,25 @@ export default function StudentManagement() {
                 </div>
 
                 {/* Modal Form */}
-                <form onSubmit={handleAddStudent} className="flex flex-col flex-1 overflow-hidden">
+                <form onSubmit={handleAddStudent} className="flex flex-col flex-1 overflow-hidden" noValidate>
                   <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                    {/* System Error Message Banner */}
+                    {formError && (
+                      <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-start gap-2.5 animate-fadeIn">
+                        <FiAlertTriangle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                        <div className="flex-1 leading-relaxed">{formError}</div>
+                        <button
+                          type="button"
+                          onClick={() => setFormError('')}
+                          className="text-red-400 hover:text-red-600 text-base leading-none font-bold ml-1 bg-transparent border-none cursor-pointer"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    )}
+
                     {!newStudent._id && (
                       <>
-
-
                         {/* Username */}
                         <div>
                           <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">Username</label>
@@ -475,10 +565,14 @@ export default function StudentManagement() {
                             type="text"
                             placeholder="e.g. johndoe10"
                             value={newStudent.username}
-                            onChange={(e) => setNewStudent({ ...newStudent, username: e.target.value })}
+                            onBlur={() => markTouched('username')}
+                            onChange={(e) => {
+                              setNewStudent({ ...newStudent, username: e.target.value });
+                              if (formError) setFormError('');
+                            }}
                             className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${newStudent.username.trim() && !isCheckingUsername
                               ? isUsernameTaken
-                                ? 'border-red-300 focus:border-red-400'
+                                ? 'border-red-300 focus:border-red-400 bg-red-50/20'
                                 : 'border-teal-300 focus:border-teal-400'
                               : 'border-slate-200 focus:border-indigo-300'
                               }`}
@@ -499,39 +593,100 @@ export default function StudentManagement() {
                           <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">Password</label>
                           <input
                             type="password"
-                            placeholder="e.g. secretpassword"
+                            placeholder="e.g. secretpassword (min 6 characters)"
                             value={newStudent.password}
-                            onChange={(e) => setNewStudent({ ...newStudent, password: e.target.value })}
-                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/10 font-sans"
+                            onBlur={() => markTouched('password')}
+                            onChange={(e) => {
+                              setNewStudent({ ...newStudent, password: e.target.value });
+                              if (formError) setFormError('');
+                            }}
+                            className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${
+                              newStudent.password.trim() !== ''
+                                ? newStudent.password.trim().length < 6
+                                  ? 'border-red-300 focus:border-red-400 bg-red-50/20'
+                                  : 'border-teal-300 focus:border-teal-400'
+                                : 'border-slate-200 focus:border-indigo-300'
+                            }`}
                           />
+                          {newStudent.password.trim().length > 0 && newStudent.password.trim().length < 6 && (
+                            <span className="text-xs text-red-500 font-semibold mt-1 block">
+                              ⚠️ Password must be at least 6 characters (currently {newStudent.password.trim().length}/6)
+                            </span>
+                          )}
+                          {newStudent.password.trim().length >= 6 && (
+                            <span className="text-xs text-teal-600 font-semibold mt-1 block">
+                              ✅ Password meets minimum requirement
+                            </span>
+                          )}
+                          {!newStudent.password.trim() && (
+                            <span className="text-xs text-slate-400 mt-1 block">
+                              Leave blank to auto-generate default password ({newStudent.username.trim() ? `${newStudent.username.trim().toLowerCase()}123` : 'stu-xxxx123'})
+                            </span>
+                          )}
                         </div>
                       </>
                     )}
 
                     {/* Full Name */}
                     <div>
-                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">Full Name</label>
+                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="text"
                         placeholder="e.g. John Doe"
                         value={newStudent.name}
-                        onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/10 font-sans"
+                        onBlur={() => markTouched('name')}
+                        onChange={(e) => {
+                          setNewStudent({ ...newStudent, name: e.target.value });
+                          if (formError) setFormError('');
+                        }}
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${
+                          touchedFields.name && !newStudent.name.trim()
+                            ? 'border-red-300 focus:border-red-400 bg-red-50/20'
+                            : newStudent.name.trim().length >= 2
+                            ? 'border-teal-300 focus:border-teal-400'
+                            : 'border-slate-200 focus:border-indigo-300'
+                        }`}
                         required
                       />
+                      {touchedFields.name && !newStudent.name.trim() && (
+                        <span className="text-xs text-red-500 font-semibold mt-1 block">⚠️ Full Name is required</span>
+                      )}
                     </div>
 
                     {/* Email Address */}
                     <div>
-                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">Email Address</label>
+                      <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">
+                        Email Address <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="email"
                         placeholder="e.g. john.doe@university.edu"
                         value={newStudent.email}
-                        onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/10 font-sans"
+                        onBlur={() => markTouched('email')}
+                        onChange={(e) => {
+                          setNewStudent({ ...newStudent, email: e.target.value });
+                          if (formError) setFormError('');
+                        }}
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${
+                          (touchedFields.email && !newStudent.email.trim()) || (newStudent.email.trim() && !isEmailValid)
+                            ? 'border-red-300 focus:border-red-400 bg-red-50/20'
+                            : newStudent.email.trim() && isEmailValid
+                            ? 'border-teal-300 focus:border-teal-400'
+                            : 'border-slate-200 focus:border-indigo-300'
+                        }`}
                         required
                       />
+                      {touchedFields.email && !newStudent.email.trim() && (
+                        <span className="text-xs text-red-500 font-semibold mt-1 block">⚠️ Email address is required</span>
+                      )}
+                      {newStudent.email.trim() !== '' && !isEmailValid && (
+                        <span className="text-xs text-red-500 font-semibold mt-1 block">⚠️ Please enter a valid email address (e.g. name@example.com)</span>
+                      )}
+                      {newStudent.email.trim() !== '' && isEmailValid && (
+                        <span className="text-xs text-teal-600 font-semibold mt-1 block">✅ Valid email address format</span>
+                      )}
                     </div>
 
                     {/* Student Mobile */}
@@ -541,12 +696,35 @@ export default function StudentManagement() {
                       </label>
                       <input
                         type="tel"
-                        placeholder="07X XXX XXXX"
+                        placeholder="07X XXX XXXX (10 digits)"
                         value={newStudent.studentMobile}
-                        onChange={(e) => setNewStudent({ ...newStudent, studentMobile: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/10 font-sans"
+                        onBlur={() => markTouched('studentMobile')}
+                        onChange={(e) => {
+                          setNewStudent({ ...newStudent, studentMobile: e.target.value });
+                          if (formError) setFormError('');
+                        }}
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${
+                          (touchedFields.studentMobile && !newStudent.studentMobile.trim()) || (newStudent.studentMobile.trim() && !isStudentPhoneValid)
+                            ? 'border-red-300 focus:border-red-400 bg-red-50/20'
+                            : newStudent.studentMobile.trim() && isStudentPhoneValid
+                            ? 'border-teal-300 focus:border-teal-400'
+                            : 'border-slate-200 focus:border-indigo-300'
+                        }`}
                         required
                       />
+                      {touchedFields.studentMobile && !newStudent.studentMobile.trim() && (
+                        <span className="text-xs text-red-500 font-semibold mt-1 block">⚠️ Student mobile number is required</span>
+                      )}
+                      {newStudent.studentMobile.trim() !== '' && !isStudentPhoneValid && (
+                        <span className="text-xs text-red-500 font-semibold mt-1 block">
+                          ⚠️ Must be a valid Sri Lankan phone number (e.g. 077 123 4567)
+                        </span>
+                      )}
+                      {newStudent.studentMobile.trim() !== '' && isStudentPhoneValid && (
+                        <span className="text-xs text-teal-600 font-semibold mt-1 block">
+                          ✅ Valid 10-digit Sri Lankan mobile number
+                        </span>
+                      )}
                     </div>
 
                     {/* Parent Mobile */}
@@ -556,12 +734,35 @@ export default function StudentManagement() {
                       </label>
                       <input
                         type="tel"
-                        placeholder="07X XXX XXXX"
+                        placeholder="07X XXX XXXX (10 digits)"
                         value={newStudent.parentMobile}
-                        onChange={(e) => setNewStudent({ ...newStudent, parentMobile: e.target.value })}
-                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-500/10 font-sans"
+                        onBlur={() => markTouched('parentMobile')}
+                        onChange={(e) => {
+                          setNewStudent({ ...newStudent, parentMobile: e.target.value });
+                          if (formError) setFormError('');
+                        }}
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${
+                          (touchedFields.parentMobile && !newStudent.parentMobile.trim()) || (newStudent.parentMobile.trim() && !isParentPhoneValid)
+                            ? 'border-red-300 focus:border-red-400 bg-red-50/20'
+                            : newStudent.parentMobile.trim() && isParentPhoneValid
+                            ? 'border-teal-300 focus:border-teal-400'
+                            : 'border-slate-200 focus:border-indigo-300'
+                        }`}
                         required
                       />
+                      {touchedFields.parentMobile && !newStudent.parentMobile.trim() && (
+                        <span className="text-xs text-red-500 font-semibold mt-1 block">⚠️ Parent mobile number is required</span>
+                      )}
+                      {newStudent.parentMobile.trim() !== '' && !isParentPhoneValid && (
+                        <span className="text-xs text-red-500 font-semibold mt-1 block">
+                          ⚠️ Must be a valid Sri Lankan phone number (e.g. 077 123 4567)
+                        </span>
+                      )}
+                      {newStudent.parentMobile.trim() !== '' && isParentPhoneValid && (
+                        <span className="text-xs text-teal-600 font-semibold mt-1 block">
+                          ✅ Valid 10-digit Sri Lankan mobile number
+                        </span>
+                      )}
                     </div>
 
                     {/* Grade */}
@@ -601,13 +802,21 @@ export default function StudentManagement() {
                     </button>
                     <button
                       type="submit"
-                      disabled={(!newStudent._id && (isUsernameTaken || isCheckingUsername))}
-                      className={`font-semibold py-2 px-5 rounded-xl text-sm transition-all ${(!newStudent._id && (isUsernameTaken || isCheckingUsername))
-                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                        : 'bg-[#3b28cc] hover:bg-indigo-700 text-white cursor-pointer'
-                        }`}
+                      disabled={isSubmitting || (!newStudent._id && (isUsernameTaken || isCheckingUsername))}
+                      className={`font-semibold py-2.5 px-6 rounded-xl text-sm transition-all flex items-center justify-center gap-2 ${
+                        isSubmitting || (!newStudent._id && (isUsernameTaken || isCheckingUsername))
+                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                          : 'bg-[#3b28cc] hover:bg-indigo-700 text-white cursor-pointer shadow-sm'
+                      }`}
                     >
-                      {newStudent._id ? 'Save Changes' : 'Add Student'}
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"></div>
+                          <span>{newStudent._id ? 'Saving...' : 'Adding Student...'}</span>
+                        </>
+                      ) : (
+                        newStudent._id ? 'Save Changes' : 'Add Student'
+                      )}
                     </button>
                   </div>
                 </form>
@@ -701,9 +910,16 @@ export default function StudentManagement() {
                   <button
                     type="button"
                     onClick={handleCopyCredentials}
-                    className="flex-1 py-2.5 rounded-xl border border-indigo-100 bg-indigo-50/50 hover:bg-indigo-50 text-[#3b28cc] text-sm font-semibold transition-colors cursor-pointer text-center"
+                    className="flex-1 py-2.5 rounded-xl border border-indigo-100 bg-indigo-50/50 hover:bg-indigo-50 text-[#3b28cc] text-sm font-semibold transition-colors cursor-pointer text-center flex items-center justify-center gap-1.5"
                   >
-                    Copy Credentials
+                    {copiedCredentials ? (
+                      <>
+                        <FiCheckCircle className="w-4 h-4 text-emerald-600" />
+                        <span className="text-emerald-700">Copied to Clipboard!</span>
+                      </>
+                    ) : (
+                      'Copy Credentials'
+                    )}
                   </button>
                   <button
                     type="button"

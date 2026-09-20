@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { FiCheckCircle, FiAlertCircle, FiShare2, FiMail, FiX, FiCamera, FiSearch, FiUserCheck, FiRefreshCw, FiCalendar, FiUser, FiFilter, FiChevronDown, FiCheck, FiUsers, FiArrowLeft } from 'react-icons/fi';
 import { TbQrcode, TbMailCheck, TbMailDown, TbCalendarEvent } from 'react-icons/tb';
 import { Html5Qrcode } from 'html5-qrcode';
+import { getCachedData, setCachedData } from '../../utils/apiCache';
 
 const getTodayDateString = () => {
   const d = new Date();
@@ -34,12 +35,15 @@ const formatDateLabel = (dateStr) => {
 };
 
 export default function AttendanceMonitor() {
-  const [students, setStudents] = useState([]);
-  const [attendanceData, setAttendanceData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const todayStr = getTodayDateString();
+  const cachedStudents = getCachedData('/api/students');
+  const cachedAttendance = getCachedData(`/api/attendance/today?date=${todayStr}`);
+
+  const [students, setStudents] = useState(cachedStudents || []);
+  const [attendanceData, setAttendanceData] = useState(cachedAttendance || []);
+  const [loading, setLoading] = useState(!cachedAttendance);
 
   // Date selection state for viewing history date-wise
-  const todayStr = getTodayDateString();
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const isViewingToday = selectedDate === todayStr;
 
@@ -94,6 +98,7 @@ export default function AttendanceMonitor() {
           return idA.localeCompare(idB, undefined, { numeric: true, sensitivity: 'base' });
         });
         setStudents(sorted);
+        setCachedData('/api/students', sorted);
       }
     } catch (err) {
       console.error('Error fetching students for attendance:', err);
@@ -102,11 +107,15 @@ export default function AttendanceMonitor() {
 
   // Load attendance logs from database for selected date
   const fetchAttendanceByDate = async (targetDateStr) => {
-    try {
+    const queryDate = targetDateStr || selectedDate;
+    const cacheKey = `/api/attendance/today?date=${queryDate}`;
+    const cached = getCachedData(cacheKey);
+    if (!cached && !attendanceData.length) {
       setLoading(true);
+    }
+    try {
       const token = localStorage.getItem('token');
-      const queryDate = targetDateStr || selectedDate;
-      const res = await fetch(`/api/attendance/today?date=${queryDate}`, {
+      const res = await fetch(cacheKey, {
         headers: {
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         }
@@ -134,6 +143,7 @@ export default function AttendanceMonitor() {
             };
           });
           setAttendanceData(formatted);
+          setCachedData(cacheKey, formatted);
         } else {
           setAttendanceData([]);
         }

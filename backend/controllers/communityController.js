@@ -107,37 +107,6 @@ let hasCleanedUpLegacyData = false;
 // @route   GET /api/community
 const getPosts = async (req, res) => {
   try {
-    // Only run database cleanup/seeding once on startup, not on every HTTP GET request
-    if (!hasCleanedUpLegacyData) {
-      hasCleanedUpLegacyData = true;
-      try {
-        await CommunityPost.deleteMany({
-          $or: [
-            { course: 'Advanced Calculus' },
-            { course: 'Physics 202' },
-            { title: { $regex: "Maxwell's Equations|Chain Rule|Thermodynamics", $options: 'i' } }
-          ]
-        });
-
-        await CommunityPost.updateMany(
-          { authorName: /Wickramasinghe/i, authorRole: 'teacher' },
-          { $set: { authorName: 'Mr. Akila Savinda', authorAvatar: 'https://i.pravatar.cc/150?u=akila' } }
-        );
-        await CommunityPost.updateMany(
-          { 'replies.authorName': /Wickramasinghe/i, 'replies.authorRole': 'teacher' },
-          { $set: { 'replies.$[elem].authorName': 'Mr. Akila Savinda', 'replies.$[elem].authorAvatar': 'https://i.pravatar.cc/150?u=akila' } },
-          { arrayFilters: [{ 'elem.authorName': { $regex: /Wickramasinghe/i }, 'elem.authorRole': 'teacher' }] }
-        );
-
-        const count = await CommunityPost.countDocuments();
-        if (count === 0) {
-          await CommunityPost.insertMany(seedPosts);
-        }
-      } catch (cleanupErr) {
-        console.warn('Community legacy data cleanup error:', cleanupErr.message);
-      }
-    }
-
     const { filter, search } = req.query;
     let query = {};
 
