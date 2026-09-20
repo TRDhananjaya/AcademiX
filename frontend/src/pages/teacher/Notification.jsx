@@ -2,10 +2,15 @@ import { useState, useEffect } from 'react';
 import { FiCheck, FiArrowRight } from 'react-icons/fi';
 import { TbAlertTriangle, TbFileText, TbMessageShare, TbBrain } from 'react-icons/tb';
 import { navigate } from '../../App';
+import { getCachedData, setCachedData } from '../../utils/apiCache';
 
 export default function TeacherNotifications() {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const authHeader = token ? `Bearer ${token}` : '';
+  const cachedNotifs = getCachedData('/api/notifications/teacher_combined', authHeader);
+
+  const [notifications, setNotifications] = useState(cachedNotifs || []);
+  const [loading, setLoading] = useState(!cachedNotifs);
   const [expandedNotifs, setExpandedNotifs] = useState({});
 
   const toggleExpand = (id) => {
@@ -14,39 +19,42 @@ export default function TeacherNotifications() {
 
   useEffect(() => {
     const fetchNotifications = async () => {
+      const currentToken = localStorage.getItem('token');
+      const currentAuth = currentToken ? `Bearer ${currentToken}` : '';
+      if (!notifications.length && !getCachedData('/api/notifications/teacher_combined', currentAuth)) {
+        setLoading(true);
+      }
       try {
-        const token = localStorage.getItem('token');
-        // Fetch dynamic notifications from /api/notifications
-        const res1 = await fetch('/api/notifications', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        let notifs1 = [];
-        if (res1.ok) {
-          notifs1 = await res1.json();
-        }
+        // Fetch notifications and quiz results in parallel with authorization
+        const [res1, res2] = await Promise.all([
+          fetch('/api/notifications', {
+            headers: currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {}
+          }),
+          fetch('/api/quiz-results', {
+            headers: currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {}
+          })
+        ]);
 
-        // Fetch dynamic quiz results
-        let notifs2 = [];
-        const res2 = await fetch('/api/quiz-results');
-        if (res2.ok) {
-          const data = await res2.json();
-          if (Array.isArray(data)) {
-            notifs2 = data.map(item => ({
-              _id: `quiz-result-${item._id}`,
-              isQuizResult: true,
-              notificationType: 'Quiz Results',
-              title: `Quiz Completed: ${item.quizTitle || item.quizId}`,
-              message: `Student: ${item.studentName} (${item.studentId}) • Score: ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct).`,
-              createdAt: item.submittedAt || new Date().toISOString(),
-              actionLabel: 'Quiz Details',
-              isRead: false
-            }));
-          }
-        }
+        const [data1, data2] = await Promise.all([
+          res1.ok ? res1.json() : [],
+          res2.ok ? res2.json() : []
+        ]);
 
-        setNotifications([...notifs1, ...notifs2].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+        const notifs1 = Array.isArray(data1) ? data1 : [];
+        const notifs2 = Array.isArray(data2) ? data2.map(item => ({
+          _id: `quiz-result-${item._id}`,
+          isQuizResult: true,
+          notificationType: 'Quiz Results',
+          title: `Quiz Completed: ${item.quizTitle || item.quizId}`,
+          message: `Student: ${item.studentName} (${item.studentId}) • Score: ${item.percentage}% (${item.correctAnswers ?? item.score}/${item.totalQuestions} correct).`,
+          createdAt: item.submittedAt || new Date().toISOString(),
+          actionLabel: 'Quiz Details',
+          isRead: false
+        })) : [];
+
+        const combined = [...notifs1, ...notifs2].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setNotifications(combined);
+        setCachedData('/api/notifications/teacher_combined', combined, currentAuth);
       } catch (error) {
         console.error('Error fetching notifications:', error);
       } finally {
@@ -114,9 +122,7 @@ export default function TeacherNotifications() {
 
       {/* Notification Items */}
       <div className="space-y-4">
-        {loading ? (
-          <p className="text-slate-500">Loading notifications...</p>
-        ) : notifications.length > 0 ? (
+        {notifications.length > 0 ? (
           notifications.map((notif) => (
             <div
               key={notif._id}
@@ -187,6 +193,11 @@ export default function TeacherNotifications() {
               </div>
             </div>
           ))
+        ) : loading ? (
+          <div className="flex flex-col items-center justify-center py-16 bg-white rounded-2xl border border-slate-100 shadow-sm">
+            <div className="w-10 h-10 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin mb-3"></div>
+            <p className="text-slate-500 font-medium">Loading notifications...</p>
+          </div>
         ) : (
           <div className="bg-white rounded-2xl p-12 border border-slate-100 text-center shadow-sm">
             <p className="text-slate-500 text-sm">No notifications found in this category.</p>

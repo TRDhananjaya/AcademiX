@@ -3,33 +3,41 @@ import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
 import { navigate } from '../../App';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { getCachedData, setCachedData } from '../../utils/apiCache';
 
 export default function Analytics() {
   const [viewMode, setViewMode] = useState('quiz'); // 'quiz' or 'student'
   const [activeNav, setActiveNav] = useState('analytics');
   const [error, setError] = useState(null);
 
+  // Cached initial metadata
+  const cachedMeta = getCachedData('/api/analytics/meta');
+  const initialQuizFilter = cachedMeta?.quizzes?.[0] || '';
+  const initialLessonFilter = cachedMeta?.lessons?.[0] || '';
+  const cachedQuizData = initialQuizFilter ? getCachedData(`/api/analytics?quizId=${initialQuizFilter}&page=1&search=`) : null;
+  const cachedLessonData = initialLessonFilter ? getCachedData(`/api/analytics/student-performance?lessonId=${initialLessonFilter}&page=1&search=`) : null;
+
   // --- Quiz Analytics View States ---
-  const [quizzes, setQuizzes] = useState([]);
-  const [quizFilter, setQuizFilter] = useState('');
-  const [quizRecords, setQuizRecords] = useState([]);
-  const [quizSummary, setQuizSummary] = useState(null);
-  const [quizPagination, setQuizPagination] = useState({ currentPage: 1, totalPages: 1, totalRecords: 0, perPage: 10 });
+  const [quizzes, setQuizzes] = useState(cachedMeta?.quizzes || []);
+  const [quizFilter, setQuizFilter] = useState(initialQuizFilter);
+  const [quizRecords, setQuizRecords] = useState(cachedQuizData?.records || []);
+  const [quizSummary, setQuizSummary] = useState(cachedQuizData?.summary || null);
+  const [quizPagination, setQuizPagination] = useState(cachedQuizData?.pagination || { currentPage: 1, totalPages: 1, totalRecords: 0, perPage: 10 });
   const [quizStudentSearch, setQuizStudentSearch] = useState('');
-  const [quizLoading, setQuizLoading] = useState(false);
+  const [quizLoading, setQuizLoading] = useState(!cachedQuizData);
 
   // --- Student Performance View States ---
-  const [lessons, setLessons] = useState([]);
-  const [lessonFilter, setLessonFilter] = useState('');
-  const [studentRecords, setStudentRecords] = useState([]);
-  const [lessonSummary, setLessonSummary] = useState(null);
-  const [studentPagination, setStudentPagination] = useState({ currentPage: 1, totalPages: 1, totalRecords: 0, perPage: 10 });
+  const [lessons, setLessons] = useState(cachedMeta?.lessons || []);
+  const [lessonFilter, setLessonFilter] = useState(initialLessonFilter);
+  const [studentRecords, setStudentRecords] = useState(cachedLessonData?.records || []);
+  const [lessonSummary, setLessonSummary] = useState(cachedLessonData?.summary || null);
+  const [studentPagination, setStudentPagination] = useState(cachedLessonData?.pagination || { currentPage: 1, totalPages: 1, totalRecords: 0, perPage: 10 });
   const [studentSearch, setStudentSearch] = useState('');
-  const [studentLoading, setStudentLoading] = useState(false);
+  const [studentLoading, setStudentLoading] = useState(!cachedLessonData);
 
   // --- Individual Student View States ---
-  const [studentsList, setStudentsList] = useState([]);
-  const [individualStudentFilter, setIndividualStudentFilter] = useState('');
+  const [studentsList, setStudentsList] = useState(cachedMeta?.students || []);
+  const [individualStudentFilter, setIndividualStudentFilter] = useState(cachedMeta?.students?.[0]?.id || '');
   const [individualData, setIndividualData] = useState(null);
   const [individualLoading, setIndividualLoading] = useState(false);
   const [historySearch, setHistorySearch] = useState('');
@@ -49,17 +57,27 @@ export default function Analytics() {
         const lessonsData = await lessonsRes.json();
         const studentsData = await studentsRes.json();
 
-        if (quizzesData.quizzes?.length > 0) {
-          setQuizzes(quizzesData.quizzes);
-          setQuizFilter(quizzesData.quizzes[0]);
+        const fetchedQuizzes = quizzesData.quizzes || [];
+        const fetchedLessons = lessonsData.lessons || [];
+        const fetchedStudents = studentsData.students || [];
+
+        setCachedData('/api/analytics/meta', {
+          quizzes: fetchedQuizzes,
+          lessons: fetchedLessons,
+          students: fetchedStudents
+        });
+
+        if (fetchedQuizzes.length > 0) {
+          setQuizzes(fetchedQuizzes);
+          setQuizFilter(prev => prev || fetchedQuizzes[0]);
         }
-        if (lessonsData.lessons?.length > 0) {
-          setLessons(lessonsData.lessons);
-          setLessonFilter(lessonsData.lessons[0]);
+        if (fetchedLessons.length > 0) {
+          setLessons(fetchedLessons);
+          setLessonFilter(prev => prev || fetchedLessons[0]);
         }
-        if (studentsData.students?.length > 0) {
-          setStudentsList(studentsData.students);
-          setIndividualStudentFilter(studentsData.students[0].id);
+        if (fetchedStudents.length > 0) {
+          setStudentsList(fetchedStudents);
+          setIndividualStudentFilter(prev => prev || fetchedStudents[0].id);
         }
       } catch (err) {
         console.error('Failed to fetch initial data:', err);
@@ -71,7 +89,16 @@ export default function Analytics() {
   // Fetch Quiz Analytics Data
   const fetchQuizAnalytics = async (page = 1) => {
     if (!quizFilter) return;
-    setQuizLoading(true);
+    const cacheKey = `/api/analytics?quizId=${quizFilter}&page=${page}&search=${quizStudentSearch}`;
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      setQuizRecords(cached.records || []);
+      setQuizSummary(cached.summary || null);
+      setQuizPagination(cached.pagination || { currentPage: 1, totalPages: 1, totalRecords: 0, perPage: 10 });
+      setQuizLoading(false);
+    } else if (!quizRecords.length) {
+      setQuizLoading(true);
+    }
     setError(null);
     try {
       let url = `/api/analytics?page=${page}&limit=10&quizId=${quizFilter}`;
@@ -81,9 +108,13 @@ export default function Analytics() {
       const data = await res.json();
 
       if (res.ok) {
-        setQuizRecords(data.records || []);
-        setQuizSummary(data.summary || null);
-        setQuizPagination(data.pagination || { currentPage: 1, totalPages: 1, totalRecords: 0, perPage: 10 });
+        const records = data.records || [];
+        const summary = data.summary || null;
+        const pagination = data.pagination || { currentPage: 1, totalPages: 1, totalRecords: 0, perPage: 10 };
+        setQuizRecords(records);
+        setQuizSummary(summary);
+        setQuizPagination(pagination);
+        setCachedData(cacheKey, { records, summary, pagination });
       } else {
         setError('Failed to fetch quiz analytics data.');
       }
@@ -106,7 +137,16 @@ export default function Analytics() {
   // Fetch Student Performance Data
   const fetchStudentPerformance = async (page = 1) => {
     if (!lessonFilter) return;
-    setStudentLoading(true);
+    const cacheKey = `/api/analytics/student-performance?lessonId=${lessonFilter}&page=${page}&search=${studentSearch}`;
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      setStudentRecords(cached.records || []);
+      setLessonSummary(cached.summary || null);
+      setStudentPagination(cached.pagination || { currentPage: 1, totalPages: 1, totalRecords: 0, perPage: 10 });
+      setStudentLoading(false);
+    } else if (!studentRecords.length) {
+      setStudentLoading(true);
+    }
     setError(null);
     try {
       let url = `/api/analytics/student-performance?page=${page}&limit=10&lessonId=${lessonFilter}`;
@@ -116,9 +156,13 @@ export default function Analytics() {
       const data = await res.json();
 
       if (res.ok) {
-        setStudentRecords(data.records || []);
-        setLessonSummary(data.summary || null);
-        setStudentPagination(data.pagination || { currentPage: 1, totalPages: 1, totalRecords: 0, perPage: 10 });
+        const records = data.records || [];
+        const summary = data.summary || null;
+        const pagination = data.pagination || { currentPage: 1, totalPages: 1, totalRecords: 0, perPage: 10 };
+        setStudentRecords(records);
+        setLessonSummary(summary);
+        setStudentPagination(pagination);
+        setCachedData(cacheKey, { records, summary, pagination });
       } else {
         setError('Failed to fetch student performance data.');
       }
@@ -393,9 +437,9 @@ export default function Analytics() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {quizLoading ? (
+                      {quizLoading && quizRecords.length === 0 ? (
                         <tr>
-                          <td colSpan="5" className="py-16 text-center">
+                          <td colSpan="6" className="py-16 text-center">
                             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>
                             <p className="mt-4 text-sm text-slate-500 font-medium">Loading analytics...</p>
                           </td>
@@ -553,7 +597,7 @@ export default function Analytics() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {studentLoading ? (
+                      {studentLoading && studentRecords.length === 0 ? (
                         <tr>
                           <td colSpan="6" className="py-16 text-center">
                             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"></div>

@@ -204,22 +204,28 @@ const getResultsByStudent = async (req, res) => {
 // @access  Public (for now)
 const getAllResults = async (req, res) => {
   try {
-    const results = await QuizResult.aggregate([
-      { $sort: { submittedAt: -1 } },
-      { $limit: 100 },
-      { $lookup: {
-          from: 'quizzes',
-          localField: 'quizId',
-          foreignField: 'quizCode',
-          as: 'quizData'
-      }},
-      { $unwind: { path: '$quizData', preserveNullAndEmptyArrays: true } },
-      { $addFields: {
-          quizTitle: '$quizData.title',
-          bundleTopic: '$quizData.bundleTopic'
-      }},
-      { $project: { quizData: 0 } }
-    ]);
+    const rawResults = await QuizResult.find()
+      .sort({ submittedAt: -1 })
+      .limit(60)
+      .select('quizId studentId studentName percentage score correctAnswers totalQuestions submittedAt')
+      .lean();
+
+    const quizIds = [...new Set(rawResults.map(r => r.quizId).filter(Boolean))];
+    const quizzes = await Quiz.find({ quizCode: { $in: quizIds } })
+      .select('quizCode title bundleTopic')
+      .lean();
+
+    const qMap = {};
+    for (const q of quizzes) {
+      qMap[q.quizCode] = q;
+    }
+
+    const results = rawResults.map(r => ({
+      ...r,
+      quizTitle: qMap[r.quizId]?.title || r.quizId,
+      bundleTopic: qMap[r.quizId]?.bundleTopic || ''
+    }));
+
     res.status(200).json(results);
   } catch (error) {
     console.error('Error fetching all quiz results:', error);

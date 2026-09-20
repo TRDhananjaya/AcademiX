@@ -28,47 +28,51 @@ const getAnalytics = async (req, res, next) => {
             query.studentName = { $regex: studentName, $options: 'i' };
         }
 
-        // Get the total count for pagination
-        const totalRecords = await QuizResult.countDocuments(query);
-
-        // Fetch paginated records using aggregation to lookup student grade
-        const records = await QuizResult.aggregate([
-            { $match: query },
-            { $sort: { score: -1, submittedAt: -1 } },
-            { $skip: skip },
-            { $limit: limit },
-            { $lookup: {
-                from: 'students',
-                localField: 'studentId',
-                foreignField: 'studentId',
-                as: 'studentData'
-            }},
-            { $unwind: { path: '$studentData', preserveNullAndEmptyArrays: true } },
-            { $addFields: { grade: '$studentData.grade' } },
-            { $project: { studentData: 0 } }
+        // Parallelize total count, paginated records, and summary stats
+        const [totalRecords, rawRecords, stats] = await Promise.all([
+            QuizResult.countDocuments(query),
+            QuizResult.find(query)
+                .sort({ score: -1, submittedAt: -1 })
+                .skip(skip)
+                .limit(limit)
+                .select('-answersDetails')
+                .lean(),
+            (quizId && quizId !== 'All Quizzes')
+                ? QuizResult.aggregate([
+                    { $match: { quizId: quizId } },
+                    { $group: {
+                        _id: null,
+                        totalStudents: { $sum: 1 },
+                        highestScore: { $max: '$score' },
+                        lowestScore: { $min: '$score' },
+                        averageScore: { $avg: '$score' }
+                    }}
+                ])
+                : Promise.resolve([])
         ]);
+
+        // Attach student grade efficiently without heavy unprojected joins
+        const sIds = [...new Set(rawRecords.map(r => r.studentId).filter(Boolean))];
+        const studentDocs = sIds.length > 0
+            ? await Student.find({ studentId: { $in: sIds } }).select('studentId grade').lean()
+            : [];
+        const gradeMap = {};
+        studentDocs.forEach(s => { gradeMap[s.studentId] = s.grade; });
+
+        const records = rawRecords.map(r => ({
+            ...r,
+            grade: gradeMap[r.studentId] || 'N/A'
+        }));
 
         // Calculate summary stats
         let summary = null;
-        if (quizId && quizId !== 'All Quizzes') {
-            const stats = await QuizResult.aggregate([
-                { $match: { quizId: quizId } },
-                { $group: {
-                    _id: null,
-                    totalStudents: { $sum: 1 },
-                    highestScore: { $max: '$score' },
-                    lowestScore: { $min: '$score' },
-                    averageScore: { $avg: '$score' }
-                }}
-            ]);
-            if (stats.length > 0) {
-                summary = {
-                    totalStudents: stats[0].totalStudents,
-                    highestScore: stats[0].highestScore,
-                    lowestScore: stats[0].lowestScore,
-                    averageScore: stats[0].averageScore
-                };
-            }
+        if (quizId && quizId !== 'All Quizzes' && stats.length > 0) {
+            summary = {
+                totalStudents: stats[0].totalStudents,
+                highestScore: stats[0].highestScore,
+                lowestScore: stats[0].lowestScore,
+                averageScore: stats[0].averageScore
+            };
         }
 
         res.status(200).json({
@@ -362,15 +366,7 @@ const getTeacherDashboardStats = async (req, res, next) => {
         const limit = parseInt(req.query.limit, 10) || 5; // Default 5 items per page
         const skip = (page - 1) * limit;
 
-        // 1. Get total, active, and inactive student counts
-        const totalStudents = await Student.countDocuments();
-        const activeStudents = await Student.countDocuments({ status: { $ne: 'Inactive' } });
-        const inactiveStudents = await Student.countDocuments({ status: 'Inactive' });
-
-        // 2. Get active modules count
-        const activeModules = await Quiz.countDocuments();
-
-        // 3. Get quiz results using aggregation to map the lessonName (bundleTopic)
+        // 1. Build Quiz Result Aggregation Stages
         const aggregationStages = [
             { $lookup: {
                 from: 'quizzes',
@@ -398,7 +394,33 @@ const getTeacherDashboardStats = async (req, res, next) => {
             aggregationStages.push({ $match: { lessonName: moduleQuery } });
         }
 
-        const allQuizResults = await QuizResult.aggregate(aggregationStages);
+        // 2. Fetch all independent dashboard data in parallel to eliminate multi-second latency
+        const [
+            totalStudents,
+            activeStudents,
+            inactiveStudents,
+            activeModules,
+            allQuizResults,
+            atRiskPredictions,
+            students,
+            recentPosts
+        ] = await Promise.all([
+            Student.countDocuments(),
+            Student.countDocuments({ status: { $ne: 'Inactive' } }),
+            Student.countDocuments({ status: 'Inactive' }),
+            Quiz.countDocuments(),
+            QuizResult.aggregate(aggregationStages),
+            Prediction.aggregate([
+                { $match: { lessonId: { $nin: ['General', 'Final Exam', 'Final Exam (All Lessons)', '', null] } } },
+                { $sort: { createdAt: -1 } },
+                { $group: { _id: { studentId: "$studentId", lessonId: "$lessonId" }, latestPrediction: { $first: "$$ROOT" } } },
+                { $replaceRoot: { newRoot: "$latestPrediction" } },
+                { $match: { predictedScore: { $lt: 50 }, teacherMet: { $ne: true } } },
+                { $project: { studentId: 1 } }
+            ]),
+            Student.find({ status: { $ne: 'Inactive' } }, 'studentId name initials status').sort({ name: 1 }).lean(),
+            CommunityPost.find({}, 'title body authorName replies needsTeacherInput createdAt').sort({ createdAt: -1 }).limit(2).lean()
+        ]);
         
         let classAverage = 0;
         if (allQuizResults.length > 0) {
@@ -406,19 +428,10 @@ const getTeacherDashboardStats = async (req, res, next) => {
             classAverage = Math.round(sum / allQuizResults.length);
         }
 
-        // 4. Get at-risk students count from predictions
-        const atRiskAggregation = await Prediction.aggregate([
-            { $match: { lessonId: { $nin: ['General', 'Final Exam', 'Final Exam (All Lessons)', '', null] } } },
-            { $sort: { createdAt: -1 } },
-            { $group: { _id: { studentId: "$studentId", lessonId: "$lessonId" }, latestPrediction: { $first: "$$ROOT" } } },
-            { $replaceRoot: { newRoot: "$latestPrediction" } },
-            { $match: { predictedScore: { $lt: 50 }, teacherMet: { $ne: true } } },
-            { $group: { _id: "$studentId" } },
-            { $count: "uniqueStudents" }
-        ]);
-        const atRiskCount = atRiskAggregation.length > 0 ? atRiskAggregation[0].uniqueStudents : 0;
+        const atRiskCount = new Set(atRiskPredictions.map(p => p.studentId)).size;
+        const mlRiskCount = atRiskPredictions.length;
 
-        // 5. Group quiz results by studentId (lowercase)
+        // 3. Group quiz results by studentId (lowercase)
         const resultsByStudent = {};
         allQuizResults.forEach(result => {
             if (!result.studentId) return;
@@ -433,9 +446,6 @@ const getTeacherDashboardStats = async (req, res, next) => {
         Object.keys(resultsByStudent).forEach(sId => {
             resultsByStudent[sId].sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
         });
-
-        // 6. Fetch all active/at-risk students to populate student tracker
-        const students = await Student.find({ status: { $ne: 'Inactive' } }).sort({ name: 1 });
 
         const studentTrackerList = students.map(student => {
             const usernameLower = student.studentId ? student.studentId.toLowerCase() : '';
@@ -483,11 +493,7 @@ const getTeacherDashboardStats = async (req, res, next) => {
             };
         });
 
-        // 7. Get recent community posts needing guidance/activity
-        const recentPosts = await CommunityPost.find()
-            .sort({ createdAt: -1 })
-            .limit(2);
-
+        // 4. Map recent community posts
         const communityActivity = recentPosts.map(post => {
             const repliesCount = post.replies ? post.replies.length : 0;
             const minsAgo = Math.floor((Date.now() - new Date(post.createdAt)) / 60000);
@@ -511,7 +517,7 @@ const getTeacherDashboardStats = async (req, res, next) => {
             };
         });
 
-        // 8. Generate predictive insights dynamically
+        // 5. Generate predictive insights dynamically
         const lessonMap = {};
         allQuizResults.forEach(r => {
             const lesson = r.quizId ? r.quizId.split('.')[0] : 'General';
@@ -540,17 +546,6 @@ const getTeacherDashboardStats = async (req, res, next) => {
                 actionRecommended: true
             }
         ];
-
-        // NEW ML INTERVENTION ALERT
-        const interventionAggregation = await Prediction.aggregate([
-            { $match: { lessonId: { $nin: ['General', 'Final Exam', 'Final Exam (All Lessons)', '', null] } } },
-            { $sort: { createdAt: -1 } },
-            { $group: { _id: { studentId: "$studentId", lessonId: "$lessonId" }, latestPrediction: { $first: "$$ROOT" } } },
-            { $replaceRoot: { newRoot: "$latestPrediction" } },
-            { $match: { predictedScore: { $lt: 50 }, teacherMet: { $ne: true } } },
-            { $count: "interventionCount" }
-        ]);
-        const mlRiskCount = interventionAggregation.length > 0 ? interventionAggregation[0].interventionCount : 0;
 
         if (mlRiskCount > 0) {
             insights.push({

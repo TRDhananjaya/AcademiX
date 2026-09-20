@@ -2,48 +2,65 @@ const CommonMessage = require('../models/CommonMessage');
 const User = require('../models/User');
 
 const seedMessages = [];
-
-let hasCleanedUpLegacyMessages = false;
+const userAvatarCache = new Map();
 
 // @desc    Get all global community messages
 // @route   GET /api/common-messages
 const getMessages = async (req, res) => {
   try {
-    // Only delete legacy dummy seed messages once on startup, not on 3s live polling
-    if (!hasCleanedUpLegacyMessages) {
-      hasCleanedUpLegacyMessages = true;
+    const messages = await CommonMessage.find({}).sort({ timestamp: 1 }).limit(200).lean();
+
+    // Map unique senderIds to their database-saved profile pictures
+    const senderIds = [...new Set(messages.map(msg => (msg.senderId || '').toLowerCase()))];
+    
+    // Check missing senders not in memory cache
+    const now = Date.now();
+    const missingSenders = senderIds.filter(id => {
+      const entry = userAvatarCache.get(id);
+      return !entry || (now - entry.timestamp > 120000); // 2 min TTL
+    });
+
+    if (missingSenders.length > 0) {
       try {
-        await CommonMessage.deleteMany({
-          $or: [
-            { senderId: { $in: ['drjenkins', 'alexchen', 'student1'] } },
-            { text: { $regex: "thermodynamics|AcademiX Common Learning Platform|Shared Resources section Alex", $options: 'i' } }
-          ]
+        const users = await User.aggregate([
+          { $match: { username: { $in: missingSenders } } },
+          {
+            $project: {
+              username: 1,
+              profilePicture: {
+                $cond: [
+                  { $gt: [{ $strLenCP: { $ifNull: ['$profilePicture', ''] } }, 80000] },
+                  '',
+                  '$profilePicture'
+                ]
+              }
+            }
+          }
+        ]);
+        users.forEach(u => {
+          if (u.username) {
+            userAvatarCache.set(u.username.toLowerCase(), {
+              avatar: u.profilePicture || '',
+              timestamp: now
+            });
+          }
         });
-      } catch (cleanupErr) {
-        console.warn('Common messages cleanup error:', cleanupErr.message);
+      } catch (aggErr) {
+        console.warn('Avatar aggregation error:', aggErr.message);
       }
     }
 
-    const messages = await CommonMessage.find({}).sort({ timestamp: 1 }).limit(200);
-
-    // Map unique senderIds to their database-saved profile pictures (normalized to lowercase)
-    const senderIds = [...new Set(messages.map(msg => (msg.senderId || '').toLowerCase()))];
-    const users = await User.find({ username: { $in: senderIds } }, 'username profilePicture').lean();
-    const userMap = new Map();
-    users.forEach(u => {
-      if (u.username) {
-        userMap.set(u.username.toLowerCase(), u.profilePicture || '');
-      }
-    });
-
     const enrichedMessages = messages.map(msg => {
       const senderKey = (msg.senderId || '').toLowerCase();
-      if (userMap.has(senderKey)) {
-        const msgObj = msg.toObject();
-        msgObj.senderAvatar = userMap.get(senderKey);
-        return msgObj;
+      const cached = userAvatarCache.get(senderKey);
+      const msgObj = { ...msg };
+      
+      if (cached && cached.avatar) {
+        msgObj.senderAvatar = cached.avatar;
+      } else if (msgObj.senderAvatar && msgObj.senderAvatar.length > 80000) {
+        msgObj.senderAvatar = '';
       }
-      return msg;
+      return msgObj;
     });
 
     res.status(200).json(enrichedMessages);
