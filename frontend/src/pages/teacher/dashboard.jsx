@@ -112,6 +112,28 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
     setActiveNav(activeTab);
   }, [activeTab]);
 
+  const tabToPath = {
+    dashboard: '/teacher/dashboard',
+    lessons: '/teacher/resources',
+    quizzes: '/teacher/quizzes',
+    'quiz-report': '/teacher/quiz-report',
+    attendance: '/teacher/attendance',
+    notifications: '/teacher/notifications',
+    community: '/teacher/community',
+    students: '/teacher/students',
+    analytics: '/analytics',
+    profile: '/teacher/profile'
+  };
+
+  const handleNavClick = (tabId) => {
+    const targetPath = tabToPath[tabId];
+    if (targetPath && window.location.pathname !== targetPath) {
+      navigate(targetPath);
+    } else {
+      setActiveNav(tabId);
+    }
+  };
+
   // Fetch dashboard stats dynamically on mount
   useEffect(() => {
     if (activeNav !== 'dashboard') return;
@@ -222,7 +244,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
 
               {/* Today's Attendance */}
               <div
-                onClick={() => setActiveNav('attendance')}
+                onClick={() => handleNavClick('attendance')}
                 className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md hover:border-emerald-300 flex flex-col justify-between relative overflow-hidden cursor-pointer transition-all duration-200 group"
                 title="View Live QR Attendance Monitor"
               >
@@ -301,7 +323,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
 
                   <div className="space-y-2.5">
                     <div
-                      onClick={() => setActiveNav('quizzes')}
+                      onClick={() => handleNavClick('quizzes')}
                       className="p-3 rounded-xl border border-slate-100/90 hover:border-indigo-200 bg-slate-50/40 hover:bg-white transition-all cursor-pointer flex items-center justify-between group"
                     >
                       <div className="flex items-center gap-3">
@@ -317,7 +339,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                     </div>
 
                     <div
-                      onClick={() => setActiveNav('lessons')}
+                      onClick={() => handleNavClick('lessons')}
                       className="p-3 rounded-xl border border-slate-100/90 hover:border-emerald-200 bg-slate-50/40 hover:bg-white transition-all cursor-pointer flex items-center justify-between group"
                     >
                       <div className="flex items-center gap-3">
@@ -333,7 +355,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                     </div>
 
                     <div
-                      onClick={() => setActiveNav('attendance')}
+                      onClick={() => handleNavClick('attendance')}
                       className="p-3 rounded-xl border border-slate-100/90 hover:border-blue-200 bg-slate-50/40 hover:bg-white transition-all cursor-pointer flex items-center justify-between group"
                     >
                       <div className="flex items-center gap-3">
@@ -349,7 +371,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                     </div>
 
                     <div
-                      onClick={() => setActiveNav('notifications')}
+                      onClick={() => handleNavClick('notifications')}
                       className="p-3 rounded-xl border border-slate-100/90 hover:border-violet-200 bg-slate-50/40 hover:bg-white transition-all cursor-pointer flex items-center justify-between group"
                     >
                       <div className="flex items-center gap-3">
@@ -379,7 +401,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                       Community Hub
                     </h3>
                     <button
-                      onClick={() => setActiveNav('community')}
+                      onClick={() => handleNavClick('community')}
                       className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1 cursor-pointer"
                     >
                       View All &gt;
@@ -428,7 +450,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                           key={post.id}
                           onClick={() => {
                             setSelectedPost(post);
-                            setActiveNav('community');
+                            handleNavClick('community');
                           }}
                           className="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 transition-all hover:bg-slate-100/60 cursor-pointer flex flex-col justify-between"
                         >
@@ -495,7 +517,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                 </div>
 
                 <button
-                  onClick={() => setActiveNav('community')}
+                  onClick={() => handleNavClick('community')}
                   className="w-full mt-5 py-2.5 bg-indigo-50/70 hover:bg-indigo-100/80 text-indigo-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-indigo-100/60"
                 >
                   Go to Community Hub
@@ -513,7 +535,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
 
   return (
     <div className="flex min-h-screen font-sans bg-[#f8f9fb]" id="dashboard-layout">
-      <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
+      <Sidebar activeItem={activeNav} onNavigate={handleNavClick} />
       <div className="flex-1 flex flex-col min-w-0 ml-0 md:ml-[72px] lg:ml-[240px]">
         <TopBar />
         <main className="flex-1 p-[20px_16px] md:p-[32px_40px_40px] overflow-y-auto">
