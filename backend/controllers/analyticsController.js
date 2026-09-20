@@ -401,9 +401,14 @@ const getTeacherDashboardStats = async (req, res, next) => {
         const allQuizResults = await QuizResult.aggregate(aggregationStages);
         
         let classAverage = 0;
+        let overallPassRate = 0;
+        let totalQuizzesSubmitted = allQuizResults.length;
         if (allQuizResults.length > 0) {
             const sum = allQuizResults.reduce((acc, curr) => acc + (curr.percentage || 0), 0);
             classAverage = Math.round(sum / allQuizResults.length);
+            
+            const passedCount = allQuizResults.filter(r => (r.percentage || 0) >= 50).length;
+            overallPassRate = Math.round((passedCount / allQuizResults.length) * 100);
         }
 
         // 4. Get at-risk students count from predictions
@@ -514,7 +519,7 @@ const getTeacherDashboardStats = async (req, res, next) => {
         // 8. Generate predictive insights dynamically
         const lessonMap = {};
         allQuizResults.forEach(r => {
-            const lesson = r.quizId ? r.quizId.split('.')[0] : 'General';
+            const lesson = r.lessonName && r.lessonName !== 'Unknown Lesson' ? r.lessonName : (r.quizId ? r.quizId.split('.')[0] : 'General');
             if (!lessonMap[lesson]) {
                 lessonMap[lesson] = { totalPct: 0, count: 0 };
             }
@@ -522,13 +527,20 @@ const getTeacherDashboardStats = async (req, res, next) => {
             lessonMap[lesson].count += 1;
         });
 
-        let weakestLesson = 'General';
-        let lowestLessonAvg = 100;
+        let weakestLesson = '--';
+        let lowestLessonAvg = 101;
+        let strongestLesson = '--';
+        let highestLessonAvg = -1;
+        
         Object.keys(lessonMap).forEach(lesson => {
             const avg = lessonMap[lesson].totalPct / lessonMap[lesson].count;
             if (avg < lowestLessonAvg) {
                 lowestLessonAvg = avg;
                 weakestLesson = lesson;
+            }
+            if (avg > highestLessonAvg) {
+                highestLessonAvg = avg;
+                strongestLesson = lesson;
             }
         });
 
@@ -716,7 +728,14 @@ const getTeacherDashboardStats = async (req, res, next) => {
                 totalQuizzes: activeModules,
                 classAverage,
                 atRiskCount,
-                todayPresentCount
+                todayPresentCount,
+                studentsWithQuizzesCount: Object.keys(resultsByStudent).length,
+                totalQuizzesSubmitted,
+                overallPassRate,
+                strongestLesson: Object.keys(lessonMap).length > 0 ? strongestLesson : '--',
+                weakestLesson: Object.keys(lessonMap).length > 0 ? weakestLesson : '--',
+                strongestLessonAvg: Object.keys(lessonMap).length > 0 ? Math.round(highestLessonAvg) : 0,
+                weakestLessonAvg: Object.keys(lessonMap).length > 0 ? Math.round(lowestLessonAvg) : 0
             },
             insights,
             communityActivity,
