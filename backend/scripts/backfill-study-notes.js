@@ -60,7 +60,7 @@ async function backfill() {
 
     let index = 0;
 
-    for (const plan of plans.slice(0, 5)) {
+    for (const plan of plans) {
       index++;
       console.log(`\n[Backfill] Processing ${index}/${plans.length}`);
       console.log(`[Backfill] StudentPlan: ${plan._id}`);
@@ -120,6 +120,21 @@ async function backfill() {
       });
       
       let averageScore = totalQuestions > 0 ? (totalScore / totalQuestions) * 100 : 0;
+      
+      const questionLookup = {};
+      lessonQuizzes.forEach(q => {
+         if (q.questions && q.questions.length > 0) {
+            q.questions.forEach(qn => {
+               if (qn._id) {
+                  questionLookup[qn._id.toString()] = {
+                     text: qn.text,
+                     options: qn.options || [],
+                     correctOption: qn.correctOption
+                  };
+               }
+            });
+         }
+      });
       let modulesData = [];
       let planHasIncorrectQuestions = false;
       
@@ -140,6 +155,7 @@ async function backfill() {
          let mScore = 0;
          let mTotal = 0;
          let incorrectQuestions = [];
+         let answersAnalysis = [];
 
          moduleQuizzes.forEach(q => {
             const result = studentResults.find(r => r.quizId === q.quizCode);
@@ -149,6 +165,29 @@ async function backfill() {
                
                if (result.answersDetails && result.answersDetails.length > 0) {
                   result.answersDetails.forEach(ans => {
+                     const qIdStr = ans.questionId ? ans.questionId.toString() : null;
+                     const quizQ = qIdStr ? questionLookup[qIdStr] : null;
+
+                     let studentAnsText = null;
+                     let correctAnsText = null;
+                     if (quizQ && quizQ.options && quizQ.options.length > 0) {
+                         if (typeof ans.selectedOption === 'number' && ans.selectedOption >= 0 && ans.selectedOption < quizQ.options.length) {
+                             studentAnsText = quizQ.options[ans.selectedOption];
+                         }
+                         if (typeof ans.correctOption === 'number' && ans.correctOption >= 0 && ans.correctOption < quizQ.options.length) {
+                             correctAnsText = quizQ.options[ans.correctOption];
+                         }
+                     }
+
+                     if (studentAnsText !== null && correctAnsText !== null) {
+                         answersAnalysis.push({
+                             questionText: ans.questionText || '',
+                             studentAnswer: studentAnsText,
+                             correctAnswer: correctAnsText,
+                             isCorrect: ans.isCorrect
+                         });
+                     }
+
                      if (!ans.isCorrect) {
                         incorrectQuestions.push(ans.questionText);
                         planHasIncorrectQuestions = true;
@@ -162,74 +201,39 @@ async function backfill() {
          modulesData.push({
             module_id: moduleIdStr,
             score: mScorePct,
-            incorrect_questions: incorrectQuestions
+            incorrect_questions: incorrectQuestions,
+            answers_analysis: answersAnalysis
          });
       });
 
       if (!planHasIncorrectQuestions) {
-         console.log(`[Backfill] SKIPPED - No Incorrect Questions`);
-         skippedNoIncorrect++;
-         continue;
+         console.log(`[Backfill] No answersDetails - Using Fallback`);
       }
 
       // 2. Original string parsing
       const oldPlan = plan.generatedStudyPlan;
       
       function replaceNotesSection(oldMarkdown, newMarkdown) {
-        const isHeading = (line) => {
-            const trimmed = line.trim();
-            const cleaned = trimmed.replace(/^\*\*|\*\*$/g, '').trim();
-            if (cleaned.startsWith('#')) return true;
-            if (/^\d+\.\s+[A-Z\s]{4,}/.test(cleaned)) return true;
-            if (/^[A-Z\s]{5,}:?$/.test(cleaned) && cleaned.length < 60) return true;
-            return false;
-        };
+         // Find what we want to insert
+         let newStart = newMarkdown.search(/(?:^|\n)(?:#+|\*\*|^\d+\.)?\s*(?:4\.\s*|5\.\s*)?(?:PERSONALIZED STUDY NOTES|TOPICS TO FOCUS|KEY DEFINITIONS)/i);
+         let newEnd = newMarkdown.search(/(?:^|\n)(?:#+|\*\*|^\d+\.)?\s*(?:6\.\s*)?(?:PERSONAL REVISION CHECKLIST|STUDY PLAN SCHEDULE|PRACTICE QUIZ|STUDY TIME|MOTIVATION)/i);
+         
+         if (newStart === -1) return null;
+         let newContent = newEnd !== -1 ? newMarkdown.substring(newStart, newEnd) : newMarkdown.substring(newStart);
 
-        // 1. Extract the new notes & definitions from the NEW plan
-        let newNotesBlock = [];
-        let inNewNotes = false;
-        for (const line of newMarkdown.split('\n')) {
-            if (isHeading(line)) {
-                const upper = line.toUpperCase();
-                if (upper.includes('STUDY NOTES') || upper.includes('KEY DEFINITIONS')) {
-                    inNewNotes = true;
-                } else if (inNewNotes && (upper.includes('CHECKLIST') || upper.includes('QUIZ') || upper.includes('SCHEDULE') || upper.includes('MOTIVATION'))) {
-                    inNewNotes = false;
-                }
-            }
-            if (inNewNotes) {
-                newNotesBlock.push(line);
-            }
-        }
-        const newContentToInsert = newNotesBlock.join('\n');
+         // Find where to replace in OLD
+         let oldStart = oldMarkdown.search(/(?:^|\n)(?:#+|\*\*|^\d+\.)?\s*(?:(?:4|5|2|3)\.\s*)?(?:PERSONALIZED STUDY NOTES|TOPICS TO FOCUS|KEY DEFINITIONS|WEAK TOPICS|KNOWLEDGE GAPS|CONCEPTS TO REVIEW)/i);
+         let oldEnd = oldMarkdown.search(/(?:^|\n)(?:#+|\*\*|^\d+\.)?\s*(?:(?:6|7|8)\.\s*)?(?:PERSONAL REVISION CHECKLIST|STUDY PLAN SCHEDULE|PRACTICE QUIZ|STUDY TIME|MOTIVATION|STUDY SCHEDULE)/i);
 
-        if (!newContentToInsert.trim()) return null;
-
-        // 2. Find boundaries in OLD plan
-        let oldLines = oldMarkdown.split('\n');
-        let startIdx = -1;
-        let endIdx = -1;
-        for (let i = 0; i < oldLines.length; i++) {
-            const line = oldLines[i];
-            if (isHeading(line)) {
-                const upper = line.toUpperCase();
-                if (startIdx === -1 && (upper.includes('STUDY NOTE') || upper.includes('KEY DEFINITIONS') || upper.includes('TOPICS TO FOCUS'))) {
-                    startIdx = i;
-                }
-                else if (startIdx !== -1 && endIdx === -1 && 
-                    (upper.includes('CHECKLIST') || upper.includes('QUIZ') || upper.includes('PRACTICE') || upper.includes('STUDY TIME') || upper.includes('SCHEDULE'))) {
-                    endIdx = i;
-                }
-            }
-        }
-
-        if (startIdx === -1) return null;
-        if (endIdx === -1) endIdx = oldLines.length;
-
-        const prefix = oldLines.slice(0, startIdx).join('\n');
-        const suffix = oldLines.slice(endIdx).join('\n');
-
-        return prefix + '\n' + newContentToInsert + '\n' + suffix;
+         if (oldStart !== -1 && oldEnd !== -1 && oldEnd > oldStart) {
+             return oldMarkdown.substring(0, oldStart) + '\n' + newContent.trim() + '\n\n' + oldMarkdown.substring(oldEnd).trim();
+         } else if (oldStart !== -1) {
+             return oldMarkdown.substring(0, oldStart) + '\n' + newContent.trim() + '\n';
+         } else if (oldEnd !== -1) {
+             return oldMarkdown.substring(0, oldEnd) + '\n' + newContent.trim() + '\n\n' + oldMarkdown.substring(oldEnd).trim();
+         } else {
+             return oldMarkdown + '\n\n' + newContent.trim() + '\n';
+         }
       }
 
       const ragApiUrl = process.env.RAG_API_URL || 'http://localhost:8000';

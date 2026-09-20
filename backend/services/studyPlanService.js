@@ -68,6 +68,23 @@ const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
     
     let averageScore = totalQuestions > 0 ? (totalScore / totalQuestions) * 100 : 0;
 
+    // Build a lookup map: questionId (string) → { text, options, correctOption }
+    // from the already-loaded Quiz documents so we can resolve option indices to text
+    const questionLookup = {};
+    lessonQuizzes.forEach(q => {
+       if (q.questions && q.questions.length > 0) {
+          q.questions.forEach(qn => {
+             if (qn._id) {
+                questionLookup[qn._id.toString()] = {
+                   text: qn.text,
+                   options: qn.options || [],
+                   correctOption: qn.correctOption
+                };
+             }
+          });
+       }
+    });
+
     let modulesData = [];
     
     lessonModules.forEach(m => {
@@ -88,6 +105,7 @@ const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
        let mScore = 0;
        let mTotal = 0;
        let incorrectQuestions = [];
+       let answersAnalysis = [];
 
        moduleQuizzes.forEach(q => {
           const result = studentResults.find(r => r.quizId === q.quizCode);
@@ -97,8 +115,59 @@ const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
              
              if (result.answersDetails && result.answersDetails.length > 0) {
                 result.answersDetails.forEach(ans => {
+                   // Legacy: keep the text-only incorrect_questions for backward compatibility
                    if (!ans.isCorrect) {
                       incorrectQuestions.push(ans.questionText);
+                   }
+
+                   // New: build rich answer analysis with resolved option text
+                   const qId = ans.questionId ? ans.questionId.toString() : null;
+                   const quizQuestion = qId ? questionLookup[qId] : null;
+
+                   let studentAnswerText = null;
+                   let correctAnswerText = null;
+
+                   if (quizQuestion && quizQuestion.options && quizQuestion.options.length > 0) {
+                      // Safely resolve selectedOption index to text
+                      if (typeof ans.selectedOption === 'number' && 
+                          ans.selectedOption >= 0 && 
+                          ans.selectedOption < quizQuestion.options.length) {
+                         studentAnswerText = quizQuestion.options[ans.selectedOption];
+                      } else {
+                         console.warn(`[StudyPlanService] Could not resolve selectedOption=${ans.selectedOption} for questionId=${qId} (options length: ${quizQuestion.options.length})`);
+                      }
+
+                      // Safely resolve correctOption index to text
+                      if (typeof ans.correctOption === 'number' && 
+                          ans.correctOption >= 0 && 
+                          ans.correctOption < quizQuestion.options.length) {
+                         correctAnswerText = quizQuestion.options[ans.correctOption];
+                      } else {
+                         console.warn(`[StudyPlanService] Could not resolve correctOption=${ans.correctOption} for questionId=${qId} (options length: ${quizQuestion.options.length})`);
+                      }
+                   } else {
+                      if (qId) {
+                         console.warn(`[StudyPlanService] Question not found in Quiz lookup for questionId=${qId}`);
+                      }
+                   }
+
+                   // Only include in analysis if we successfully resolved both answer texts
+                   if (studentAnswerText !== null && correctAnswerText !== null) {
+                      answersAnalysis.push({
+                         questionText: ans.questionText || '',
+                         studentAnswer: studentAnswerText,
+                         correctAnswer: correctAnswerText,
+                         isCorrect: ans.isCorrect
+                      });
+                   } else if (ans.questionText) {
+                      // Fallback: include question text without answer details
+                      // so Gemini still knows the question but cannot assume the specific misconception
+                      answersAnalysis.push({
+                         questionText: ans.questionText,
+                         studentAnswer: 'Unable to resolve',
+                         correctAnswer: 'Unable to resolve',
+                         isCorrect: ans.isCorrect
+                      });
                    }
                 });
              }
@@ -110,7 +179,8 @@ const generateStudyPlanAsync = async (studentId, studentName, lessonId) => {
        modulesData.push({
           module_id: moduleIdStr,
           score: mScorePct,
-          incorrect_questions: incorrectQuestions
+          incorrect_questions: incorrectQuestions,
+          answers_analysis: answersAnalysis
        });
     });
 
