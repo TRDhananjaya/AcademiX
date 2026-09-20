@@ -412,7 +412,7 @@ const getTeacherDashboardStats = async (req, res, next) => {
             { $sort: { createdAt: -1 } },
             { $group: { _id: { studentId: "$studentId", lessonId: "$lessonId" }, latestPrediction: { $first: "$$ROOT" } } },
             { $replaceRoot: { newRoot: "$latestPrediction" } },
-            { $match: { predictedScore: { $lt: 50 } } },
+            { $match: { predictedScore: { $lt: 50 }, teacherMet: { $ne: true } } },
             { $group: { _id: "$studentId" } },
             { $count: "uniqueStudents" }
         ]);
@@ -766,7 +766,8 @@ const getAdminInterventionAlerts = async (req, res, next) => {
             },
             {
                 $match: {
-                    predictedScore: { $lt: 50 }
+                    predictedScore: { $lt: 50 },
+                    teacherMet: { $ne: true }
                 }
             }
         ]);
@@ -826,7 +827,8 @@ const getAdminInterventionAlerts = async (req, res, next) => {
             studentMap[sId].lessons.push({
                 lessonId: pred.lessonId,
                 lessonName: lName,
-                predictedPercentage: pred.predictedScore
+                predictedPercentage: pred.predictedScore,
+                _id: pred._id
             });
         }
 
@@ -931,6 +933,32 @@ const getStudentInterventionAlerts = async (req, res, next) => {
     }
 };
 
+// @desc    Resolve intervention alert (mark as teacher met)
+// @route   PUT /api/analytics/intervention/:predictionId/resolve
+// @access  Private (Teacher)
+const resolveIntervention = async (req, res, next) => {
+    try {
+        const { predictionId } = req.params;
+
+        const prediction = await Prediction.findById(predictionId);
+        
+        if (!prediction) {
+            return res.status(404).json({ message: 'Prediction not found' });
+        }
+
+        prediction.teacherMet = true;
+        prediction.teacherMetAt = new Date();
+        prediction.teacherMetBy = req.user._id;
+
+        await prediction.save();
+
+        res.json({ message: 'Intervention resolved successfully' });
+    } catch (error) {
+        console.error('Resolve Intervention Error:', error);
+        next(error);
+    }
+};
+
 module.exports = {
     getAnalytics,
     getAvailableQuizzes,
@@ -940,5 +968,6 @@ module.exports = {
     getIndividualStudentAnalytics,
     getTeacherDashboardStats,
     getAdminInterventionAlerts,
-    getStudentInterventionAlerts
+    getStudentInterventionAlerts,
+    resolveIntervention
 };
