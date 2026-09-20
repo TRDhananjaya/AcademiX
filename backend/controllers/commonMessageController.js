@@ -9,44 +9,8 @@ let hasCleanedUpLegacyMessages = false;
 // @route   GET /api/common-messages
 const getMessages = async (req, res) => {
   try {
-    // Only delete legacy dummy seed messages once on startup, not on 3s live polling
-    if (!hasCleanedUpLegacyMessages) {
-      hasCleanedUpLegacyMessages = true;
-      try {
-        await CommonMessage.deleteMany({
-          $or: [
-            { senderId: { $in: ['drjenkins', 'alexchen', 'student1'] } },
-            { text: { $regex: "thermodynamics|AcademiX Common Learning Platform|Shared Resources section Alex", $options: 'i' } }
-          ]
-        });
-      } catch (cleanupErr) {
-        console.warn('Common messages cleanup error:', cleanupErr.message);
-      }
-    }
-
-    const messages = await CommonMessage.find({}).sort({ timestamp: 1 }).limit(200);
-
-    // Map unique senderIds to their database-saved profile pictures (normalized to lowercase)
-    const senderIds = [...new Set(messages.map(msg => (msg.senderId || '').toLowerCase()))];
-    const users = await User.find({ username: { $in: senderIds } }, 'username profilePicture').lean();
-    const userMap = new Map();
-    users.forEach(u => {
-      if (u.username) {
-        userMap.set(u.username.toLowerCase(), u.profilePicture || '');
-      }
-    });
-
-    const enrichedMessages = messages.map(msg => {
-      const senderKey = (msg.senderId || '').toLowerCase();
-      if (userMap.has(senderKey)) {
-        const msgObj = msg.toObject();
-        msgObj.senderAvatar = userMap.get(senderKey);
-        return msgObj;
-      }
-      return msg;
-    });
-
-    res.status(200).json(enrichedMessages);
+    const messages = await CommonMessage.find({}).sort({ timestamp: 1 }).limit(200).lean();
+    res.status(200).json(messages);
   } catch (error) {
     console.error('Error fetching common messages:', error);
     res.status(500).json({ message: 'Server error fetching messages' });
@@ -67,14 +31,11 @@ const sendMessage = async (req, res) => {
     const sName = senderName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Community Member');
     const sRole = senderRole || (user ? user.role : 'student');
 
-    const dbUser = await User.findOne({ username: sId.toLowerCase() }, 'profilePicture');
-    const sAvatar = (dbUser && dbUser.profilePicture) || '';
-
     const message = new CommonMessage({
       senderId: sId,
       senderName: sName,
       senderRole: sRole,
-      senderAvatar: sAvatar,
+      senderAvatar: '',
       text: text.trim(),
       timestamp: new Date()
     });

@@ -7,8 +7,8 @@ const syncStudentsAndUsers = async () => {
         // Enforce Grade 10 on all existing students first
         await Student.updateMany({ grade: { $ne: 'Grade 10' } }, { $set: { grade: 'Grade 10' } });
 
-        const users = await User.find({ role: 'student' });
-        const students = await Student.find();
+        const users = await User.find({ role: 'student' }).select('-password -profilePicture').lean();
+        const students = await Student.find().lean();
 
         const studentEmails = new Set(students.map(s => s.email ? s.email.toLowerCase() : '').filter(Boolean));
         const studentIds = new Set(students.map(s => s.studentId ? s.studentId.toLowerCase() : '').filter(Boolean));
