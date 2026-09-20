@@ -100,18 +100,16 @@ export default function Sidebar({ activeItem = 'dashboard', onNavigate }) {
                 }
               `}
               onClick={() => {
-                if (item.id === 'dashboard') {
-                  navigate('/student/dashboard');
-                } else if (item.id === 'study-plans') {
-                  navigate('/student/study-plans');
-                } else if (item.id === 'lessons') {
-                  navigate('/student/lessons');
-                } else if (item.id === 'quizzes') {
-                  navigate('/student/quizzes');
-                } else if (item.id === 'community') {
-                  navigate('/student/community');
-                } else if (item.id === 'notifications') {
-                  navigate('/student/notifications');
+                const routes = {
+                  dashboard: '/student/dashboard',
+                  lessons: '/student/lessons',
+                  quizzes: '/student/quizzes',
+                  'study-plans': '/student/study-plans',
+                  community: '/student/community',
+                  notifications: '/student/notifications'
+                };
+                if (routes[item.id] && window.location.pathname !== routes[item.id]) {
+                  navigate(routes[item.id]);
                 }
                 onNavigate?.(item.id);
               }}
@@ -134,7 +132,9 @@ export default function Sidebar({ activeItem = 'dashboard', onNavigate }) {
       {/* User Profile */}
       <button 
         onClick={() => {
-          navigate('/student/profile');
+          if (window.location.pathname !== '/student/profile') {
+            navigate('/student/profile');
+          }
           onNavigate?.('profile');
         }}
         className="p-4 border-t border-slate-100 flex items-center gap-3 justify-center lg:p-[20px_24px] lg:justify-start w-full text-left bg-transparent hover:bg-slate-50 transition-colors cursor-pointer border-none shrink-0"

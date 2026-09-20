@@ -207,7 +207,11 @@ export default function Notifications() {
                         notif.notificationType === 'StudyPlanGenerated' && (
                           <button
                             type="button"
-                            onClick={() => navigate('/student/study-plans')}
+                            onClick={() => {
+                              if (window.location.pathname !== '/student/study-plans') {
+                                navigate('/student/study-plans');
+                              }
+                            }}
                             className="bg-[#3b28cc] hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors inline-block cursor-pointer border-none"
                           >
                             Review Plan
