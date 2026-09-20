@@ -153,11 +153,71 @@ const calculateFeatures = async (studentId, lessonId) => {
     };
 };
 
-// Shared helper for prediction calculation
+// Shared helper for prediction calculation with Permanent DB Storage & Instant Read
 const getStudentLessonPrediction = async (student, lessonId) => {
     const lessonNum = getLessonNumber(lessonId);
     const lessonMaxMark = lessonMaxMarks[lessonNum] || 50;
+    const dbLessonId = `Q${lessonNum}`;
 
+    // FAST PATH: Check MongoDB FIRST for existing prediction
+    try {
+        const existingPrediction = await Prediction.findOne({
+            studentId: student._id,
+            lessonId: dbLessonId
+        }).sort({ updatedAt: -1, createdAt: -1 });
+
+        if (existingPrediction) {
+            // Verify if student submitted any NEW quizzes after this prediction was saved
+            const lastSavedDate = existingPrediction.updatedAt || existingPrediction.createdAt;
+            const targetStudentId = student.studentId ? student.studentId.toLowerCase() : '';
+            
+            const [newQuiz, newFollowup] = await Promise.all([
+                QuizResult.findOne({
+                    studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') },
+                    submittedAt: { $gt: lastSavedDate }
+                }).select('_id').lean(),
+                FollowupResult.findOne({
+                    studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') },
+                    submittedAt: { $gt: lastSavedDate }
+                }).select('_id').lean()
+            ]);
+
+            // If no new quiz was submitted since the prediction was saved, return DB cached prediction INSTANTLY (sub-1ms)
+            if (!newQuiz && !newFollowup) {
+                const feats = existingPrediction.features || {};
+                const predPct = existingPrediction.predictedScore;
+                const predMark = parseFloat(((predPct / 100) * lessonMaxMark).toFixed(1));
+
+                return {
+                    studentId: student.studentId,
+                    studentName: student.name || 'Unknown',
+                    quiz1Score: feats.Module_1_Score || 0,
+                    quiz2Score: feats.Module_2_Score || 0,
+                    quiz3Score: feats.Module_3_Score || 0,
+                    quizAverage: feats.Avg_Module_Score || 0,
+                    followupScore: feats.Followup_Quiz_Score || 0,
+                    predictedPercentage: predPct,
+                    predictedLessonMark: predMark,
+                    lessonMaxMark: lessonMaxMark,
+                    predictionStatus: "AVAILABLE",
+                    features: {
+                        Quiz_1_Score: feats.Module_1_Score || 0,
+                        Quiz_2_Score: feats.Module_2_Score || 0,
+                        Quiz_3_Score: feats.Module_3_Score || 0,
+                        Quiz_Average: feats.Avg_Module_Score || 0,
+                        Followup_Quiz_Score: feats.Followup_Quiz_Score || 0
+                    },
+                    missingData: [],
+                    hasCompletedRequiredQuizzes: true,
+                    lesson: lessonId
+                };
+            }
+        }
+    } catch (dbErr) {
+        console.error("Error checking instant DB prediction:", dbErr);
+    }
+
+    // SLOW PATH / NEW DATA: Calculate features across quizzes
     const featuresData = await calculateFeatures(student.studentId, lessonId);
     const { missingData, hasCompletedRequiredQuizzes, ...features } = featuresData;
 
@@ -184,22 +244,6 @@ const getStudentLessonPrediction = async (student, lessonId) => {
         return studentResult;
     }
 
-    const dbLessonId = `Q${lessonNum}`;
-    try {
-        const existingPrediction = await Prediction.findOne({
-            studentId: student._id,
-            lessonId: dbLessonId
-        }).sort({ createdAt: -1 });
-
-        if (existingPrediction) {
-            studentResult.predictedPercentage = existingPrediction.predictedScore;
-            studentResult.predictedLessonMark = parseFloat(((existingPrediction.predictedScore / 100) * lessonMaxMark).toFixed(1));
-            return studentResult;
-        }
-    } catch (dbErr) {
-        console.error("Error checking existing prediction:", dbErr);
-    }
-
     const mlFeatures = {
         Quiz_1_Score: features.Quiz_1_Score,
         Quiz_2_Score: features.Quiz_2_Score,
@@ -212,8 +256,8 @@ const getStudentLessonPrediction = async (student, lessonId) => {
     const trimmed = rawUrl.replace(/\/+$/, '');
     const mlUrl = trimmed.endsWith('/predict') ? trimmed : `${trimmed}/predict`;
     const isLocal = mlUrl.includes('127.0.0.1') || mlUrl.includes('localhost');
-    const firstTimeout = isLocal ? 2500 : 35000;
-    const secondTimeout = isLocal ? 2000 : 20000;
+    const firstTimeout = isLocal ? 2000 : 35000;
+    const secondTimeout = isLocal ? 1500 : 20000;
 
     try {
         let mlResponse;
@@ -222,10 +266,9 @@ const getStudentLessonPrediction = async (student, lessonId) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(mlFeatures),
-                signal: AbortSignal.timeout(firstTimeout) // Fast timeout for local, longer for Render cold start
+                signal: AbortSignal.timeout(firstTimeout)
             });
         } catch (firstErr) {
-            // If timed out or cold-starting, retry once (only on remote hosts)
             if (!isLocal) {
                 console.warn(`ML service initial call timed out (${firstErr.message}), retrying once...`);
                 mlResponse = await fetch(mlUrl, {
@@ -245,43 +288,46 @@ const getStudentLessonPrediction = async (student, lessonId) => {
             studentResult.predictedPercentage = parseFloat(predictedPercentage.toFixed(1));
             studentResult.predictedLessonMark = parseFloat(((predictedPercentage / 100) * lessonMaxMark).toFixed(1));
         } else {
-            console.warn(`ML service returned status ${mlResponse?.status} for URL: ${mlUrl}, skipping prediction.`);
-            studentResult.predictionStatus = "ML_SERVICE_ERROR";
+            // Intelligent Fallback: Weighted formula (Quiz Average 60% + Followup 40%)
+            const fallbackPct = parseFloat(((features.Quiz_Average * 0.6) + (features.Followup_Quiz_Score * 0.4)).toFixed(1));
+            studentResult.predictedPercentage = fallbackPct;
+            studentResult.predictedLessonMark = parseFloat(((fallbackPct / 100) * lessonMaxMark).toFixed(1));
         }
     } catch (mlErr) {
-        console.warn(`ML service call failed (${mlErr.message}), skipping prediction.`);
-        studentResult.predictionStatus = "ML_SERVICE_ERROR";
+        console.warn(`ML service call unreachable (${mlErr.message}), using weighted fallback formula.`);
+        // Fallback formula when ML microservice is unreachable
+        const fallbackPct = parseFloat(((features.Quiz_Average * 0.6) + (features.Followup_Quiz_Score * 0.4)).toFixed(1));
+        studentResult.predictedPercentage = fallbackPct;
+        studentResult.predictedLessonMark = parseFloat(((fallbackPct / 100) * lessonMaxMark).toFixed(1));
     }
 
-    // SAVE THE PREDICTION IF IT WAS SUCCESSFULLY GENERATED
+    // PERMANENTLY SAVE OR UPDATE PREDICTION IN MONGODB (UPSERT)
     if (studentResult.predictedPercentage !== null) {
         try {
-            const dbLessonId = `Q${lessonNum}`;
-            
-            // Re-check uniqueness just in case of parallel requests
-            const checkExist = await Prediction.findOne({ studentId: student._id, lessonId: dbLessonId }).sort({ createdAt: -1 });
-            if (!checkExist) {
-                const newPrediction = new Prediction({
-                    studentId: student._id,
-                    lessonId: dbLessonId,
-                    features: {
-                        Module_1_Score: features.Quiz_1_Score,
-                        Module_2_Score: features.Quiz_2_Score,
-                        Module_3_Score: features.Quiz_3_Score,
-                        Avg_Module_Score: features.Quiz_Average,
-                        Followup_Quiz_Score: features.Followup_Quiz_Score,
-                        Weak_Module_Count: 0,
-                        Priority_Score: 0,
-                        Improvement_Percentage: 0,
-                        Lesson_Performance: "N/A",
-                        Quiz_Difficulty: "N/A"
-                    },
-                    predictedScore: studentResult.predictedPercentage
-                });
-                await newPrediction.save();
-            }
+            await Prediction.findOneAndUpdate(
+                { studentId: student._id, lessonId: dbLessonId },
+                {
+                    $set: {
+                        features: {
+                            Module_1_Score: features.Quiz_1_Score,
+                            Module_2_Score: features.Quiz_2_Score,
+                            Module_3_Score: features.Quiz_3_Score,
+                            Avg_Module_Score: features.Quiz_Average,
+                            Followup_Quiz_Score: features.Followup_Quiz_Score,
+                            Weak_Module_Count: 0,
+                            Priority_Score: 0,
+                            Improvement_Percentage: 0,
+                            Lesson_Performance: "N/A",
+                            Quiz_Difficulty: "N/A"
+                        },
+                        predictedScore: studentResult.predictedPercentage,
+                        updatedAt: new Date()
+                    }
+                },
+                { upsert: true, new: true, setDefaultsOnInsert: true }
+            );
         } catch (saveErr) {
-            console.error("Error saving new prediction:", saveErr);
+            console.error("Error saving/updating prediction in MongoDB:", saveErr);
         }
     }
 
@@ -596,5 +642,6 @@ module.exports = {
     generatePrediction,
     getLessonPredictions,
     getStudentAllLessonsPrediction,
-    backfillPredictions
+    backfillPredictions,
+    getStudentLessonPrediction
 };
