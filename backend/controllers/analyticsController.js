@@ -542,20 +542,22 @@ const getTeacherDashboardStats = async (req, res, next) => {
         ];
 
         // NEW ML INTERVENTION ALERT
-        const underperformingPredictions = await Prediction.find({
-            predictedScore: { $lt: 50 },
-            lessonId: { $nin: ['General', 'Final Exam', 'Final Exam (All Lessons)', '', null] }
-        });
-        const uniqueUnderperformingStudentIds = new Set(underperformingPredictions.map(p => p.studentId ? p.studentId.toString() : ''));
-        uniqueUnderperformingStudentIds.delete('');
-        const mlRiskCount = uniqueUnderperformingStudentIds.size;
+        const interventionAggregation = await Prediction.aggregate([
+            { $match: { lessonId: { $nin: ['General', 'Final Exam', 'Final Exam (All Lessons)', '', null] } } },
+            { $sort: { createdAt: -1 } },
+            { $group: { _id: { studentId: "$studentId", lessonId: "$lessonId" }, latestPrediction: { $first: "$$ROOT" } } },
+            { $replaceRoot: { newRoot: "$latestPrediction" } },
+            { $match: { predictedScore: { $lt: 50 }, teacherMet: { $ne: true } } },
+            { $count: "interventionCount" }
+        ]);
+        const mlRiskCount = interventionAggregation.length > 0 ? interventionAggregation[0].interventionCount : 0;
 
         if (mlRiskCount > 0) {
             insights.push({
                 type: 'intervention-alert',
-                title: `Intervention Alert: ${mlRiskCount} Student(s) Underperforming`,
-                description: `${mlRiskCount} student(s) have a predicted term test score below 50% in one or more lessons. Immediate intervention is highly recommended.`,
-                actionText: 'View Underperforming Students'
+                title: `Intervention Alert: ${mlRiskCount} Underperforming Record(s)`,
+                description: `There are ${mlRiskCount} unresolved underperforming lesson predictions. Immediate intervention is highly recommended.`,
+                actionText: 'View Intervention Alerts'
             });
         }
 
