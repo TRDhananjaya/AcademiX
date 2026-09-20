@@ -5,11 +5,24 @@ import { navigate } from '../../App';
 import {
   FiFileText, FiVideo, FiFile, FiArrowLeft, FiSearch,
   FiExternalLink, FiBookOpen, FiFolder, FiLink, FiGlobe,
-  FiHelpCircle, FiDownloadCloud, FiLoader, FiCheckSquare
+  FiHelpCircle, FiDownloadCloud, FiLoader, FiCheckSquare,
+  FiPlay, FiX
 } from 'react-icons/fi';
 
 export default function Lessons() {
   const [activeNav, setActiveNav] = useState('lessons');
+  const [selectedVideo, setSelectedVideo] = useState(null);
+
+  const getYouTubeEmbedUrl = (urlStr) => {
+    if (!urlStr) return null;
+    const str = urlStr.trim();
+    const ytMatch = str.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if (ytMatch && ytMatch[1]) {
+      return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0`;
+    }
+    if (str.includes('youtube.com/embed/')) return str;
+    return null;
+  };
 
   // Hierarchy Navigation state
   // views: 'lessons' (Level 1), 'modules' (Level 2), 'resources' (Level 3)
@@ -118,7 +131,7 @@ export default function Lessons() {
       window.history.pushState(
         { view: 'modules', lessonId: lIdStr },
         '',
-        `${window.location.pathname}?lessonId=${lIdStr}`
+        window.location.pathname
       );
     }
   };
@@ -134,7 +147,7 @@ export default function Lessons() {
       window.history.pushState(
         { view: 'resources', lessonId: lIdStr, moduleId: mIdStr },
         '',
-        `${window.location.pathname}?lessonId=${lIdStr}&moduleId=${mIdStr}`
+        window.location.pathname
       );
     }
   };
@@ -152,13 +165,13 @@ export default function Lessons() {
     }
   };
 
-  // Sync state with Browser History and URL Query Params
+  // Sync state with Browser History
   useEffect(() => {
     const syncStateFromUrl = (stateFromEvent) => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const lessonIdParam = urlParams.get('lessonId') || stateFromEvent?.lessonId;
-      const moduleIdParam = urlParams.get('moduleId') || stateFromEvent?.moduleId;
-      const viewParam = stateFromEvent?.view || (moduleIdParam ? 'resources' : lessonIdParam ? 'modules' : 'lessons');
+      const currentState = stateFromEvent || window.history.state;
+      const lessonIdParam = currentState?.lessonId;
+      const moduleIdParam = currentState?.moduleId;
+      const viewParam = currentState?.view || 'lessons';
 
       if (viewParam === 'resources' && moduleIdParam && lessons.length > 0 && modules.length > 0) {
         const foundLesson = lessons.find(l => String(l._id || l.id) === String(lessonIdParam));
@@ -171,7 +184,7 @@ export default function Lessons() {
         if (foundLesson) setActiveLesson(foundLesson);
         setActiveModule(null);
         setCurrentView('modules');
-      } else if (!lessonIdParam && !moduleIdParam) {
+      } else if (viewParam === 'lessons') {
         setCurrentView('lessons');
         setActiveLesson(null);
         setActiveModule(null);
@@ -198,46 +211,32 @@ export default function Lessons() {
     const resId = res._id || res.id;
     setDownloadingId(resId);
     try {
-      let rawUrl = res.url;
-      if (!rawUrl || rawUrl === '#') {
-        const response = await fetch(`/api/resources/${resId}`);
-        if (response.ok) {
-          const data = await response.json();
-          rawUrl = data.url;
-        }
+      if (res.url && !res.url.startsWith('data:') && res.url !== '#' && !res.url.startsWith('/public/uploads/')) {
+        const externalUrl = /^https?:\/\//i.test(res.url) ? res.url : `https://${res.url}`;
+        window.open(externalUrl, '_blank');
+        return;
       }
 
-      if (rawUrl) {
-        if (rawUrl.startsWith('data:')) {
-          const parts = rawUrl.split(',');
-          const mimeMatch = parts[0].match(/:(.*?);/);
-          const mime = mimeMatch ? mimeMatch[1] : 'application/pdf';
-          const bstr = atob(parts[1]);
-          let n = bstr.length;
-          const u8arr = new Uint8Array(n);
-          while (n--) {
-            u8arr[n] = bstr.charCodeAt(n);
-          }
-          const blob = new Blob([u8arr], { type: mime });
-          const blobUrl = URL.createObjectURL(blob);
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/resources/${resId}/file`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
 
-          const link = document.createElement('a');
-          link.href = blobUrl;
-          link.download = res.title || 'resource-file.pdf';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-        } else {
-          const link = document.createElement('a');
-          link.href = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`;
-          link.download = res.title || 'resource-file';
-          link.target = '_blank';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
+      if (!response.ok) {
+        throw new Error('Server error downloading resource file');
       }
+
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      const safeTitle = (res.title || 'resource-file').trim();
+      link.download = safeTitle.endsWith('.pdf') ? safeTitle : `${safeTitle}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
     } catch (err) {
       console.error('Error downloading resource:', err);
     } finally {
@@ -539,13 +538,13 @@ export default function Lessons() {
 
                   {/* Resource Counts: Only PDFs & Videos */}
                   <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-100 text-center text-slate-500 mt-auto">
-                    <div className="bg-rose-50/70 border border-rose-100/70 rounded-2xl p-2.5">
-                      <span className="block text-base font-extrabold text-rose-900">{pdfsCount}</span>
-                      <span className="text-[10px] font-extrabold uppercase text-rose-700 tracking-wider">PDFs</span>
+                    <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-2.5">
+                      <span className="block text-base font-extrabold text-slate-800">{pdfsCount}</span>
+                      <span className="text-[10px] font-bold uppercase text-slate-500 tracking-wider">PDFs</span>
                     </div>
-                    <div className="bg-purple-50/70 border border-purple-100/70 rounded-2xl p-2.5">
-                      <span className="block text-base font-extrabold text-purple-900">{videosCount}</span>
-                      <span className="text-[10px] font-extrabold uppercase text-purple-700 tracking-wider">Videos</span>
+                    <div className="bg-indigo-50/60 border border-indigo-100/80 rounded-xl p-2.5">
+                      <span className="block text-base font-extrabold text-indigo-900">{videosCount}</span>
+                      <span className="text-[10px] font-bold uppercase text-indigo-700 tracking-wider">Videos</span>
                     </div>
                   </div>
 
@@ -621,15 +620,13 @@ export default function Lessons() {
               <FiExternalLink className="w-3.5 h-3.5" />
             </a>
           ) : res.type === 'Video' || /youtube\.com|youtu\.be/i.test(res.url || '') ? (
-            <a
-              href={/^https?:\/\//i.test(res.url) ? res.url : `https://${res.url}`}
-              target="_blank"
-              rel="noreferrer"
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-3.5 rounded-xl text-xs transition-colors shrink-0 flex items-center gap-1.5 shadow-sm cursor-pointer"
+            <button
+              onClick={() => setSelectedVideo(res)}
+              className="bg-[#3b28cc] hover:bg-indigo-700 text-white font-bold py-2 px-3.5 rounded-xl text-xs transition-colors shrink-0 flex items-center gap-1.5 shadow-sm cursor-pointer border-none"
             >
-              Resource Video
-              <FiVideo className="w-3.5 h-3.5" />
-            </a>
+              Watch Video
+              <FiPlay className="w-3.5 h-3.5 fill-current" />
+            </button>
           ) : (
             <button
               disabled={isDownloading}
@@ -705,10 +702,10 @@ export default function Lessons() {
         <div className="flex gap-2 overflow-x-auto pb-1">
           {[
             { id: 'All', label: 'All Resources' },
-            { id: 'MCQ', label: '📝 MCQ Practice PDFs' },
-            { id: 'Lesson PDF', label: '📘 Lesson Main PDFs' },
-            { id: 'Module PDF', label: '📂 Module PDFs' },
-            { id: 'Videos', label: '🎥 Resource Videos & Links' }
+            { id: 'MCQ', label: 'MCQ Practice PDFs' },
+            { id: 'Lesson PDF', label: 'Lesson Main PDFs' },
+            { id: 'Module PDF', label: 'Module PDFs' },
+            { id: 'Videos', label: 'Resource Videos & Links' }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -729,15 +726,15 @@ export default function Lessons() {
           {/* 1. MCQ Practice PDFs */}
           {(resourceFilter === 'All' || resourceFilter === 'MCQ') && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-amber-100">
-                <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-100">
                   <FiCheckSquare className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">📝 MCQ Practice PDFs</h3>
+                  <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">MCQ Practice PDFs</h3>
                   <p className="text-[11px] text-slate-400">Multiple choice question sheets for student practice</p>
                 </div>
-                <span className="ml-auto text-xs font-bold bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full border border-amber-200">
+                <span className="ml-auto text-xs font-bold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full border border-slate-200">
                   {mcqResources.length} Items
                 </span>
               </div>
@@ -756,15 +753,15 @@ export default function Lessons() {
           {/* 2. Lesson Main PDFs */}
           {(resourceFilter === 'All' || resourceFilter === 'Lesson PDF') && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-indigo-100">
-                <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-100">
                   <FiBookOpen className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">📘 Lesson Main PDFs & Syllabus Guides</h3>
+                  <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">Lesson Main PDFs & Syllabus Guides</h3>
                   <p className="text-[11px] text-slate-400">Main lesson notes shared across all chapters</p>
                 </div>
-                <span className="ml-auto text-xs font-bold bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full border border-indigo-200">
+                <span className="ml-auto text-xs font-bold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full border border-slate-200">
                   {lessonPdfResources.length} Items
                 </span>
               </div>
@@ -783,15 +780,15 @@ export default function Lessons() {
           {/* 3. Module PDFs */}
           {(resourceFilter === 'All' || resourceFilter === 'Module PDF') && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-rose-100">
-                <div className="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-100">
                   <FiFileText className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">📂 Module Chapter PDFs & Documents</h3>
+                  <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">Module Chapter PDFs & Documents</h3>
                   <p className="text-[11px] text-slate-400">Chapter notes, presentations, and documents</p>
                 </div>
-                <span className="ml-auto text-xs font-bold bg-rose-50 text-rose-700 px-2.5 py-0.5 rounded-full border border-rose-200">
+                <span className="ml-auto text-xs font-bold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full border border-slate-200">
                   {modulePdfResources.length} Items
                 </span>
               </div>
@@ -810,15 +807,15 @@ export default function Lessons() {
           {/* 4. Resource Videos & Links */}
           {(resourceFilter === 'All' || resourceFilter === 'Videos') && (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 pb-2 border-b border-purple-100">
-                <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                <div className="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center border border-indigo-100">
                   <FiVideo className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">🎥 Resource Videos & Links</h3>
+                  <h3 className="text-sm font-extrabold text-slate-800 uppercase tracking-wide">Resource Videos & Links</h3>
                   <p className="text-[11px] text-slate-400">Educational resource videos, YouTube links, and simulation web tools</p>
                 </div>
-                <span className="ml-auto text-xs font-bold bg-purple-50 text-purple-700 px-2.5 py-0.5 rounded-full border border-purple-200">
+                <span className="ml-auto text-xs font-bold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded-full border border-slate-200">
                   {videoLinkResources.length} Items
                 </span>
               </div>
@@ -865,6 +862,74 @@ export default function Lessons() {
           {currentView === 'resources' && renderResourcesView()}
         </main>
       </div>
+
+      {/* Embedded Video Player Modal */}
+      {selectedVideo && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl max-w-4xl w-full overflow-hidden shadow-2xl border border-slate-100 flex flex-col">
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 flex items-center justify-between border-b border-slate-100 bg-slate-50/60">
+              <div className="flex items-center gap-2.5 min-w-0 pr-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100">
+                  <FiPlay className="w-4 h-4 fill-current" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-extrabold text-slate-800 truncate" title={selectedVideo.title}>
+                    {selectedVideo.title}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 font-medium truncate">
+                    {selectedVideo.description || 'AcademiX Educational Video Resource'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSelectedVideo(null)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer shrink-0 border border-slate-200/60"
+              >
+                <FiX className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Video Container (16:9 Aspect Ratio) */}
+            <div className="relative w-full pb-[56.25%] bg-black">
+              {getYouTubeEmbedUrl(selectedVideo.url) ? (
+                <iframe
+                  src={getYouTubeEmbedUrl(selectedVideo.url)}
+                  title={selectedVideo.title}
+                  className="absolute top-0 left-0 w-full h-full border-none"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                ></iframe>
+              ) : (
+                <video
+                  src={/^https?:\/\//i.test(selectedVideo.url) ? selectedVideo.url : `https://${selectedVideo.url}`}
+                  controls
+                  autoPlay
+                  className="absolute top-0 left-0 w-full h-full object-contain"
+                >
+                  Your browser does not support video playback.
+                </video>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 sm:p-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between gap-3 text-xs">
+              <span className="text-[11px] font-semibold text-slate-500">
+                Playing in AcademiX Player
+              </span>
+              <a
+                href={/^https?:\/\//i.test(selectedVideo.url) ? selectedVideo.url : `https://${selectedVideo.url}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 hover:underline"
+              >
+                Open in YouTube / External Tab
+                <FiExternalLink className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

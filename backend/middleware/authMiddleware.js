@@ -8,12 +8,14 @@ const User = require('../models/User');
 async function authMiddleware(req, res, next) {
 	let token;
 
-	// Check for Bearer token in Authorization header
+	// Check for Bearer token in Authorization header or query parameter
 	if (
 		req.headers.authorization &&
 		req.headers.authorization.startsWith('Bearer')
 	) {
 		token = req.headers.authorization.split(' ')[1];
+	} else if (req.query && req.query.token) {
+		token = req.query.token;
 	}
 
 	if (!token) {
