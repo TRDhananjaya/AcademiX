@@ -42,7 +42,7 @@ export default function StudentManagement() {
   const isEmailValid = !newStudent.email.trim() || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newStudent.email.trim());
   const isStudentPhoneValid = !newStudent.studentMobile.trim() || isValidSriLankanPhone(newStudent.studentMobile, false);
   const isParentPhoneValid = !newStudent.parentMobile.trim() || isValidSriLankanPhone(newStudent.parentMobile, false);
-  const isPasswordValid = newStudent._id || !newStudent.password.trim() || newStudent.password.trim().length >= 6;
+  const isPwdLengthValid = newStudent._id || !newStudent.password.trim() || newStudent.password.trim().length >= 6;
 
   const markTouched = (field) => {
     setTouchedFields(prev => ({ ...prev, [field]: true }));
