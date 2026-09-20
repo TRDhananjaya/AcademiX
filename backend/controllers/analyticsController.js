@@ -406,8 +406,17 @@ const getTeacherDashboardStats = async (req, res, next) => {
             classAverage = Math.round(sum / allQuizResults.length);
         }
 
-        // 4. Get at-risk students count
-        const atRiskCount = await Student.countDocuments({ status: 'At Risk' });
+        // 4. Get at-risk students count from predictions
+        const atRiskAggregation = await Prediction.aggregate([
+            { $match: { lessonId: { $nin: ['General', 'Final Exam', 'Final Exam (All Lessons)', '', null] } } },
+            { $sort: { createdAt: -1 } },
+            { $group: { _id: { studentId: "$studentId", lessonId: "$lessonId" }, latestPrediction: { $first: "$$ROOT" } } },
+            { $replaceRoot: { newRoot: "$latestPrediction" } },
+            { $match: { predictedScore: { $lt: 50 }, teacherMet: { $ne: true } } },
+            { $group: { _id: "$studentId" } },
+            { $count: "uniqueStudents" }
+        ]);
+        const atRiskCount = atRiskAggregation.length > 0 ? atRiskAggregation[0].uniqueStudents : 0;
 
         // 5. Group quiz results by studentId (lowercase)
         const resultsByStudent = {};
@@ -533,20 +542,22 @@ const getTeacherDashboardStats = async (req, res, next) => {
         ];
 
         // NEW ML INTERVENTION ALERT
-        const underperformingPredictions = await Prediction.find({
-            predictedScore: { $lt: 50 },
-            lessonId: { $nin: ['General', 'Final Exam', 'Final Exam (All Lessons)', '', null] }
-        });
-        const uniqueUnderperformingStudentIds = new Set(underperformingPredictions.map(p => p.studentId ? p.studentId.toString() : ''));
-        uniqueUnderperformingStudentIds.delete('');
-        const mlRiskCount = uniqueUnderperformingStudentIds.size;
+        const interventionAggregation = await Prediction.aggregate([
+            { $match: { lessonId: { $nin: ['General', 'Final Exam', 'Final Exam (All Lessons)', '', null] } } },
+            { $sort: { createdAt: -1 } },
+            { $group: { _id: { studentId: "$studentId", lessonId: "$lessonId" }, latestPrediction: { $first: "$$ROOT" } } },
+            { $replaceRoot: { newRoot: "$latestPrediction" } },
+            { $match: { predictedScore: { $lt: 50 }, teacherMet: { $ne: true } } },
+            { $count: "interventionCount" }
+        ]);
+        const mlRiskCount = interventionAggregation.length > 0 ? interventionAggregation[0].interventionCount : 0;
 
         if (mlRiskCount > 0) {
             insights.push({
                 type: 'intervention-alert',
-                title: `Intervention Alert: ${mlRiskCount} Student(s) Underperforming`,
-                description: `${mlRiskCount} student(s) have a predicted term test score below 50% in one or more lessons. Immediate intervention is highly recommended.`,
-                actionText: 'View Underperforming Students'
+                title: `Intervention Alert: ${mlRiskCount} Underperforming Record(s)`,
+                description: `There are ${mlRiskCount} unresolved underperforming lesson predictions. Immediate intervention is highly recommended.`,
+                actionText: 'View Intervention Alerts'
             });
         }
 
@@ -757,7 +768,8 @@ const getAdminInterventionAlerts = async (req, res, next) => {
             },
             {
                 $match: {
-                    predictedScore: { $lt: 50 }
+                    predictedScore: { $lt: 50 },
+                    teacherMet: { $ne: true }
                 }
             }
         ]);
@@ -817,7 +829,8 @@ const getAdminInterventionAlerts = async (req, res, next) => {
             studentMap[sId].lessons.push({
                 lessonId: pred.lessonId,
                 lessonName: lName,
-                predictedPercentage: pred.predictedScore
+                predictedPercentage: pred.predictedScore,
+                _id: pred._id
             });
         }
 
@@ -922,6 +935,32 @@ const getStudentInterventionAlerts = async (req, res, next) => {
     }
 };
 
+// @desc    Resolve intervention alert (mark as teacher met)
+// @route   PUT /api/analytics/intervention/:predictionId/resolve
+// @access  Private (Teacher)
+const resolveIntervention = async (req, res, next) => {
+    try {
+        const { predictionId } = req.params;
+
+        const prediction = await Prediction.findById(predictionId);
+        
+        if (!prediction) {
+            return res.status(404).json({ message: 'Prediction not found' });
+        }
+
+        prediction.teacherMet = true;
+        prediction.teacherMetAt = new Date();
+        prediction.teacherMetBy = req.user._id;
+
+        await prediction.save();
+
+        res.json({ message: 'Intervention resolved successfully' });
+    } catch (error) {
+        console.error('Resolve Intervention Error:', error);
+        next(error);
+    }
+};
+
 module.exports = {
     getAnalytics,
     getAvailableQuizzes,
@@ -931,5 +970,6 @@ module.exports = {
     getIndividualStudentAnalytics,
     getTeacherDashboardStats,
     getAdminInterventionAlerts,
-    getStudentInterventionAlerts
+    getStudentInterventionAlerts,
+    resolveIntervention
 };

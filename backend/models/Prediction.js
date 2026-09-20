@@ -25,6 +25,17 @@ const predictionSchema = new mongoose.Schema({
   predictedScore: {
     type: Number,
     required: true
+  },
+  teacherMet: {
+    type: Boolean,
+    default: false
+  },
+  teacherMetAt: {
+    type: Date
+  },
+  teacherMetBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true

@@ -10,7 +10,8 @@ const {
     getIndividualStudentAnalytics,
     getTeacherDashboardStats,
     getAdminInterventionAlerts,
-    getStudentInterventionAlerts
+    getStudentInterventionAlerts,
+    resolveIntervention
 } = require('../controllers/analyticsController');
 
 // Teacher-only analytics
@@ -26,6 +27,7 @@ router.get('/student/:studentId', getIndividualStudentAnalytics);
 
 // Intervention routes
 router.get('/intervention', roleMiddleware('teacher'), getAdminInterventionAlerts);
+router.put('/intervention/:predictionId/resolve', roleMiddleware('teacher'), resolveIntervention);
 router.get('/intervention/student/:studentId', getStudentInterventionAlerts);
 
 module.exports = router;
