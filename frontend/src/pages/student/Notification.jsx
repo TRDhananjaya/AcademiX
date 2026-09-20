@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { FiCheck, FiArrowRight, FiPlay, FiBookOpen } from 'react-icons/fi';
 import { TbRobot, TbFileText, TbCalendarEvent, TbBrain } from 'react-icons/tb';
 import { getCachedData, setCachedData } from '../../utils/apiCache';
+import { navigate } from '../../App';
 
 export default function Notifications() {
   const { user } = useAuth();
@@ -204,9 +205,13 @@ export default function Notifications() {
                         </div>
                       ) : (
                         notif.notificationType === 'StudyPlanGenerated' && (
-                          <a href="/student/study-plans" className="bg-[#3b28cc] hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors inline-block">
+                          <button
+                            type="button"
+                            onClick={() => navigate('/student/study-plans')}
+                            className="bg-[#3b28cc] hover:bg-indigo-700 text-white text-xs font-semibold py-2 px-4 rounded-lg transition-colors inline-block cursor-pointer border-none"
+                          >
                             Review Plan
-                          </a>
+                          </button>
                         )
                       )}
                     </div>
