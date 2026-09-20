@@ -3,6 +3,7 @@ import favicon from '../../../assets/favicon.png';
 import logoBlack from '../../../assets/logo_black.png';
 import { useAuth } from '../../../context/AuthContext';
 import propic from '../../../assets/propic.png';
+import { navigate } from '../../../App';
 
 const navItems = [
   {
@@ -130,31 +131,18 @@ export default function Sidebar({ activeItem = 'quizzes', onNavigate }) {
                 }
               `}
               onClick={() => {
-                if (item.id === 'dashboard') {
-                  window.history.pushState({}, '', '/teacher/dashboard');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
-
-                } else if (item.id === 'lessons') {
-                  window.history.pushState({}, '', '/teacher/resources');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
-                } else if (item.id === 'quizzes') {
-                  window.history.pushState({}, '', '/teacher/quizzes');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
-                } else if (item.id === 'analytics') {
-                  window.history.pushState({}, '', '/analytics');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
-                } else if (item.id === 'students') {
-                  window.history.pushState({}, '', '/teacher/students');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
-                } else if (item.id === 'attendance') {
-                  window.history.pushState({}, '', '/teacher/attendance');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
-                } else if (item.id === 'notifications') {
-                  window.history.pushState({}, '', '/teacher/notifications');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
-                } else if (item.id === 'community') {
-                  window.history.pushState({}, '', '/teacher/community');
-                  window.dispatchEvent(new PopStateEvent('popstate'));
+                const routes = {
+                  dashboard: '/teacher/dashboard',
+                  lessons: '/teacher/resources',
+                  quizzes: '/teacher/quizzes',
+                  analytics: '/analytics',
+                  students: '/teacher/students',
+                  attendance: '/teacher/attendance',
+                  notifications: '/teacher/notifications',
+                  community: '/teacher/community'
+                };
+                if (routes[item.id] && window.location.pathname !== routes[item.id]) {
+                  navigate(routes[item.id]);
                 }
                 onNavigate?.(item.id);
               }}
@@ -170,8 +158,9 @@ export default function Sidebar({ activeItem = 'quizzes', onNavigate }) {
       {/* User Profile */}
       <button
         onClick={() => {
-          window.history.pushState({}, '', '/teacher/profile');
-          window.dispatchEvent(new PopStateEvent('popstate'));
+          if (window.location.pathname !== '/teacher/profile') {
+            navigate('/teacher/profile');
+          }
           onNavigate?.('profile');
         }}
         className="p-4 border-t border-slate-100 flex items-center gap-3 justify-center lg:p-[20px_24px] lg:justify-start w-full text-left bg-transparent hover:bg-slate-50 transition-colors cursor-pointer border-none shrink-0"
