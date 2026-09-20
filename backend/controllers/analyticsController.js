@@ -855,6 +855,12 @@ const getAdminInterventionAlerts = async (req, res, next) => {
 
         const students = Object.values(studentMap);
         
+        students.sort((a, b) => {
+            const idA = a.studentId ? a.studentId.toLowerCase() : '';
+            const idB = b.studentId ? b.studentId.toLowerCase() : '';
+            return idA.localeCompare(idB);
+        });
+        
         res.status(200).json({
             count: students.length,
             students
