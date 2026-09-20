@@ -15,27 +15,6 @@ export default function StudentDashboard() {
   const [prediction, setPrediction] = useState(null);
   const [communityPosts, setCommunityPosts] = useState([]);
   const [todayAttendance, setTodayAttendance] = useState(null);
-  const [interventionAlerts, setInterventionAlerts] = useState([]);
-
-  // Fetch Intervention Alerts
-  useEffect(() => {
-    if (!user) return;
-    const fetchAlerts = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`/api/analytics/intervention/student/${user.username}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setInterventionAlerts(data.alerts || []);
-        }
-      } catch (err) {
-        console.error('Error fetching student intervention alerts:', err);
-      }
-    };
-    fetchAlerts();
-  }, [user]);
 
   // Fetch Student Analytics
   useEffect(() => {
@@ -314,29 +293,6 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          {/* Intervention Alert Section */}
-          {interventionAlerts.length > 0 && (
-            <div className="mb-8 bg-red-50 border-l-4 border-red-500 rounded-r-xl p-5 shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className="text-red-500 mt-0.5 shrink-0">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                </div>
-                <div className="w-full">
-                  <h3 className="text-lg font-bold text-red-800 mb-3">Underperformance Alert</h3>
-                  <div className="space-y-4">
-                    {interventionAlerts.map((alert, idx) => (
-                      <div key={idx} className="bg-white/60 rounded-lg p-3 border border-red-100">
-                        <p className="text-sm font-semibold text-slate-800">{alert.lessonName}</p>
-                        <p className="text-sm text-red-600 font-medium">
-                          Predicted Term Test: {Number(alert.predictedPercentage).toFixed(2)}%
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* ROW 1: Academic & Exam Performance */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start mb-6">
