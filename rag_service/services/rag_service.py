@@ -451,28 +451,31 @@ For each concept include:
 4. PERSONALIZED STUDY NOTES
 ==================================================
 
-Create notes ONLY for weak concepts.
+Analyze the student's incorrect questions to identify specific weak concepts.
+Rank these concepts by the number of mistakes made (highest number of mistakes = highest priority).
 
-For each weak concept include:
+Create personalized study notes ONLY for these identified weak concepts, ordered by their priority.
 
-- Simple explanation
+If the student has NO incorrect questions, provide standard notes based on the modules where they scored lowest.
+
+For each concept include:
+- Concept Name (Ordered by Priority)
+- Simple explanation (using ONLY retrieved content)
 - Important points
-- Key definitions
+- Key definitions (using ONLY retrieved content)
 - Examples from learning material
 - Common mistakes
-- Exam reminders
 
-
-Do not create full module notes.
+Do not create full module notes. Do NOT invent information outside of the retrieved content.
 
 
 ==================================================
 5. KEY DEFINITIONS
 ==================================================
 
-List important definitions related to weak concepts.
+List important definitions related to weak concepts, prioritized by the number of mistakes.
 
-Use simple student-friendly explanations.
+Use simple student-friendly explanations derived ONLY from retrieved content.
 
 
 ==================================================

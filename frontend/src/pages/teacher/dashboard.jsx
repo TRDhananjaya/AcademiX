@@ -8,6 +8,7 @@ import CommunityMonitor from './CommunityMonitor';
 import AttendanceMonitor from './AttendanceMonitor';
 import QuizReportContent from '../../components/dashboard/QuizReportContent';
 import { navigate } from '../../App';
+import ConfirmModal from '../../components/common/ConfirmModal';
 
 export default function Dashboard({ activeTab = 'dashboard' }) {
   const [activeNav, setActiveNav] = useState(activeTab);
@@ -15,8 +16,10 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
   const [dashboardData, setDashboardData] = useState(null);
   const [showInterventionModal, setShowInterventionModal] = useState(false);
   const [interventionData, setInterventionData] = useState(null);
+  const [resolvingIds, setResolvingIds] = useState(new Set());
+  const [resolveConfirm, setResolveConfirm] = useState({ show: false, predictionId: null });
 
-  const handleViewInterventions = async () => {
+  const fetchInterventionAlerts = async (openModal = false) => {
     try {
       const token = localStorage.getItem('token');
       const res = await fetch('/api/analytics/intervention', {
@@ -25,10 +28,70 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
       if (res.ok) {
         const data = await res.json();
         setInterventionData(data);
-        setShowInterventionModal(true);
+        if (openModal) setShowInterventionModal(true);
+      }
+    } catch (error) {
+      console.error('Error fetching intervention alerts:', error);
+    }
+  };
+
+  const handleViewInterventions = () => fetchInterventionAlerts(true);
+
+  const fetchDashboardStats = async () => {
+    try {
+      if (!dashboardData) setLoading(true);
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/analytics/teacher-dashboard', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setDashboardData(data);
       }
     } catch (err) {
-      console.error('Error fetching intervention data:', err);
+      console.error('Error fetching teacher stats:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResolveIntervention = (predictionId) => {
+    setResolveConfirm({ show: true, predictionId });
+  };
+
+  const confirmResolveIntervention = async () => {
+    const { predictionId } = resolveConfirm;
+    if (!predictionId) return;
+
+    setResolveConfirm({ show: false, predictionId: null });
+    try {
+      setResolvingIds(prev => new Set(prev).add(predictionId));
+      
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/analytics/intervention/${predictionId}/resolve`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (res.ok) {
+        // Refresh the lists directly
+        fetchInterventionAlerts();
+        fetchDashboardStats();
+      } else {
+        alert("Failed to update status. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error resolving intervention:", error);
+      alert("An error occurred while updating status.");
+    } finally {
+      setResolvingIds(prev => {
+        const next = new Set(prev);
+        next.delete(predictionId);
+        return next;
+      });
     }
   };
 
@@ -170,7 +233,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
 
               {/* At-Risk Students */}
               <div
-                onClick={() => navigate('/teacher/students')}
+                onClick={handleViewInterventions}
                 className={`bg-white rounded-2xl p-6 ${atRiskBorder} hover:shadow-md hover:border-red-300 flex flex-col justify-between relative overflow-hidden cursor-pointer transition-all duration-200 group`}
                 title="View At-Risk Students"
               >
@@ -356,25 +419,44 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                   <table className="w-full text-left border-collapse">
                     <thead className="bg-slate-50 border-b border-slate-200">
                       <tr>
-                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Student</th>
-                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Student ID</th>
-                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Lesson</th>
-                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Predicted</th>
+                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-1/4">Student</th>
+                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-1/4">Student ID</th>
+                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-1/2">Underperforming Lessons</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
-                      {interventionData.students.flatMap(student => 
-                        student.lessons.map((lesson, idx) => (
-                          <tr key={`${student.studentId}-${lesson.lessonId}`} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-3 px-4 text-sm font-semibold text-slate-800">{student.studentName}</td>
-                            <td className="py-3 px-4 text-sm text-slate-500 font-mono font-medium">{student.studentId}</td>
-                            <td className="py-3 px-4 text-sm text-slate-700">{lesson.lessonName}</td>
-                            <td className="py-3 px-4 text-sm font-bold text-red-600 text-right">
-                              {Number(lesson.predictedPercentage).toFixed(2)}%
-                            </td>
-                          </tr>
-                        ))
-                      )}
+                      {interventionData.students.map(student => (
+                        <tr key={student.studentId} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-3 px-4 text-sm font-semibold text-slate-800 align-top">{student.studentName}</td>
+                          <td className="py-3 px-4 text-sm text-slate-500 font-mono font-medium align-top">{student.studentId}</td>
+                          <td className="py-3 px-4 text-sm text-slate-700">
+                            <ul className="space-y-2">
+                              {student.lessons.map(lesson => (
+                                <li key={lesson.lessonId} className="flex flex-wrap items-center gap-4 bg-white border border-slate-100 p-2.5 rounded-lg shadow-sm group w-fit">
+                                  <div className="flex items-center gap-3">
+                                    <span className="font-medium text-slate-600">• {lesson.lessonName.split(' - ')[0]}</span>
+                                    <span className="font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded whitespace-nowrap">
+                                      {Number(lesson.predictedPercentage).toFixed(2)}%
+                                    </span>
+                                  </div>
+                                  <button
+                                    onClick={() => handleResolveIntervention(lesson._id)}
+                                    disabled={resolvingIds.has(lesson._id)}
+                                    className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-green-50 hover:bg-green-100 text-green-700 px-3 py-1.5 rounded-lg text-xs font-bold disabled:opacity-50"
+                                  >
+                                    {resolvingIds.has(lesson._id) ? (
+                                      <span className="w-3 h-3 border-2 border-green-700 border-t-transparent rounded-full animate-spin"></span>
+                                    ) : (
+                                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path></svg>
+                                    )}
+                                    Teacher Met
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -383,6 +465,16 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={resolveConfirm.show}
+        onClose={() => setResolveConfirm({ show: false, predictionId: null })}
+        onConfirm={confirmResolveIntervention}
+        title="Teacher Met Confirmation"
+        message="Have you met this student and discussed their performance?"
+        confirmText="Confirm"
+        cancelText="Cancel"
+      />
     </div>
   );
 }
