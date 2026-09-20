@@ -63,7 +63,7 @@ export default function LoginForm() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50/80 via-slate-50 to-purple-50/60 flex items-center justify-center p-4 sm:p-6 lg:p-8 select-none relative overflow-hidden">
-      
+
       {/* Subtle Dot Grid Pattern */}
       <div
         className="absolute inset-0 opacity-40 pointer-events-none"

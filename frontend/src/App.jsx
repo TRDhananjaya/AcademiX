@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Home from './pages/home';
 import About from './pages/about';
 import Contact from './pages/contact';
@@ -12,6 +12,7 @@ import CreateQuiz from './pages/teacher/create-quiz';
 
 import { useAuth } from './context/AuthContext';
 import IdleSessionManager from './components/common/IdleSessionManager';
+import ConfirmModal from './components/common/ConfirmModal';
 
 
 import Analytics from './pages/teacher/Analytics';
@@ -35,7 +36,13 @@ export function navigate(path, state = {}) {
 function App() {
   const getPage = () => window.location.pathname.replace(/^\//, '') || 'home';
   const [currentPage, setCurrentPage] = useState(getPage);
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const userRef = useRef(user);
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   const teacherRoutes = [
     'teacher/dashboard', 'teacher/resources', 'teacher/quizzes', 'teacher/quiz-report',
@@ -51,11 +58,57 @@ function App() {
   const isTeacherRoute = teacherRoutes.includes(currentPage);
   const isStudentRoute = studentRoutes.includes(currentPage);
 
+  // Maintain a guard history entry while logged in so browser Back can be intercepted
   useEffect(() => {
-    const onRouteChange = () => setCurrentPage(getPage());
+    if (!user) return;
+
+    // Push initial guard
+    window.history.pushState({ appGuard: true }, '', window.location.pathname);
+
+    // Re-push on user interaction so Chromium attaches user activation to the history entry
+    let armed = false;
+    const armOnGesture = () => {
+      if (!armed) {
+        armed = true;
+        window.history.pushState({ appGuard: true }, '', window.location.pathname);
+      }
+    };
+
+    window.addEventListener('pointerdown', armOnGesture, { capture: true, passive: true });
+    window.addEventListener('keydown', armOnGesture, { capture: true, passive: true });
+    window.addEventListener('click', armOnGesture, { capture: true, passive: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', armOnGesture, { capture: true });
+      window.removeEventListener('keydown', armOnGesture, { capture: true });
+      window.removeEventListener('click', armOnGesture, { capture: true });
+    };
+  }, [user, currentPage]);
+
+  useEffect(() => {
+    const onRouteChange = (e) => {
+      // If user is logged in and presses browser Back or Forward button, ask confirmation
+      if (e.isTrusted && userRef.current) {
+        window.history.pushState({ appGuard: true }, '', window.location.pathname);
+        setShowLogoutConfirm(true);
+        return;
+      }
+      setCurrentPage(getPage());
+    };
     window.addEventListener('popstate', onRouteChange);
     return () => window.removeEventListener('popstate', onRouteChange);
   }, []);
+
+  const handleLogoutConfirm = () => {
+    setShowLogoutConfirm(false);
+    if (setUser) setUser(null);
+    window.location.href = '/login';
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutConfirm(false);
+    window.history.pushState({ appGuard: true }, '', window.location.pathname);
+  };
 
   useEffect(() => {
     if (!user) {
@@ -158,6 +211,16 @@ function App() {
   return (
     <>
       <IdleSessionManager />
+      <ConfirmModal
+        isOpen={showLogoutConfirm}
+        onClose={handleLogoutCancel}
+        onConfirm={handleLogoutConfirm}
+        title="Log Out"
+        message="Are you sure you want to log out? You'll need to sign in again to access your account."
+        confirmText="Log Out"
+        cancelText="Stay"
+        variant="danger"
+      />
       {renderContent()}
     </>
   );
