@@ -2,89 +2,103 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import favicon from '../../assets/favicon.png';
 
-// Configuration: 30 minutes total idle time, 2 minutes warning countdown
+// ─── Session Constants ────────────────────────────────────────────────────────
+// Must match the values in AuthContext.jsx
 const DEFAULT_TOTAL_IDLE_MS = 30 * 60 * 1000; // 30 minutes
-const DEFAULT_WARNING_MS = 2 * 60 * 1000;     // 2 minutes (120 seconds)
+const DEFAULT_WARNING_MS    = 2 * 60 * 1000;  // 2 minutes warning before logout
+const LAST_ACTIVITY_KEY     = 'lastActivity';
 
 export default function IdleSessionManager() {
   const { user, setUser } = useAuth();
   const [showWarning, setShowWarning] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(120);
 
-  const lastActivityRef = useRef(Date.now());
+  const lastActivityRef = useRef((() => {
+    // Restore persisted last-activity so elapsed time is correct even after a refresh
+    const stored = localStorage.getItem(LAST_ACTIVITY_KEY);
+    return stored ? parseInt(stored, 10) : Date.now();
+  })());
   const isWarningActiveRef = useRef(false);
 
-  // Keep ref synchronized with state to avoid race conditions in event listeners
+  // Keep ref in sync with state (avoids stale closure issues in event listeners)
   useEffect(() => {
     isWarningActiveRef.current = showWarning;
   }, [showWarning]);
 
+  // ── Logout ────────────────────────────────────────────────────────────────
   const handleLogout = useCallback(() => {
     setShowWarning(false);
     isWarningActiveRef.current = false;
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    // setUser(null) calls clearSession() in AuthContext — clears all storage
+    if (setUser) setUser(null);
     sessionStorage.setItem('logout_reason', 'inactivity');
-    if (setUser) {
-      setUser(null);
-    }
     window.location.href = '/login';
   }, [setUser]);
 
+  // ── Stay Logged In ────────────────────────────────────────────────────────
   const handleStayLoggedIn = useCallback(() => {
-    lastActivityRef.current = Date.now();
+    const now = Date.now();
+    lastActivityRef.current = now;
+    localStorage.setItem(LAST_ACTIVITY_KEY, String(now));
+    document.cookie = 'acad_session=1; path=/; SameSite=Lax';
     setShowWarning(false);
     isWarningActiveRef.current = false;
   }, []);
 
-  // Track user activity (throttled to avoid CPU overhead)
+  // ── Cross-Tab Activity Synchronization ────────────────────────────────────
+  useEffect(() => {
+    const handleStorage = (e) => {
+      if (e.key === LAST_ACTIVITY_KEY && e.newValue) {
+        lastActivityRef.current = parseInt(e.newValue, 10);
+        if (isWarningActiveRef.current) {
+          setShowWarning(false);
+          isWarningActiveRef.current = false;
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  // ── User Activity Tracking ────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
 
     const handleUserActivity = () => {
-      // If warning modal is already active, don't silently dismiss on passive mouse movement;
-      // Require explicit button click ("Stay Logged In") to confirm presence.
+      // While warning is showing, require explicit "Stay Logged In" click
       if (isWarningActiveRef.current) return;
 
       const now = Date.now();
-      // Throttle updates to at most once every 1.5 seconds
+      // Throttle: persist at most once every 1.5 s to avoid hammering localStorage
       if (now - lastActivityRef.current > 1500) {
         lastActivityRef.current = now;
+        localStorage.setItem(LAST_ACTIVITY_KEY, String(now));
       }
     };
 
     const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
-    events.forEach((event) => {
-      window.addEventListener(event, handleUserActivity, { passive: true });
-    });
-
-    return () => {
-      events.forEach((event) => {
-        window.removeEventListener(event, handleUserActivity);
-      });
-    };
+    events.forEach((e) => window.addEventListener(e, handleUserActivity, { passive: true }));
+    return () => events.forEach((e) => window.removeEventListener(e, handleUserActivity));
   }, [user]);
 
-  // Periodic heartbeat timer to check idle status every second
+  // ── Idle Check Heartbeat (every 1 s) ─────────────────────────────────────
   useEffect(() => {
     if (!user) {
       setShowWarning(false);
       return;
     }
 
-    // Allow override for debugging/testing via window variable if needed
-    const totalIdleMs = window.__IDLE_TIMEOUT_MS__ || DEFAULT_TOTAL_IDLE_MS;
-    const warningMs = window.__WARNING_MS__ || DEFAULT_WARNING_MS;
+    const totalIdleMs     = window.__IDLE_TIMEOUT_MS__ || DEFAULT_TOTAL_IDLE_MS;
+    const warningMs       = window.__WARNING_MS__      || DEFAULT_WARNING_MS;
     const warningTriggerMs = totalIdleMs - warningMs;
 
     const interval = setInterval(() => {
-      // Quiz protection: If current path is taking a quiz, do not interrupt student
-      const currentPath = window.location.pathname;
-      const isQuizPage = currentPath.includes('student/quizzes');
-      
-      // If actively in a quiz, keep bumping activity timestamp
+      // Quiz protection: never interrupt a student mid-quiz
+      const isQuizPage = window.location.pathname.includes('student/quizzes');
       if (isQuizPage) {
-        lastActivityRef.current = Date.now();
+        const now = Date.now();
+        lastActivityRef.current = now;
+        localStorage.setItem(LAST_ACTIVITY_KEY, String(now));
         if (isWarningActiveRef.current) {
           setShowWarning(false);
           isWarningActiveRef.current = false;
@@ -92,15 +106,12 @@ export default function IdleSessionManager() {
         return;
       }
 
-      const now = Date.now();
-      const elapsed = now - lastActivityRef.current;
+      const elapsed = Date.now() - lastActivityRef.current;
 
       if (elapsed >= totalIdleMs) {
-        // Session expired
         clearInterval(interval);
         handleLogout();
       } else if (elapsed >= warningTriggerMs) {
-        // Show warning modal and update remaining seconds
         const remaining = Math.max(0, Math.ceil((totalIdleMs - elapsed) / 1000));
         setSecondsLeft(remaining);
         if (!isWarningActiveRef.current) {
@@ -120,7 +131,7 @@ export default function IdleSessionManager() {
 
   if (!user || !showWarning) return null;
 
-  // Format MM:SS
+  // ── Render Warning Modal ──────────────────────────────────────────────────
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
   const formattedTime = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
@@ -142,7 +153,7 @@ export default function IdleSessionManager() {
         <div className="h-2 w-full bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500" />
 
         <div className="p-6 sm:p-8">
-          {/* Pulsing Shield / Icon Header */}
+          {/* Pulsing Icon Header */}
           <div className="flex justify-center mb-5">
             <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-amber-50 border border-amber-200/70 shadow-inner">
               <span
@@ -171,21 +182,11 @@ export default function IdleSessionManager() {
             automatically logged out in:
           </p>
 
-          {/* Countdown Clock Display */}
+          {/* Countdown Clock */}
           <div className="flex justify-center mb-6">
             <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-900">
-              <svg
-                className="w-5 h-5 text-amber-600 animate-pulse"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
+              <svg className="w-5 h-5 text-amber-600 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="font-mono text-2xl font-bold tracking-widest text-amber-700">
                 {formattedTime}

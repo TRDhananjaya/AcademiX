@@ -12,13 +12,17 @@ export default function LoginForm() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [inactivityNotice, setInactivityNotice] = useState(false);
+  const [browserClosedNotice, setBrowserClosedNotice] = useState(false);
   const { setUser } = useAuth();
 
   useEffect(() => {
-    if (sessionStorage.getItem('logout_reason') === 'inactivity') {
+    const reason = sessionStorage.getItem('logout_reason');
+    if (reason === 'inactivity') {
       setInactivityNotice(true);
-      sessionStorage.removeItem('logout_reason');
+    } else if (reason === 'browser_closed') {
+      setBrowserClosedNotice(true);
     }
+    if (reason) sessionStorage.removeItem('logout_reason');
   }, []);
 
   const handleSubmit = async (e) => {
@@ -135,6 +139,19 @@ export default function LoginForm() {
             <p className="text-slate-500 text-center mb-8 leading-relaxed text-sm">
               Log in to continue your learning journey.
             </p>
+
+            {/* Browser Closed Notice Banner */}
+            {browserClosedNotice && (
+              <div className="mb-6 p-3.5 bg-blue-50/90 border border-blue-200/80 text-blue-900 rounded-xl text-xs sm:text-sm flex items-start gap-2.5 shadow-xs">
+                <svg className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+                </svg>
+                <div className="text-left">
+                  <p className="font-semibold text-slate-800">Session ended</p>
+                  <p className="text-slate-600 text-xs mt-0.5 leading-relaxed">Your session was cleared when the browser closed. Please log in again to continue.</p>
+                </div>
+              </div>
+            )}
 
             {/* Inactivity Notice Banner */}
             {inactivityNotice && (
