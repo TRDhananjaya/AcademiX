@@ -10,6 +10,10 @@ export default function QuizManagement() {
   const [modules, setModules] = useState(cachedModules || []);
   const [quizzes, setQuizzes] = useState(cachedQuizzes || []);
   const [results, setResults] = useState(cachedResults || []);
+  const [fq1Available, setFq1Available] = useState(true);
+  const [fq2Available, setFq2Available] = useState(true);
+  const [isTogglingGroup1, setIsTogglingGroup1] = useState(false);
+  const [isTogglingGroup2, setIsTogglingGroup2] = useState(false);
   const [isLoading, setIsLoading] = useState(!hasCache);
   const [isExporting, setIsExporting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -23,10 +27,13 @@ export default function QuizManagement() {
     async function fetchData() {
       try {
         if (!hasCache) setIsLoading(true);
-        const [modulesRes, quizzesRes, resultsRes] = await Promise.all([
+        const [modulesRes, quizzesRes, resultsRes, groupStatusRes] = await Promise.all([
           fetch('/api/quizzes/modules'),
           fetch('/api/quizzes'),
-          fetch('/api/quiz-results')
+          fetch('/api/quiz-results'),
+          fetch('/api/followup/group-status', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token') || ''}` }
+          })
         ]);
 
         if (modulesRes.ok && quizzesRes.ok && resultsRes.ok) {
@@ -41,6 +48,12 @@ export default function QuizManagement() {
           setCachedData('/api/quizzes/modules', modulesData);
           setCachedData('/api/quizzes', quizzesData);
           setCachedData('/api/quiz-results', resultsData);
+        }
+
+        if (groupStatusRes.ok) {
+          const groupData = await groupStatusRes.json();
+          if (groupData.quiz1) setFq1Available(groupData.quiz1.isAvailable);
+          if (groupData.quiz2) setFq2Available(groupData.quiz2.isAvailable);
         }
       } catch (err) {
         console.error('Error fetching quiz dashboard data:', err);
@@ -114,6 +127,39 @@ export default function QuizManagement() {
       alert('Error deleting quiz');
     } finally {
       setIsDeletingQuiz(false);
+    }
+  };
+
+  const handleToggleQuizGroup = async (quizNumber) => {
+    const isGroup1 = Number(quizNumber) === 1;
+    const currentStatus = isGroup1 ? fq1Available : fq2Available;
+    const targetState = !currentStatus;
+
+    if (isGroup1) setIsTogglingGroup1(true);
+    else setIsTogglingGroup2(true);
+
+    try {
+      const res = await fetch('/api/followup/toggle-group', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        },
+        body: JSON.stringify({ quizNumber, targetState })
+      });
+
+      if (res.ok) {
+        if (isGroup1) setFq1Available(targetState);
+        else setFq2Available(targetState);
+      } else {
+        alert(`Failed to update Follow-Up Quiz ${quizNumber}.`);
+      }
+    } catch (err) {
+      console.error(`Error toggling Follow-Up Quiz ${quizNumber}:`, err);
+      alert(`Error updating Follow-Up Quiz ${quizNumber}.`);
+    } finally {
+      if (isGroup1) setIsTogglingGroup1(false);
+      else setIsTogglingGroup2(false);
     }
   };
 
@@ -347,6 +393,126 @@ export default function QuizManagement() {
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Full Width Section: Follow-Up Quizzes Management */}
+          <div className="bg-white border border-slate-100 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] overflow-hidden mb-6">
+            <div className="p-[20px_24px] border-b border-slate-100">
+              <h2 className="text-lg font-bold text-slate-800 m-0">Follow-Up Quizzes Management</h2>
+              <p className="text-xs text-slate-500 m-0 mt-1">
+                Control student access to Follow-Up Quiz 1 and Follow-Up Quiz 2 across the ICT department.
+              </p>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Card 1: Follow-Up Quiz 1 */}
+              <div className="p-5 border border-purple-100 rounded-2xl bg-gradient-to-br from-purple-50/40 via-white to-slate-50/50 flex flex-col justify-between shadow-xs">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-extrabold text-purple-700 bg-purple-100 px-3 py-1 rounded-full border border-purple-200 uppercase tracking-wide">
+                      Follow-Up Quiz 1
+                    </span>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                      fq1Available
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-slate-100 text-slate-500 border border-slate-200'
+                    }`}>
+                      <span className={`w-2 h-2 rounded-full ${fq1Available ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                      {fq1Available ? 'Allowed for All Students' : 'Disabled for All Students'}
+                    </span>
+                  </div>
+
+                  <h3 className="font-bold text-base text-slate-800 mb-1">
+                    Lesson 1: Fundamentals of a Computer System
+                  </h3>
+                  <p className="text-xs text-slate-500 leading-relaxed mb-5">
+                    Adaptive remedial quiz covering core ICT concepts, hardware components, Von Neumann architecture, and operating systems.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => handleToggleQuizGroup(1)}
+                  disabled={isTogglingGroup1}
+                  className={`w-full py-3 px-4 rounded-xl font-bold text-sm cursor-pointer transition-all shadow-xs flex items-center justify-center gap-2 border ${
+                    fq1Available
+                      ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent'
+                  }`}
+                >
+                  {isTogglingGroup1 ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  ) : fq1Available ? (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                      </svg>
+                      Disable Follow Up Quiz 1 for All Students
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      Allow Follow Up Quiz 1 for All Students
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Card 2: Follow-Up Quiz 2 */}
+              <div className="p-5 border border-indigo-100 rounded-2xl bg-gradient-to-br from-indigo-50/40 via-white to-slate-50/50 flex flex-col justify-between shadow-xs">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-extrabold text-indigo-700 bg-indigo-100 px-3 py-1 rounded-full border border-indigo-200 uppercase tracking-wide">
+                      Follow-Up Quiz 2
+                    </span>
+                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                      fq2Available
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-slate-100 text-slate-500 border border-slate-200'
+                    }`}>
+                      <span className={`w-2 h-2 rounded-full ${fq2Available ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`}></span>
+                      {fq2Available ? 'Allowed for All Students' : 'Disabled for All Students'}
+                    </span>
+                  </div>
+
+                  <h3 className="font-bold text-base text-slate-800 mb-1">
+                    Lesson 2: Information and Communication Technology
+                  </h3>
+                  <p className="text-xs text-slate-500 leading-relaxed mb-5">
+                    Adaptive remedial quiz covering practical ICT applications, emerging digital trends, networking, and cloud ethics.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => handleToggleQuizGroup(2)}
+                  disabled={isTogglingGroup2}
+                  className={`w-full py-3 px-4 rounded-xl font-bold text-sm cursor-pointer transition-all shadow-xs flex items-center justify-center gap-2 border ${
+                    fq2Available
+                      ? 'bg-rose-50 hover:bg-rose-100 text-rose-700 border-rose-200'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white border-transparent'
+                  }`}
+                >
+                  {isTogglingGroup2 ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                  ) : fq2Available ? (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                      </svg>
+                      Disable Follow Up Quiz 2 for All Students
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                      Allow Follow Up Quiz 2 for All Students
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
