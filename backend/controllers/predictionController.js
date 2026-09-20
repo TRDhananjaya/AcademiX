@@ -167,10 +167,55 @@ const getStudentLessonPrediction = async (student, lessonId) => {
         }).sort({ updatedAt: -1, createdAt: -1 });
 
         if (existingPrediction) {
+            const targetStudentId = student.studentId ? student.studentId.toLowerCase() : '';
+            const feats = existingPrediction.features || {};
+            
+            // Check if student completed follow-up quiz for this lesson
+            const hasFollowupScore = typeof feats.Followup_Quiz_Score === 'number' && feats.Followup_Quiz_Score > 0;
+            const followupDoc = hasFollowupScore || await FollowupResult.findOne({
+                studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') },
+                $or: [
+                    { lessonId: lessonNum.toString() },
+                    { lessonId: `Lesson ${lessonNum}` },
+                    { quizId: { $regex: `^FQ_${lessonNum}_`, $options: 'i' } }
+                ]
+            }).select('_id').lean();
+
+            // SINGLE PREDICTION POLICY:
+            // Once a follow-up quiz is completed and a prediction is saved in MongoDB for a lesson,
+            // it becomes PERMANENT & FINAL for that lesson. Do NOT re-predict or overwrite ever again!
+            if (followupDoc) {
+                const predPct = existingPrediction.predictedScore;
+                const predMark = parseFloat(((predPct / 100) * lessonMaxMark).toFixed(1));
+
+                return {
+                    studentId: student.studentId,
+                    studentName: student.name || 'Unknown',
+                    quiz1Score: feats.Module_1_Score || 0,
+                    quiz2Score: feats.Module_2_Score || 0,
+                    quiz3Score: feats.Module_3_Score || 0,
+                    quizAverage: feats.Avg_Module_Score || 0,
+                    followupScore: feats.Followup_Quiz_Score || 0,
+                    predictedPercentage: predPct,
+                    predictedLessonMark: predMark,
+                    lessonMaxMark: lessonMaxMark,
+                    predictionStatus: "AVAILABLE",
+                    features: {
+                        Quiz_1_Score: feats.Module_1_Score || 0,
+                        Quiz_2_Score: feats.Module_2_Score || 0,
+                        Quiz_3_Score: feats.Module_3_Score || 0,
+                        Quiz_Average: feats.Avg_Module_Score || 0,
+                        Followup_Quiz_Score: feats.Followup_Quiz_Score || 0
+                    },
+                    missingData: [],
+                    hasCompletedRequiredQuizzes: true,
+                    isFinalized: true,
+                    lesson: lessonId
+                };
+            }
+
             // Verify if student submitted any NEW quizzes after this prediction was saved
             const lastSavedDate = existingPrediction.updatedAt || existingPrediction.createdAt;
-            const targetStudentId = student.studentId ? student.studentId.toLowerCase() : '';
-            
             const [newQuiz, newFollowup] = await Promise.all([
                 QuizResult.findOne({
                     studentId: { $regex: new RegExp(`^${targetStudentId}$`, 'i') },
@@ -184,7 +229,6 @@ const getStudentLessonPrediction = async (student, lessonId) => {
 
             // If no new quiz was submitted since the prediction was saved, return DB cached prediction INSTANTLY (sub-1ms)
             if (!newQuiz && !newFollowup) {
-                const feats = existingPrediction.features || {};
                 const predPct = existingPrediction.predictedScore;
                 const predMark = parseFloat(((predPct / 100) * lessonMaxMark).toFixed(1));
 
@@ -326,6 +370,38 @@ const getStudentLessonPrediction = async (student, lessonId) => {
                 },
                 { upsert: true, new: true, setDefaultsOnInsert: true }
             );
+
+            // AUTO-DISPATCH STUDENT NOTIFICATION IF PREDICTION < 50%
+            if (studentResult.predictedPercentage < 50) {
+                try {
+                    const Notification = require('../models/Notification');
+                    const User = require('../models/User');
+                    const userDoc = await User.findOne({ username: { $regex: new RegExp(`^${student.studentId}$`, 'i') } });
+                    if (userDoc) {
+                        const syncKey = `UNDERPERFORMANCE:${student.studentId}:${dbLessonId}`;
+                        const exists = await Notification.findOne({
+                            recipientId: userDoc._id,
+                            notificationType: 'Underperformance Alert',
+                            relatedStudentId: syncKey
+                        });
+
+                        if (!exists) {
+                            const fullLessonName = await getFullLessonTitle(lessonNum);
+                            await Notification.create({
+                                recipientId: userDoc._id,
+                                recipientRole: 'student',
+                                title: '🔴 Academic Performance Alert',
+                                message: `Your predicted performance for "${fullLessonName}" is below the expected 50%. Predicted Score: ${Number(studentResult.predictedPercentage).toFixed(1)}%. Please meet your teacher to discuss your performance and get guidance on how you can improve in this lesson.`,
+                                notificationType: 'Underperformance Alert',
+                                relatedStudentId: syncKey,
+                                isRead: false
+                            });
+                        }
+                    }
+                } catch (notifErr) {
+                    console.warn('Auto notification dispatch error:', notifErr.message);
+                }
+            }
         } catch (saveErr) {
             console.error("Error saving/updating prediction in MongoDB:", saveErr);
         }
