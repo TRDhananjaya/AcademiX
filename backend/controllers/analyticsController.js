@@ -406,8 +406,17 @@ const getTeacherDashboardStats = async (req, res, next) => {
             classAverage = Math.round(sum / allQuizResults.length);
         }
 
-        // 4. Get at-risk students count
-        const atRiskCount = await Student.countDocuments({ status: 'At Risk' });
+        // 4. Get at-risk students count from predictions
+        const atRiskAggregation = await Prediction.aggregate([
+            { $match: { lessonId: { $nin: ['General', 'Final Exam', 'Final Exam (All Lessons)', '', null] } } },
+            { $sort: { createdAt: -1 } },
+            { $group: { _id: { studentId: "$studentId", lessonId: "$lessonId" }, latestPrediction: { $first: "$$ROOT" } } },
+            { $replaceRoot: { newRoot: "$latestPrediction" } },
+            { $match: { predictedScore: { $lt: 50 } } },
+            { $group: { _id: "$studentId" } },
+            { $count: "uniqueStudents" }
+        ]);
+        const atRiskCount = atRiskAggregation.length > 0 ? atRiskAggregation[0].uniqueStudents : 0;
 
         // 5. Group quiz results by studentId (lowercase)
         const resultsByStudent = {};

@@ -170,7 +170,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
 
               {/* At-Risk Students */}
               <div
-                onClick={() => navigate('/teacher/students')}
+                onClick={handleViewInterventions}
                 className={`bg-white rounded-2xl p-6 ${atRiskBorder} hover:shadow-md hover:border-red-300 flex flex-col justify-between relative overflow-hidden cursor-pointer transition-all duration-200 group`}
                 title="View At-Risk Students"
               >
@@ -356,25 +356,30 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                   <table className="w-full text-left border-collapse">
                     <thead className="bg-slate-50 border-b border-slate-200">
                       <tr>
-                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Student</th>
-                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Student ID</th>
-                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Lesson</th>
-                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Predicted</th>
+                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-1/4">Student</th>
+                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-1/4">Student ID</th>
+                        <th className="py-3 px-4 text-xs font-bold text-slate-500 uppercase tracking-wider w-1/2">Underperforming Lessons</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
-                      {interventionData.students.flatMap(student => 
-                        student.lessons.map((lesson, idx) => (
-                          <tr key={`${student.studentId}-${lesson.lessonId}`} className="hover:bg-slate-50 transition-colors">
-                            <td className="py-3 px-4 text-sm font-semibold text-slate-800">{student.studentName}</td>
-                            <td className="py-3 px-4 text-sm text-slate-500 font-mono font-medium">{student.studentId}</td>
-                            <td className="py-3 px-4 text-sm text-slate-700">{lesson.lessonName}</td>
-                            <td className="py-3 px-4 text-sm font-bold text-red-600 text-right">
-                              {Number(lesson.predictedPercentage).toFixed(2)}%
-                            </td>
-                          </tr>
-                        ))
-                      )}
+                      {interventionData.students.map(student => (
+                        <tr key={student.studentId} className="hover:bg-slate-50 transition-colors">
+                          <td className="py-3 px-4 text-sm font-semibold text-slate-800 align-top">{student.studentName}</td>
+                          <td className="py-3 px-4 text-sm text-slate-500 font-mono font-medium align-top">{student.studentId}</td>
+                          <td className="py-3 px-4 text-sm text-slate-700">
+                            <ul className="space-y-2">
+                              {student.lessons.map(lesson => (
+                                <li key={lesson.lessonId} className="flex justify-between items-center bg-white border border-slate-100 p-2.5 rounded-lg shadow-sm">
+                                  <span className="font-medium text-slate-600">• {lesson.lessonName}</span>
+                                  <span className="font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded ml-4 whitespace-nowrap">
+                                    {Number(lesson.predictedPercentage).toFixed(2)}%
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
