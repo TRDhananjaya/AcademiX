@@ -423,12 +423,17 @@ const getTeacherDashboardStats = async (req, res, next) => {
         ]);
         
         let classAverage = 0;
+        let overallPassRate = 0;
+        let totalQuizzesSubmitted = allQuizResults.length;
         if (allQuizResults.length > 0) {
             const sum = allQuizResults.reduce((acc, curr) => acc + (curr.percentage || 0), 0);
             classAverage = Math.round(sum / allQuizResults.length);
+            
+            const passedCount = allQuizResults.filter(r => (r.percentage || 0) >= 50).length;
+            overallPassRate = Math.round((passedCount / allQuizResults.length) * 100);
         }
 
-        const atRiskCount = new Set(atRiskPredictions.map(p => p.studentId)).size;
+        const atRiskCount = new Set(atRiskPredictions.map(p => p.studentId ? p.studentId.toString() : null).filter(Boolean)).size;
         const mlRiskCount = atRiskPredictions.length;
 
         // 3. Group quiz results by studentId (lowercase)
@@ -520,7 +525,7 @@ const getTeacherDashboardStats = async (req, res, next) => {
         // 5. Generate predictive insights dynamically
         const lessonMap = {};
         allQuizResults.forEach(r => {
-            const lesson = r.quizId ? r.quizId.split('.')[0] : 'General';
+            const lesson = r.lessonName && r.lessonName !== 'Unknown Lesson' ? r.lessonName : (r.quizId ? r.quizId.split('.')[0] : 'General');
             if (!lessonMap[lesson]) {
                 lessonMap[lesson] = { totalPct: 0, count: 0 };
             }
@@ -528,13 +533,20 @@ const getTeacherDashboardStats = async (req, res, next) => {
             lessonMap[lesson].count += 1;
         });
 
-        let weakestLesson = 'General';
-        let lowestLessonAvg = 100;
+        let weakestLesson = '--';
+        let lowestLessonAvg = 101;
+        let strongestLesson = '--';
+        let highestLessonAvg = -1;
+        
         Object.keys(lessonMap).forEach(lesson => {
             const avg = lessonMap[lesson].totalPct / lessonMap[lesson].count;
             if (avg < lowestLessonAvg) {
                 lowestLessonAvg = avg;
                 weakestLesson = lesson;
+            }
+            if (avg > highestLessonAvg) {
+                highestLessonAvg = avg;
+                strongestLesson = lesson;
             }
         });
 
@@ -711,7 +723,14 @@ const getTeacherDashboardStats = async (req, res, next) => {
                 totalQuizzes: activeModules,
                 classAverage,
                 atRiskCount,
-                todayPresentCount
+                todayPresentCount,
+                studentsWithQuizzesCount: Object.keys(resultsByStudent).length,
+                totalQuizzesSubmitted,
+                overallPassRate,
+                strongestLesson: Object.keys(lessonMap).length > 0 ? strongestLesson : '--',
+                weakestLesson: Object.keys(lessonMap).length > 0 ? weakestLesson : '--',
+                strongestLessonAvg: Object.keys(lessonMap).length > 0 ? Math.round(highestLessonAvg) : 0,
+                weakestLessonAvg: Object.keys(lessonMap).length > 0 ? Math.round(lowestLessonAvg) : 0
             },
             insights,
             communityActivity,
@@ -830,6 +849,12 @@ const getAdminInterventionAlerts = async (req, res, next) => {
         }
 
         const students = Object.values(studentMap);
+        
+        students.sort((a, b) => {
+            const idA = a.studentId ? a.studentId.toLowerCase() : '';
+            const idB = b.studentId ? b.studentId.toLowerCase() : '';
+            return idA.localeCompare(idB);
+        });
         
         res.status(200).json({
             count: students.length,
