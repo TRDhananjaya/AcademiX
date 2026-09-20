@@ -363,9 +363,7 @@ export default function StudentDashboard() {
                         </span>
                         <p className="text-2xl font-black text-slate-900 tracking-tight leading-tight mt-0.5">
                           {predictionScore.toFixed(1)} <span className="text-sm text-slate-400 font-normal">/ {predictionTotalMarks}</span>
-                          <span className="text-xs font-bold text-indigo-700 bg-indigo-100/70 border border-indigo-200/60 ml-2 px-2 py-0.5 rounded-full">
-                            {predictionScore.toFixed(0)}% Avg
-                          </span>
+
                         </p>
                         <p className="text-xs text-slate-500 font-medium mt-0.5">
                           Average of All Evaluated Lessons

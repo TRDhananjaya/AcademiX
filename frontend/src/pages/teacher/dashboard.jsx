@@ -78,7 +78,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
     setResolveConfirm({ show: false, predictionId: null });
     try {
       setResolvingIds(prev => new Set(prev).add(predictionId));
-      
+
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/analytics/intervention/${predictionId}/resolve`, {
         method: 'PUT',
@@ -87,7 +87,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
           'Content-Type': 'application/json'
         }
       });
-      
+
       if (res.ok) {
         // Refresh the lists directly
         fetchInterventionAlerts();
@@ -279,104 +279,148 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
 
             </div>
 
-            {/* Middle Columns (Predictive Insights & Community Activity) */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Middle Columns: 1st Quick Actions, 2nd Community Hub */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-              {/* Academic Performance Overview */}
-              <div className="lg:col-span-2 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col">
-                <div className="flex justify-between items-start mb-6">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-1.5">
-                      <span className="text-indigo-600">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20v-6M6 20V10M18 20V4"></path><path d="M4 10h4v10H4z"></path><path d="M16 4h4v16h-4z"></path></svg>
-                      </span> Academic Performance Overview
+              {/* 1. Quick Actions */}
+              <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                      </span>
+                      Quick Actions
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Quick overview of student academic performance.
-                    </p>
+
+                  </div>
+                  <p className="text-xs text-slate-500 mb-5">
+                    Fast access to essential teaching tools.
+                  </p>
+
+                  <div className="space-y-2.5">
+                    <div
+                      onClick={() => setActiveNav('quizzes')}
+                      className="p-3 rounded-xl border border-slate-100/90 hover:border-indigo-200 bg-slate-50/40 hover:bg-white transition-all cursor-pointer flex items-center justify-between group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">Create New Quiz</h4>
+                          <p className="text-[10px] text-slate-400">Add MCQs & test questions</p>
+                        </div>
+                      </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-300 group-hover:text-indigo-600 group-hover:translate-x-0.5 transition-all"><path d="M9 18l6-6-6-6" /></svg>
+                    </div>
+
+                    <div
+                      onClick={() => setActiveNav('lessons')}
+                      className="p-3 rounded-xl border border-slate-100/90 hover:border-emerald-200 bg-slate-50/40 hover:bg-white transition-all cursor-pointer flex items-center justify-between group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">Manage Lessons</h4>
+                          <p className="text-[10px] text-slate-400">Upload PDFs, notes & videos</p>
+                        </div>
+                      </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all"><path d="M9 18l6-6-6-6" /></svg>
+                    </div>
+
+                    <div
+                      onClick={() => setActiveNav('attendance')}
+                      className="p-3 rounded-xl border border-slate-100/90 hover:border-blue-200 bg-slate-50/40 hover:bg-white transition-all cursor-pointer flex items-center justify-between group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-800 group-hover:text-blue-600 transition-colors">Live QR Attendance</h4>
+                          <p className="text-[10px] text-slate-400">Scan & monitor check-ins</p>
+                        </div>
+                      </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all"><path d="M9 18l6-6-6-6" /></svg>
+                    </div>
+
+                    <div
+                      onClick={() => setActiveNav('notifications')}
+                      className="p-3 rounded-xl border border-slate-100/90 hover:border-violet-200 bg-slate-50/40 hover:bg-white transition-all cursor-pointer flex items-center justify-between group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-bold text-slate-800 group-hover:text-violet-600 transition-colors">Broadcast Notice</h4>
+                          <p className="text-[10px] text-slate-400">Send alerts to student cohort</p>
+                        </div>
+                      </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="text-slate-300 group-hover:text-violet-600 group-hover:translate-x-0.5 transition-all"><path d="M9 18l6-6-6-6" /></svg>
+                    </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 flex-1">
-                  
-                  {/* Top Performing Lesson */}
-                  <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md hover:border-emerald-300 flex flex-col justify-between relative overflow-hidden transition-all duration-200 group">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 pr-3">
-                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider group-hover:text-emerald-600 transition-colors">Top Performing</span>
-                        <h3 className="text-3xl font-extrabold text-slate-900 mt-2">
-                          {metrics?.strongestLessonAvg !== undefined ? `${metrics.strongestLessonAvg}%` : '--'}
-                        </h3>
-                      </div>
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
-                      </div>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between text-xs font-semibold text-emerald-600">
-                      <span className="truncate pr-2" title={metrics?.strongestLesson || '--'}>
-                        {metrics?.strongestLesson || '--'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Most Challenging Lesson */}
-                  <div className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md hover:border-rose-300 flex flex-col justify-between relative overflow-hidden transition-all duration-200 group">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 pr-3">
-                        <span className="text-slate-400 text-xs font-bold uppercase tracking-wider group-hover:text-rose-600 transition-colors">Most Challenging</span>
-                        <h3 className="text-3xl font-extrabold text-slate-900 mt-2">
-                          {metrics?.weakestLessonAvg !== undefined ? `${metrics.weakestLessonAvg}%` : '--'}
-                        </h3>
-                      </div>
-                      <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
-                      </div>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between text-xs font-semibold text-rose-600">
-                      <span className="truncate pr-2" title={metrics?.weakestLesson || '--'}>
-                        {metrics?.weakestLesson || '--'}
-                      </span>
-                    </div>
-                  </div>
-
+                <div className="mt-5 pt-3 border-t border-slate-100 text-[11px] text-slate-400 text-center font-medium">
+                  Select a workflow to get started
                 </div>
               </div>
 
-              {/* Community Activity */}
+              {/* 2. Community Hub */}
               <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-1.5 mb-1">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-800"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    Community Activity
-                  </h3>
-                  <p className="text-xs text-slate-500 mb-6">
-                    Recent discussions needing guidance.
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <span className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                      </span>
+                      Community Hub
+                    </h3>
+                    <span className="text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">
+                      Discussions
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-5">
+                    Recent student questions needing guidance.
                   </p>
 
-                  <div className="space-y-5">
+                  <div className="space-y-3.5">
                     {dashboardData?.communityActivity && dashboardData.communityActivity.length > 0 ? (
                       dashboardData.communityActivity.map((post, index) => (
-                        <div key={post.id} className={`group cursor-pointer ${index > 0 ? 'border-t border-slate-50 pt-4' : ''}`} onClick={() => setActiveNav('community')}>
+                        <div
+                          key={post.id || index}
+                          className="p-3 rounded-xl border border-slate-100/90 hover:border-indigo-200 bg-slate-50/40 hover:bg-white transition-all cursor-pointer group"
+                          onClick={() => setActiveNav('community')}
+                        >
                           <div className="flex justify-between items-baseline mb-1">
-                            <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors truncate max-w-[170px]">{post.title}</h4>
-                            <span className="text-[10px] text-slate-400">{post.time}</span>
+                            <h4 className="font-bold text-slate-800 text-xs group-hover:text-indigo-600 transition-colors truncate max-w-[280px]">
+                              {post.title}
+                            </h4>
+                            <span className="text-[10px] text-slate-400 font-medium shrink-0 ml-1">{post.time}</span>
                           </div>
-                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-1.5">
+                          <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed mb-2">
                             {post.body}
                           </p>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-slate-400">{post.repliesCount} Replies</span>
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="font-semibold text-slate-400 flex items-center gap-1">
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                              {post.repliesCount} {post.repliesCount === 1 ? 'Reply' : 'Replies'}
+                            </span>
                             {post.needsTeacherInput && (
-                              <>
-                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide">Needs Teacher Input</span>
-                              </>
+                              <span className="inline-flex items-center gap-1 font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded uppercase tracking-wider text-[9px]">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                Needs Guidance
+                              </span>
                             )}
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="text-center py-6 text-xs text-slate-400 font-medium">
+                      <div className="text-center py-8 text-xs text-slate-400 font-medium">
                         No recent discussion posts.
                       </div>
                     )}
@@ -385,9 +429,10 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
 
                 <button
                   onClick={() => setActiveNav('community')}
-                  className="w-full mt-6 py-2.5 border border-slate-200 hover:border-slate-300 text-slate-600 hover:text-slate-800 rounded-xl text-sm font-semibold transition-all flex items-center justify-center"
+                  className="w-full mt-5 py-2.5 bg-indigo-50/70 hover:bg-indigo-100/80 text-indigo-700 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-indigo-100/60"
                 >
-                  Go to Forums
+                  Go to Community Hub
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
                 </button>
               </div>
 
@@ -424,7 +469,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
             <div className="p-6 overflow-y-auto flex-1">
               {!interventionData ? (
                 <div className="flex justify-center py-12">
-                   <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+                  <div className="w-8 h-8 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
                 </div>
               ) : interventionData.students?.length === 0 ? (
                 <div className="text-center py-12 bg-slate-50 rounded-xl border border-slate-100">
