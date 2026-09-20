@@ -56,7 +56,8 @@ from models.request_models import ModuleData
 
 def build_prompt(overall_score: float, modules_data: List[ModuleData]) -> str:
     all_context = ""
-    all_incorrect_questions = []
+    all_incorrect_questions = []  # Legacy: plain text list
+    all_answers_analysis = []     # New: rich answer objects
     module_scores = []
     
     for mod in modules_data:
@@ -68,9 +69,43 @@ def build_prompt(overall_score: float, modules_data: List[ModuleData]) -> str:
             logging.warning(f"No context found for module {mod.module_id}")
             
         all_incorrect_questions.extend(mod.incorrect_questions)
+        all_answers_analysis.extend(mod.answers_analysis)
 
-    incorrect_str = "\n".join([f"- {q}" for q in all_incorrect_questions]) if all_incorrect_questions else "None"
     scores_str = "\n".join(module_scores)
+
+    # Build the answer evidence section
+    # Priority: use rich answer analysis if available, else fall back to text-only
+    has_rich_answers = any(
+        a.studentAnswer != 'Unable to resolve' and a.correctAnswer != 'Unable to resolve'
+        for a in all_answers_analysis
+    ) if all_answers_analysis else False
+
+    if has_rich_answers:
+        incorrect_answers = [a for a in all_answers_analysis if not a.isCorrect]
+        correct_answers = [a for a in all_answers_analysis if a.isCorrect]
+
+        # Build structured incorrect answers section
+        incorrect_parts = []
+        for i, a in enumerate(incorrect_answers, 1):
+            part = f"INCORRECT ANSWER {i}:\n"
+            part += f"  Question: {a.questionText}\n"
+            part += f"  Student's Answer: {a.studentAnswer}\n"
+            part += f"  Correct Answer: {a.correctAnswer}"
+            incorrect_parts.append(part)
+
+        # Build correctly answered reference
+        correct_parts = []
+        for a in correct_answers:
+            correct_parts.append(f"  - {a.questionText} ✓")
+
+        answer_evidence_str = "\n\n".join(incorrect_parts) if incorrect_parts else "None"
+        if correct_parts:
+            answer_evidence_str += "\n\nCORRECTLY ANSWERED (concepts the student already understands):\n" + "\n".join(correct_parts)
+
+        incorrect_str = answer_evidence_str
+    else:
+        # Fallback: use legacy text-only incorrect questions
+        incorrect_str = "\n".join([f"- {q}" for q in all_incorrect_questions]) if all_incorrect_questions else "None"
 
     if overall_score >= 85 and len(all_incorrect_questions) <= 3:
         prompt = f"""
@@ -308,7 +343,7 @@ Module Scores:
 {scores_str}
 
 
-Incorrect Questions:
+STUDENT ANSWER ANALYSIS:
 {incorrect_str}
 
 
@@ -394,40 +429,50 @@ Include:
 (MOST IMPORTANT SECTION)
 ==================================================
 
-Analyze every important incorrect question.
+Analyze every incorrect question using the STUDENT ANSWER ANALYSIS data above.
+
+For each incorrect answer, the student's actual selected answer and the correct answer have been provided.
+Use this evidence to diagnose the student's specific misconception.
+
+Do NOT guess why the student chose their answer if the evidence does not support a specific conclusion.
+Do NOT invent a misconception. Base your analysis on the comparison between the student's answer and the correct answer.
 
 For each question provide:
 
 
 Question:
-(Student's incorrect question)
+(The question the student answered incorrectly)
 
 
-Concept Tested:
-(The ICT concept)
-
-
-Why This Was Wrong:
-(Explain the misunderstanding)
-
-
-Correct Understanding:
-(Explain the correct concept using learning material)
+Student's Answer:
+(What the student selected — taken from the data above)
 
 
 Correct Answer:
-(Provide the correct answer)
+(The actual correct answer — taken from the data above)
+
+
+Concept Tested:
+(The ICT concept this question tests)
+
+
+Why This Was Wrong:
+(Compare the student's answer with the correct answer. Explain the specific misunderstanding based on this comparison.)
+
+
+Correct Understanding:
+(Explain the correct concept using retrieved learning material)
 
 
 Exam Strategy:
-(How to identify and answer similar questions)
+(How to identify and answer similar questions correctly)
 
 
 Priority:
-(Critical / High / Medium / Low)
+(Critical / High / Medium / Low — higher if multiple questions test the same concept)
 
 
-Repeat for all major mistakes.
+Repeat for all incorrect answers.
 
 
 ==================================================
