@@ -32,22 +32,7 @@ const submitQuiz = async (req, res) => {
     });
 
     const savedResult = await result.save();
-
-    // Trigger non-blocking background ML Prediction pre-calculation and DB storage
-    try {
-      const match = (quiz.quizCode || '').match(/^[QL](\d+)/i);
-      const lessonNum = match ? match[1] : '1';
-      const studentDoc = await Student.findOne({ studentId: { $regex: new RegExp(`^${(studentId || '').trim()}$`, 'i') } });
-      if (studentDoc) {
-        const { getStudentLessonPrediction } = require('./predictionController');
-        setImmediate(() => {
-          getStudentLessonPrediction(studentDoc, lessonNum).catch(err => console.warn('Background prediction pre-calc error:', err.message));
-        });
-      }
-    } catch (preCalcErr) {
-      console.warn('Background pre-calc trigger error:', preCalcErr.message);
-    }
-
+    
     // --- START AI STUDY PLAN WORKFLOW LOGIC ---
     try {
       const Module = require('../models/Module');

@@ -41,7 +41,4 @@ const predictionSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Compound index for instant sub-millisecond lookups
-predictionSchema.index({ studentId: 1, lessonId: 1 });
-
 module.exports = mongoose.model('Prediction', predictionSchema, 'prediction_results');

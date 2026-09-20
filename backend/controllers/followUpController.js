@@ -300,21 +300,6 @@ const submitFollowUpQuiz = async (req, res) => {
 
     const savedResult = await newResult.save();
 
-    // Trigger non-blocking background ML Prediction pre-calculation and DB storage
-    try {
-      const match = (lessonId || quizId || '').match(/\d+/);
-      const lessonNum = match ? match[0] : '1';
-      const studentDoc = await Student.findOne({ studentId: { $regex: new RegExp(`^${studentId.trim()}$`, 'i') } });
-      if (studentDoc) {
-        const { getStudentLessonPrediction } = require('./predictionController');
-        setImmediate(() => {
-          getStudentLessonPrediction(studentDoc, lessonNum).catch(err => console.warn('Background followup prediction pre-calc error:', err.message));
-        });
-      }
-    } catch (preCalcErr) {
-      console.warn('Background followup pre-calc trigger error:', preCalcErr.message);
-    }
-
     res.status(200).json({
       message: 'Follow-up quiz submitted successfully',
       result: savedResult
