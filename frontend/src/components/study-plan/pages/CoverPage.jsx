@@ -1,25 +1,34 @@
 import React from 'react';
-import { FaGraduationCap, FaBookOpen, FaUserGraduate } from 'react-icons/fa';
+import { FaGraduationCap, FaBookOpen, FaUserGraduate, FaExclamationCircle, FaCheckCircle } from 'react-icons/fa';
 
 const CoverPage = ({ user, lessonTitle, score, dateGenerated, onStart }) => {
   const numericScore = parseFloat(score) || 0;
 
   let scoreStatus = {
     label: 'Needs Review',
+    statusText: 'Guided Practice Recommended',
     color: 'text-amber-700 bg-amber-50 border-amber-200',
+    iconBg: 'bg-amber-100/70 text-amber-600',
+    Icon: FaBookOpen,
     desc: 'Target specific knowledge gaps to boost comprehension across this lesson.'
   };
 
   if (numericScore >= 75) {
     scoreStatus = {
       label: 'Strong Mastery',
+      statusText: 'High Concept Proficiency',
       color: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+      iconBg: 'bg-emerald-100/70 text-emerald-600',
+      Icon: FaCheckCircle,
       desc: 'Solid understanding. Focus on fine details and advanced topics for full marks.'
     };
   } else if (numericScore < 50) {
     scoreStatus = {
       label: 'Critical Revision Needed',
+      statusText: 'Requires Immediate Focus',
       color: 'text-rose-700 bg-rose-50 border-rose-200',
+      iconBg: 'bg-rose-100/70 text-rose-600',
+      Icon: FaExclamationCircle,
       desc: 'Revisit core definitions and examine key misconceptions identified in quizzes.'
     };
   }
@@ -47,22 +56,24 @@ const CoverPage = ({ user, lessonTitle, score, dateGenerated, onStart }) => {
         <span className="text-slate-700 font-medium">{studentDisplayName}</span>.
       </p>
 
-      {/* Score & Diagnostic Summary Card (Clean and balanced, no distracting progress bar) */}
+      {/* Diagnostic Summary Card (Clean and balanced, with status icon & descriptive text) */}
       <div className="w-full max-w-md bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm text-left mb-6">
         <div className="flex items-center justify-between gap-4 pb-3 border-b border-slate-100">
-          <div>
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
-              Diagnostic Assessment Score
-            </span>
-            <div className="flex items-baseline gap-1.5 mt-1">
-              <span className="text-4xl font-bold text-indigo-600">
-                {typeof score === 'number' ? (Number.isInteger(score) ? score : score.toFixed(1)) : score}%
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${scoreStatus.iconBg}`}>
+              <scoreStatus.Icon className="text-lg" />
+            </div>
+            <div>
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                Diagnostic Assessment Status
               </span>
-              <span className="text-sm text-slate-400 font-normal">/ 100%</span>
+              <h4 className="text-base font-bold text-slate-800 mt-0.5">
+                {scoreStatus.statusText}
+              </h4>
             </div>
           </div>
 
-          <span className={`px-3 py-1.5 rounded-xl text-xs font-medium border ${scoreStatus.color}`}>
+          <span className={`px-3 py-1.5 rounded-xl text-xs font-medium border shrink-0 ${scoreStatus.color}`}>
             {scoreStatus.label}
           </span>
         </div>

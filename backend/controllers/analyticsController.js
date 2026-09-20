@@ -515,7 +515,9 @@ const getTeacherDashboardStats = async (req, res, next) => {
                 id: post._id,
                 title: post.title,
                 body: post.body,
-                authorName: post.authorName,
+                authorName: post.authorName || post.author || 'Student Member',
+                role: post.role || post.authorRole || 'Student',
+                category: post.category || post.topic || 'Grade 10 ICT',
                 repliesCount,
                 needsTeacherInput: post.needsTeacherInput || false,
                 time: timeStr
