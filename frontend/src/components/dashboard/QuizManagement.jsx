@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { getCachedData, setCachedData, invalidateCache } from '../../utils/apiCache';
-import { navigate } from '../../App';
 
 export default function QuizManagement() {
   const cachedModules = getCachedData('/api/quizzes/modules');
@@ -221,7 +220,8 @@ export default function QuizManagement() {
           <button
             className="inline-flex items-center gap-2 bg-indigo-900 text-white px-5 py-3 rounded-lg border-none font-semibold text-[14.5px] cursor-pointer transition-opacity hover:opacity-90"
             onClick={() => {
-              navigate('/create-quiz');
+              window.history.pushState({}, '', '/create-quiz');
+              window.dispatchEvent(new PopStateEvent('popstate'));
             }}
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -302,7 +302,8 @@ export default function QuizManagement() {
                                   <button
                                     className="text-indigo-600 bg-transparent border-none font-bold hover:underline cursor-pointer"
                                     onClick={() => {
-                                      navigate('/create-quiz', { defaultModuleCode: quiz.quizCode });
+                                      window.history.pushState({ defaultModuleCode: quiz.quizCode }, '', '/create-quiz');
+                                      window.dispatchEvent(new PopStateEvent('popstate'));
                                     }}
                                   >
                                     Edit
@@ -561,7 +562,8 @@ export default function QuizManagement() {
                           : 'bg-indigo-900 text-white hover:bg-indigo-700'
                         }`}
                       onClick={() => {
-                        navigate('/create-quiz', { defaultModuleCode: mod.quizCode });
+                        window.history.pushState({ defaultModuleCode: mod.quizCode }, '', '/create-quiz');
+                        window.dispatchEvent(new PopStateEvent('popstate'));
                       }}
                     >
                       {isActive ? 'Update / Re-create Quiz' : 'Create Quiz'}

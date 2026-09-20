@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { navigate } from '../../App';
 
 export default function CreateQuizContent() {
   const [modules, setModules] = useState([]);
@@ -159,7 +158,8 @@ export default function CreateQuizContent() {
           buttonText: 'Continue to Quizzes',
           onConfirm: () => {
             setPopupModal(null);
-            navigate('/teacher/quizzes');
+            window.history.pushState({}, '', '/teacher/quizzes');
+            window.dispatchEvent(new PopStateEvent('popstate'));
           }
         });
       } else {
@@ -195,7 +195,7 @@ export default function CreateQuizContent() {
         <div className="flex gap-3">
           <button 
             className="bg-white text-slate-600 px-6 py-2.5 rounded-lg border border-slate-300 font-semibold text-[14.5px] cursor-pointer transition-all hover:bg-slate-50 hover:text-slate-800" 
-            onClick={() => navigate('/teacher/quizzes')}>
+            onClick={() => window.history.pushState({}, '', '/dashboard') || window.dispatchEvent(new PopStateEvent('popstate'))}>
             Cancel
           </button>
           <button 

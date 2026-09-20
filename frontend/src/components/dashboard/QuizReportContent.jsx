@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { invalidateCache } from '../../utils/apiCache';
-import { navigate } from '../../App';
 
 export default function QuizReportContent() {
   const [quizzes, setQuizzes] = useState([]);
@@ -145,7 +144,7 @@ export default function QuizReportContent() {
         <div>
           <div className="flex items-center gap-3 mb-2">
             <button
-              onClick={() => navigate('/teacher/quizzes')}
+              onClick={() => window.history.pushState({}, '', '/teacher/quizzes') || window.dispatchEvent(new PopStateEvent('popstate'))}
               className="text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer bg-transparent border-none p-1 flex items-center justify-center rounded-md hover:bg-slate-100"
               title="Back to Quizzes"
             >
