@@ -129,77 +129,8 @@ const getPosts = async (req, res) => {
       sortOptions = { votes: -1, createdAt: -1 };
     }
 
-    const posts = await CommunityPost.find(query).sort(sortOptions);
-
-    // Only fetch profile pictures for users who authored posts or replies in this list
-    const authorNames = new Set();
-    posts.forEach(p => {
-      if (p.authorName) authorNames.add(p.authorName.trim());
-      (p.replies || []).forEach(r => {
-        if (r.authorName) authorNames.add(r.authorName.trim());
-      });
-    });
-
-    const profilePicMap = new Map();
-    if (authorNames.size > 0) {
-      const queryOr = [];
-      authorNames.forEach(name => {
-        const cleanName = name.replace(/^(mr\.|mrs\.|ms\.|dr\.)\s*/i, '').trim();
-        queryOr.push({ username: new RegExp(`^${name}$`, 'i') });
-        queryOr.push({ username: new RegExp(`^${cleanName}$`, 'i') });
-
-        const parts = cleanName.split(/\s+/);
-        if (parts.length > 1) {
-          queryOr.push({
-            firstName: new RegExp(`^${parts[0]}$`, 'i'),
-            lastName: new RegExp(`^${parts.slice(1).join(' ')}$`, 'i')
-          });
-        } else if (parts[0]) {
-          queryOr.push({ firstName: new RegExp(`^${parts[0]}$`, 'i') });
-        }
-      });
-
-      const users = await User.find({ $or: queryOr }, 'firstName lastName username profilePicture').lean();
-      users.forEach(u => {
-        if (u.profilePicture) {
-          const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim().toLowerCase();
-          if (fullName) {
-            profilePicMap.set(fullName, u.profilePicture);
-            profilePicMap.set(`mr. ${fullName}`, u.profilePicture);
-            profilePicMap.set(`mrs. ${fullName}`, u.profilePicture);
-            profilePicMap.set(`dr. ${fullName}`, u.profilePicture);
-          }
-          if (u.username) {
-            profilePicMap.set(u.username.toLowerCase(), u.profilePicture);
-          }
-        }
-      });
-    }
-
-    const enrichedPosts = posts.map(post => {
-      const postObj = post.toObject();
-
-      const authorKey = (postObj.authorName || '').toLowerCase();
-      const dbProfilePic = profilePicMap.get(authorKey);
-      if (dbProfilePic) {
-        postObj.authorAvatar = dbProfilePic;
-      }
-
-      if (postObj.replies && postObj.replies.length > 0) {
-        postObj.replies = postObj.replies.map(reply => {
-          const replyAuthorKey = (reply.authorName || '').toLowerCase();
-          const replyDbProfilePic = profilePicMap.get(replyAuthorKey);
-          if (replyDbProfilePic) {
-            reply.authorAvatar = replyDbProfilePic;
-          }
-          return reply;
-        });
-      }
-
-      return postObj;
-    });
-
-    res.status(200).json(enrichedPosts);
+    const posts = await CommunityPost.find(query).sort(sortOptions).lean();
+    res.status(200).json(posts);
   } catch (error) {
     console.error('Error fetching community posts:', error);
     res.status(500).json({ message: 'Server error fetching community posts' });

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { invalidateCache } from '../../utils/apiCache';
 
 export default function QuizReportContent() {
   const [quizzes, setQuizzes] = useState([]);
@@ -9,6 +10,8 @@ export default function QuizReportContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState({ key: 'studentId', direction: 'asc' });
   const [searchQuery, setSearchQuery] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -42,6 +45,32 @@ export default function QuizReportContent() {
         .catch(err => console.error(err));
     }
   }, [selectedQuizId]);
+
+  const handleDeleteQuizResult = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/quiz-results/${deleteTarget._id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        }
+      });
+      if (res.ok) {
+        invalidateCache('/api/quiz-results');
+        invalidateCache('/api/analytics');
+        setSubmissions(prev => prev.filter(r => r._id !== deleteTarget._id));
+        setDeleteTarget(null);
+      } else {
+        alert('Failed to delete quiz result.');
+      }
+    } catch (err) {
+      console.error('Error deleting quiz result:', err);
+      alert('Server error deleting quiz result.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (isLoading) {
     return <div className="p-10 text-center font-bold text-slate-500">Loading Report...</div>;
@@ -233,6 +262,7 @@ export default function QuizReportContent() {
                 <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">Student Name</th>
                 <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">ID</th>
                 <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50">Marks</th>
+                <th className="p-[16px_24px] text-[12px] font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-100 bg-slate-50/50 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -256,6 +286,18 @@ export default function QuizReportContent() {
                     <span className="font-bold text-slate-800 text-[14.5px]">
                       {student.percentage}% {student.score !== undefined && student.totalQuestions ? `(${student.score}/${student.totalQuestions})` : ''}
                     </span>
+                  </td>
+                  <td className="p-[16px_24px] text-right">
+                    <button
+                      onClick={() => setDeleteTarget(student)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1 text-xs font-semibold"
+                      title="Delete Attempt (Allow Student Retake)"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -296,6 +338,45 @@ export default function QuizReportContent() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mb-4 mx-auto">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-800 text-center mb-2">Delete Completed Quiz Attempt?</h3>
+            <p className="text-sm text-slate-500 text-center mb-6 leading-relaxed">
+              Are you sure you want to delete the completed attempt for <strong className="text-slate-800">{deleteTarget.studentName}</strong> (<span className="font-mono text-indigo-600">{deleteTarget.studentId}</span>)?
+              <br /><br />
+              <span className="text-emerald-700 font-medium bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 block text-xs">
+                ✓ Record will be permanently removed from MongoDB, allowing the student to retake this quiz.
+              </span>
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl font-semibold text-slate-700 hover:bg-slate-50 transition-colors text-sm cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteQuizResult}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-semibold transition-colors text-sm shadow-sm cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete & Reset Attempt'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

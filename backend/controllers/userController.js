@@ -7,7 +7,7 @@ const User = require('../models/User');
  */
 const getStudents = async (req, res) => {
 	try {
-		const students = await User.find({ role: 'student' }).select('-password').sort({ createdAt: -1 });
+		const students = await User.find({ role: 'student' }).select('-password -profilePicture').sort({ createdAt: -1 }).lean();
 		res.status(200).json(students);
 	} catch (error) {
 		console.error('Get students error:', error);

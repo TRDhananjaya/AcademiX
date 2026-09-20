@@ -15,8 +15,8 @@ const getConversations = async (req, res) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
-    // Fetch all real users except current user from the database
-    const users = await User.find({}, 'firstName lastName username role profilePicture');
+    // Fetch all real users except current user from the database (exclude heavy profilePicture Base64 strings)
+    const users = await User.find({}, 'firstName lastName username role').lean();
     const contacts = users
       .filter(u => (u.username || u._id.toString()) !== currentUserId)
       .map(u => ({

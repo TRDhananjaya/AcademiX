@@ -84,14 +84,11 @@ const sendMessage = async (req, res) => {
     const sName = senderName || (user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : 'Community Member');
     const sRole = senderRole || (user ? user.role : 'student');
 
-    const dbUser = await User.findOne({ username: sId.toLowerCase() }, 'profilePicture');
-    const sAvatar = (dbUser && dbUser.profilePicture) || '';
-
     const message = new CommonMessage({
       senderId: sId,
       senderName: sName,
       senderRole: sRole,
-      senderAvatar: sAvatar,
+      senderAvatar: '',
       text: text.trim(),
       timestamp: new Date()
     });

@@ -19,6 +19,7 @@ export default function CommonCommunityChat() {
   const [isLoading, setIsLoading] = useState(!cachedMessages);
 
   const chatContainerRef = useRef(null);
+  const isFetchingRef = useRef(false);
 
   // Auth helper for protected API calls
   const authHeaders = () => {
@@ -39,10 +40,15 @@ export default function CommonCommunityChat() {
   };
 
   const fetchMessages = async (isInitial = false) => {
+    if (isFetchingRef.current && !isInitial) return;
+    isFetchingRef.current = true;
     try {
       const res = await fetch('/api/common-messages', { headers: authHeaders() });
       const data = await res.json();
       if (Array.isArray(data)) {
+        if (typeof setCachedData === 'function') {
+          setCachedData('/api/common-messages', data, authHeader);
+        }
         setMessages(prev => {
           const hasChanged = prev.length !== data.length ||
             (prev.length > 0 && data.length > 0 && prev[prev.length - 1]._id !== data[data.length - 1]._id);
@@ -62,6 +68,7 @@ export default function CommonCommunityChat() {
     } catch (err) {
       console.error('Error loading common community messages:', err);
     } finally {
+      isFetchingRef.current = false;
       setIsLoading(false);
     }
   };

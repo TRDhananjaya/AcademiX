@@ -394,10 +394,42 @@ const exportQuizResultsCSV = async (req, res) => {
   }
 };
 
+// @desc    Delete a student completed quiz result by ID
+// @route   DELETE /api/quiz-results/:id
+// @access  Teacher / Admin
+const deleteQuizResult = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let deleted = null;
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      deleted = await QuizResult.findByIdAndDelete(id);
+    }
+    if (!deleted) {
+      deleted = await QuizResult.findOneAndDelete({
+        $or: [{ _id: id }, { quizId: id }]
+      });
+    }
+
+    if (!deleted) {
+      return res.status(404).json({ message: 'Quiz result not found' });
+    }
+
+    res.status(200).json({
+      message: 'Completed quiz result deleted successfully. The student can now retake this quiz.',
+      deletedId: deleted._id
+    });
+  } catch (error) {
+    console.error('Error deleting quiz result:', error);
+    res.status(500).json({ message: 'Server error deleting quiz result' });
+  }
+};
+
 module.exports = {
   submitQuiz,
   getResultsByQuiz,
   getResultsByStudent,
   getAllResults,
-  exportQuizResultsCSV
+  exportQuizResultsCSV,
+  deleteQuizResult
 };
