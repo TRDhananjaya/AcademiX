@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
 import { navigate } from '../../App';
@@ -21,6 +21,31 @@ export default function ExamPrediction() {
   
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const searchContainerRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target)) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selectedStudentFilter && classPredictions?.students) {
+      const student = classPredictions.students.find(s => s.studentId === selectedStudentFilter);
+      if (student && !searchQuery.startsWith(student.studentId)) {
+         setSearchQuery(`${student.studentId} — ${student.studentName}`);
+      }
+    }
+  }, [classPredictions, selectedStudentFilter]);
   
   useEffect(() => {
     return () => {
@@ -125,13 +150,34 @@ export default function ExamPrediction() {
   const handleLessonChange = (e) => {
     setSelectedLesson(e.target.value);
     setSelectedStudentFilter('');
+    setSearchQuery('');
     setCurrentPage(1);
   };
   
-  const handleStudentFilterChange = (e) => {
-    setSelectedStudentFilter(e.target.value);
+  const handleStudentFilterChange = (studentId) => {
+    setSelectedStudentFilter(studentId);
     setCurrentPage(1);
+    setShowSuggestions(false);
+    if (!studentId) {
+      setSearchQuery('');
+    } else {
+      const student = classPredictions?.students?.find(s => s.studentId === studentId);
+      if (student) {
+        setSearchQuery(`${student.studentId} — ${student.studentName}`);
+      }
+    }
   };
+
+  const searchSuggestions = useMemo(() => {
+    if (!classPredictions?.students) return [];
+    if (!searchQuery) return classPredictions.students;
+    
+    const lowerQuery = searchQuery.toLowerCase();
+    return classPredictions.students.filter(s => 
+      s.studentId.toLowerCase().includes(lowerQuery) || 
+      s.studentName.toLowerCase().includes(lowerQuery)
+    );
+  }, [classPredictions, searchQuery]);
 
   const filteredStudents = useMemo(() => {
     if (!classPredictions?.students) return [];
@@ -175,23 +221,72 @@ export default function ExamPrediction() {
                 className="w-full border border-slate-200 text-slate-700 rounded-lg px-4 py-2.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="" disabled>-- Select a Lesson --</option>
-                {lessons.map(l => <option key={l} value={l}>Lesson {l}</option>)}
+                {lessons.map(l => {
+                  let displayNum = l;
+                  let num = parseInt(l, 10);
+                  if (isNaN(num)) {
+                    const match = l?.toString().match(/^[QL](\d+)/i);
+                    if (match) num = parseInt(match[1], 10);
+                  }
+                  if (!isNaN(num)) {
+                    displayNum = num;
+                  }
+                  return <option key={l} value={l}>Lesson {displayNum}</option>;
+                })}
               </select>
             </div>
             
-            <div className="flex-1">
+            <div className="flex-1" ref={searchContainerRef}>
               <label className="block text-sm font-bold text-slate-700 mb-2">Filter Student</label>
-              <select 
-                value={selectedStudentFilter}
-                onChange={handleStudentFilterChange}
-                disabled={!classPredictions || !classPredictions.students}
-                className="w-full border border-slate-200 text-slate-700 rounded-lg px-4 py-2.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-              >
-                <option value="">All Students</option>
-                {classPredictions?.students?.map(s => (
-                  <option key={s.studentId} value={s.studentId}>{s.studentName} — {s.studentId}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setShowSuggestions(true);
+                    if (e.target.value === '') {
+                        setSelectedStudentFilter('');
+                        setCurrentPage(1);
+                    }
+                  }}
+                  onFocus={() => setShowSuggestions(true)}
+                  disabled={!classPredictions || !classPredictions.students}
+                  placeholder="Search by student name or ID..."
+                  className="w-full border border-slate-200 text-slate-700 rounded-lg pl-10 pr-10 py-2.5 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                />
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                {searchQuery && (
+                  <button 
+                    onClick={() => handleStudentFilterChange('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                    title="Clear filter"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                  </button>
+                )}
+                
+                {showSuggestions && classPredictions?.students && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {searchSuggestions.length > 0 ? (
+                      searchSuggestions.map(s => (
+                        <div 
+                          key={s.studentId}
+                          onClick={() => handleStudentFilterChange(s.studentId)}
+                          className={`px-4 py-3 cursor-pointer hover:bg-slate-50 transition-colors flex flex-col ${selectedStudentFilter === s.studentId ? 'bg-indigo-50' : ''}`}
+                        >
+                          <span className="font-bold text-slate-800">{s.studentId}</span>
+                          <span className="text-sm text-slate-600">{s.studentName}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-3 text-sm text-slate-500">No students found.</div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
