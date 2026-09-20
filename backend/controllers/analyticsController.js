@@ -433,7 +433,7 @@ const getTeacherDashboardStats = async (req, res, next) => {
             overallPassRate = Math.round((passedCount / allQuizResults.length) * 100);
         }
 
-        const atRiskCount = new Set(atRiskPredictions.map(p => p.studentId)).size;
+        const atRiskCount = new Set(atRiskPredictions.map(p => p.studentId ? p.studentId.toString() : null).filter(Boolean)).size;
         const mlRiskCount = atRiskPredictions.length;
 
         // 3. Group quiz results by studentId (lowercase)
