@@ -184,6 +184,22 @@ const getStudentLessonPrediction = async (student, lessonId) => {
         return studentResult;
     }
 
+    const dbLessonId = `Q${lessonNum}`;
+    try {
+        const existingPrediction = await Prediction.findOne({
+            studentId: student._id,
+            lessonId: dbLessonId
+        }).sort({ createdAt: -1 });
+
+        if (existingPrediction) {
+            studentResult.predictedPercentage = existingPrediction.predictedScore;
+            studentResult.predictedLessonMark = parseFloat(((existingPrediction.predictedScore / 100) * lessonMaxMark).toFixed(1));
+            return studentResult;
+        }
+    } catch (dbErr) {
+        console.error("Error checking existing prediction:", dbErr);
+    }
+
     const mlFeatures = {
         Quiz_1_Score: features.Quiz_1_Score,
         Quiz_2_Score: features.Quiz_2_Score,
@@ -229,16 +245,44 @@ const getStudentLessonPrediction = async (student, lessonId) => {
             studentResult.predictedPercentage = parseFloat(predictedPercentage.toFixed(1));
             studentResult.predictedLessonMark = parseFloat(((predictedPercentage / 100) * lessonMaxMark).toFixed(1));
         } else {
-            console.warn(`ML service returned status ${mlResponse?.status} for URL: ${mlUrl}, applying calibrated performance model.`);
-            const estimatedPct = parseFloat(Math.min(100, Math.max(0, (features.Quiz_Average * 0.6 + features.Followup_Quiz_Score * 0.4))).toFixed(1));
-            studentResult.predictedPercentage = estimatedPct;
-            studentResult.predictedLessonMark = parseFloat(((estimatedPct / 100) * lessonMaxMark).toFixed(1));
+            console.warn(`ML service returned status ${mlResponse?.status} for URL: ${mlUrl}, skipping prediction.`);
+            studentResult.predictionStatus = "ML_SERVICE_ERROR";
         }
     } catch (mlErr) {
-        console.warn(`ML service call failed (${mlErr.message}), applying calibrated performance model.`);
-        const estimatedPct = parseFloat(Math.min(100, Math.max(0, (features.Quiz_Average * 0.6 + features.Followup_Quiz_Score * 0.4))).toFixed(1));
-        studentResult.predictedPercentage = estimatedPct;
-        studentResult.predictedLessonMark = parseFloat(((estimatedPct / 100) * lessonMaxMark).toFixed(1));
+        console.warn(`ML service call failed (${mlErr.message}), skipping prediction.`);
+        studentResult.predictionStatus = "ML_SERVICE_ERROR";
+    }
+
+    // SAVE THE PREDICTION IF IT WAS SUCCESSFULLY GENERATED
+    if (studentResult.predictedPercentage !== null) {
+        try {
+            const dbLessonId = `Q${lessonNum}`;
+            
+            // Re-check uniqueness just in case of parallel requests
+            const checkExist = await Prediction.findOne({ studentId: student._id, lessonId: dbLessonId }).sort({ createdAt: -1 });
+            if (!checkExist) {
+                const newPrediction = new Prediction({
+                    studentId: student._id,
+                    lessonId: dbLessonId,
+                    features: {
+                        Module_1_Score: features.Quiz_1_Score,
+                        Module_2_Score: features.Quiz_2_Score,
+                        Module_3_Score: features.Quiz_3_Score,
+                        Avg_Module_Score: features.Quiz_Average,
+                        Followup_Quiz_Score: features.Followup_Quiz_Score,
+                        Weak_Module_Count: 0,
+                        Priority_Score: 0,
+                        Improvement_Percentage: 0,
+                        Lesson_Performance: "N/A",
+                        Quiz_Difficulty: "N/A"
+                    },
+                    predictedScore: studentResult.predictedPercentage
+                });
+                await newPrediction.save();
+            }
+        } catch (saveErr) {
+            console.error("Error saving new prediction:", saveErr);
+        }
     }
 
     return studentResult;
@@ -478,8 +522,79 @@ const getStudentAllLessonsPrediction = async (req, res, next) => {
     }
 };
 
+// @desc    Backfill missing predictions for all eligible students and lessons
+// @route   POST /api/predictions/backfill
+// @access  Private
+const backfillPredictions = async (req, res, next) => {
+    try {
+        const students = await Student.find({ status: 'Active' });
+        
+        const results = {
+            success: true,
+            totalEligible: 0,
+            existingPredictions: 0,
+            missingPredictions: 0,
+            newlyGenerated: 0,
+            skipped: 0,
+            failed: 0
+        };
+
+        for (const student of students) {
+            const quizResults = await QuizResult.find({
+                studentId: { $regex: new RegExp(`^${student.studentId}$`, 'i') } 
+            });
+
+            const lessonNumbers = [...new Set(quizResults.map(r => {
+                const match = r.quizId.match(/^[QL](\d+)/i);
+                return match ? match[1] : null;
+            }).filter(Boolean))].sort();
+
+            for (const lessonNumStr of lessonNumbers) {
+                const dbLessonId = `Q${lessonNumStr}`;
+
+                const featuresData = await calculateFeatures(student.studentId, lessonNumStr);
+                if (featuresData.missingData && featuresData.missingData.length > 0) {
+                    continue; // Not eligible
+                }
+
+                results.totalEligible++;
+
+                const existingPrediction = await Prediction.findOne({
+                    studentId: student._id,
+                    lessonId: dbLessonId
+                });
+
+                if (existingPrediction) {
+                    results.existingPredictions++;
+                    results.skipped++;
+                } else {
+                    results.missingPredictions++;
+                    try {
+                        const lessonResult = await getStudentLessonPrediction(student, lessonNumStr);
+                        
+                        if (lessonResult.predictionStatus === "AVAILABLE") {
+                            results.newlyGenerated++;
+                        } else {
+                            results.failed++;
+                        }
+                    } catch (e) {
+                        results.failed++;
+                        console.error(`Backfill failed for student ${student.studentId} lesson ${lessonNumStr}:`, e);
+                    }
+                }
+            }
+        }
+
+        res.status(200).json(results);
+    } catch (error) {
+        console.error('Backfill error:', error);
+        res.status(500).json({ success: false, message: 'Backfill process failed', error: error.message });
+    }
+};
+
 module.exports = {
     generatePrediction,
     getLessonPredictions,
-    getStudentAllLessonsPrediction
+    getStudentAllLessonsPrediction,
+    backfillPredictions
 };

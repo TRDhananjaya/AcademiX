@@ -5,6 +5,8 @@ const Quiz = require('../models/Quiz');
 const CommunityPost = require('../models/CommunityPost');
 const Attendance = require('../models/Attendance');
 const Lesson = require('../models/Lesson');
+const Prediction = require('../models/Prediction');
+const mongoose = require('mongoose');
 
 // @desc    Get Analytics Records
 // @route   GET /api/analytics
@@ -530,20 +532,21 @@ const getTeacherDashboardStats = async (req, res, next) => {
             }
         ];
 
-        if (atRiskCount > 0) {
+        // NEW ML INTERVENTION ALERT
+        const underperformingPredictions = await Prediction.find({
+            predictedScore: { $lt: 50 },
+            lessonId: { $nin: ['General', 'Final Exam', 'Final Exam (All Lessons)', '', null] }
+        });
+        const uniqueUnderperformingStudentIds = new Set(underperformingPredictions.map(p => p.studentId ? p.studentId.toString() : ''));
+        uniqueUnderperformingStudentIds.delete('');
+        const mlRiskCount = uniqueUnderperformingStudentIds.size;
+
+        if (mlRiskCount > 0) {
             insights.push({
                 type: 'intervention-alert',
-                title: `Intervention Alert: ${atRiskCount} At-Risk Student(s)`,
-                description: `${atRiskCount} student(s) show dropping performance or are flagged. Immediate intervention is highly recommended.`,
-                actionText: 'Message Students'
-            });
-        } else if (studentTrackerList.filter(s => s.status === 'At Risk').length > 0) {
-            const riskCount = studentTrackerList.filter(s => s.status === 'At Risk').length;
-            insights.push({
-                type: 'intervention-alert',
-                title: `Intervention Alert: ${riskCount} Student(s) Underperforming`,
-                description: `${riskCount} student(s) have a quiz average below 50%. Suggest sending review materials.`,
-                actionText: 'Message Students'
+                title: `Intervention Alert: ${mlRiskCount} Student(s) Underperforming`,
+                description: `${mlRiskCount} student(s) have a predicted term test score below 50% in one or more lessons. Immediate intervention is highly recommended.`,
+                actionText: 'View Underperforming Students'
             });
         }
 
@@ -729,6 +732,192 @@ const getTeacherDashboardStats = async (req, res, next) => {
     }
 };
 
+// @desc    Get intervention alerts for Admin
+// @route   GET /api/analytics/intervention
+// @access  Private (Teacher)
+const getAdminInterventionAlerts = async (req, res, next) => {
+    try {
+        const latestPredictions = await Prediction.aggregate([
+            {
+                $match: {
+                    lessonId: { $nin: ['General', 'Final Exam', 'Final Exam (All Lessons)', '', null] }
+                }
+            },
+            {
+                $sort: { createdAt: -1 }
+            },
+            {
+                $group: {
+                    _id: { studentId: "$studentId", lessonId: "$lessonId" },
+                    latestPrediction: { $first: "$$ROOT" }
+                }
+            },
+            {
+                $replaceRoot: { newRoot: "$latestPrediction" }
+            },
+            {
+                $match: {
+                    predictedScore: { $lt: 50 }
+                }
+            }
+        ]);
+
+        const predictions = await Prediction.populate(latestPredictions, { path: 'studentId' });
+
+        const defaultLessonNames = {
+            1: "Information and Communication Technology",
+            2: "Fundamentals of a Computer System",
+            3: "Data Representation Methods in Computer Systems",
+            4: "Logic Gates with Boolean Functions",
+            5: "Operating Systems",
+            6: "Word Processing",
+            7: "Electronic Spreadsheet",
+            8: "Electronic Presentations",
+            9: "Database"
+        };
+
+        const studentMap = {};
+
+        for (const pred of predictions) {
+            if (!pred.studentId) continue;
+            const sId = pred.studentId.studentId;
+            const sName = pred.studentId.name;
+            
+            let num = parseInt(pred.lessonId, 10);
+            if (isNaN(num)) {
+                const match = pred.lessonId?.toString().match(/^[QL](\d+)/i);
+                if (match) num = parseInt(match[1], 10);
+            }
+
+            let lName = `Lesson ${pred.lessonId}`;
+            if (!isNaN(num) && defaultLessonNames[num]) {
+                lName = `Lesson ${num} - ${defaultLessonNames[num]}`;
+            }
+            try {
+                 const queryOps = [];
+                 if (!isNaN(num)) queryOps.push({ lessonNumber: num });
+                 if (pred.lessonId && mongoose.Types.ObjectId.isValid(pred.lessonId)) queryOps.push({ _id: pred.lessonId });
+                 
+                 if (queryOps.length > 0) {
+                     const lessonDoc = await Lesson.findOne({ $or: queryOps });
+                     if (lessonDoc) lName = lessonDoc.title.toLowerCase().startsWith('lesson') ? lessonDoc.title : `Lesson ${lessonDoc.lessonNumber} - ${lessonDoc.title}`;
+                 }
+            } catch (e) {}
+            
+            if (!studentMap[sId]) {
+                studentMap[sId] = {
+                    studentId: sId,
+                    studentName: sName,
+                    lessons: []
+                };
+            }
+            
+            studentMap[sId].lessons.push({
+                lessonId: pred.lessonId,
+                lessonName: lName,
+                predictedPercentage: pred.predictedScore
+            });
+        }
+
+        const students = Object.values(studentMap);
+        
+        res.status(200).json({
+            count: students.length,
+            students
+        });
+    } catch (error) {
+        console.error('Admin Intervention Error:', error);
+        res.status(500).json({ message: 'Failed to fetch intervention alerts', error: error.message });
+    }
+};
+
+// @desc    Get intervention alerts for a specific student
+// @route   GET /api/analytics/intervention/student/:studentId
+// @access  Private (Student/Teacher)
+const getStudentInterventionAlerts = async (req, res, next) => {
+    try {
+        const { studentId } = req.params;
+        
+        const student = await Student.findOne({ studentId: { $regex: new RegExp(`^${studentId}$`, 'i') } });
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        const predictions = await Prediction.aggregate([
+            {
+                $match: {
+                    studentId: student._id,
+                    lessonId: { $nin: ['General', 'Final Exam', 'Final Exam (All Lessons)', '', null] }
+                }
+            },
+            {
+                $sort: { createdAt: -1 }
+            },
+            {
+                $group: {
+                    _id: { lessonId: "$lessonId" },
+                    latestPrediction: { $first: "$$ROOT" }
+                }
+            },
+            {
+                $replaceRoot: { newRoot: "$latestPrediction" }
+            },
+            {
+                $match: {
+                    predictedScore: { $lt: 50 }
+                }
+            }
+        ]);
+
+        const defaultLessonNames = {
+            1: "Information and Communication Technology",
+            2: "Fundamentals of a Computer System",
+            3: "Data Representation Methods in Computer Systems",
+            4: "Logic Gates with Boolean Functions",
+            5: "Operating Systems",
+            6: "Word Processing",
+            7: "Electronic Spreadsheet",
+            8: "Electronic Presentations",
+            9: "Database"
+        };
+
+        const alerts = [];
+        for (const pred of predictions) {
+            let num = parseInt(pred.lessonId, 10);
+            if (isNaN(num)) {
+                const match = pred.lessonId?.toString().match(/^[QL](\d+)/i);
+                if (match) num = parseInt(match[1], 10);
+            }
+
+            let lName = `Lesson ${pred.lessonId}`;
+            if (!isNaN(num) && defaultLessonNames[num]) {
+                lName = `Lesson ${num} - ${defaultLessonNames[num]}`;
+            }
+            try {
+                 const queryOps = [];
+                 if (!isNaN(num)) queryOps.push({ lessonNumber: num });
+                 if (pred.lessonId && mongoose.Types.ObjectId.isValid(pred.lessonId)) queryOps.push({ _id: pred.lessonId });
+                 
+                 if (queryOps.length > 0) {
+                     const lessonDoc = await Lesson.findOne({ $or: queryOps });
+                     if (lessonDoc) lName = lessonDoc.title.toLowerCase().startsWith('lesson') ? lessonDoc.title : `Lesson ${lessonDoc.lessonNumber} - ${lessonDoc.title}`;
+                 }
+            } catch (e) {}
+            
+            alerts.push({
+                lessonId: pred.lessonId,
+                lessonName: lName,
+                predictedPercentage: pred.predictedScore
+            });
+        }
+
+        res.status(200).json({ alerts });
+    } catch (error) {
+        console.error('Student Intervention Error:', error);
+        res.status(500).json({ message: 'Failed to fetch intervention alerts', error: error.message });
+    }
+};
+
 module.exports = {
     getAnalytics,
     getAvailableQuizzes,
@@ -736,5 +925,7 @@ module.exports = {
     getStudentPerformance,
     getAllStudents,
     getIndividualStudentAnalytics,
-    getTeacherDashboardStats
+    getTeacherDashboardStats,
+    getAdminInterventionAlerts,
+    getStudentInterventionAlerts
 };
