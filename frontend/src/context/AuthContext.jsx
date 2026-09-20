@@ -80,7 +80,6 @@ export function AuthProvider({ children }) {
 
     if (result === 'browser_closed') {
       clearSession();
-      sessionStorage.setItem('logout_reason', 'browser_closed');
       return null;
     }
     if (result === 'expired') {
