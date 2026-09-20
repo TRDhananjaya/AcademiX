@@ -32,12 +32,21 @@ const getOrGenerateFollowUpQuiz = async (req, res) => {
       ]
     });
 
-    if (quiz && quiz.questions && quiz.questions.length >= 20) {
-      return res.status(200).json({
-        quiz,
-        completed: !!pastResult,
-        pastResult: pastResult || null
-      });
+    if (quiz) {
+      if (quiz.isAvailable === false) {
+        return res.status(200).json({
+          available: false,
+          message: 'This follow-up quiz is currently hidden by your teacher.',
+          quiz: null
+        });
+      }
+      if (quiz.questions && quiz.questions.length >= 20) {
+        return res.status(200).json({
+          quiz,
+          completed: !!pastResult,
+          pastResult: pastResult || null
+        });
+      }
     }
 
     // 3. Otherwise, fetch lesson & modules to build an adaptive 20-question quiz from DB
@@ -464,11 +473,111 @@ const deleteFollowUpQuiz = async (req, res) => {
   }
 };
 
+/**
+ * @desc Toggle availability of all follow-up quizzes at once
+ * @route PUT /api/followup/toggle-all
+ */
+const toggleAllFollowUpAvailability = async (req, res) => {
+  try {
+    const { targetState } = req.body;
+    const isAvailable = typeof targetState === 'boolean' ? targetState : true;
+    await FollowupQuiz.updateMany({}, { isAvailable });
+    res.status(200).json({
+      message: `All follow-up quizzes have been ${isAvailable ? 'enabled' : 'disabled'} for students.`
+    });
+  } catch (error) {
+    console.error('Error toggling all follow-up quizzes:', error);
+    res.status(500).json({ message: 'Server error toggling all follow-up quizzes' });
+  }
+};
+
+const getFilterForGroup = (quizNumber) => {
+  if (Number(quizNumber) === 1) {
+    return {
+      $or: [
+        { moduleId: '6a3671282181b4065bba4afc' },
+        { quizCode: { $regex: /6a3671282181b4065bba4afc|FQ1|MODULE_1/i } },
+        { title: { $regex: /Fundamentals|Quiz 1/i } }
+      ]
+    };
+  } else {
+    return {
+      $or: [
+        { moduleId: '6a33c6b4d67ba7d81f63916b' },
+        { quizCode: { $regex: /6a33c6b4d67ba7d81f63916b|FQ2|MODULE_2/i } },
+        { title: { $regex: /Information|Quiz 2/i } }
+      ]
+    };
+  }
+};
+
+/**
+ * @desc Get status of Follow-Up Quiz 1 and Follow-Up Quiz 2
+ * @route GET /api/followup/group-status
+ */
+const getFollowUpGroupStatus = async (req, res) => {
+  try {
+    const q1List = await FollowupQuiz.find(getFilterForGroup(1)).lean();
+    const q2List = await FollowupQuiz.find(getFilterForGroup(2)).lean();
+
+    const quiz1Available = q1List.length === 0 || q1List.every(q => q.isAvailable !== false);
+    const quiz2Available = q2List.length === 0 || q2List.every(q => q.isAvailable !== false);
+
+    res.status(200).json({
+      quiz1: {
+        quizNumber: 1,
+        title: 'Follow-Up Quiz 1 (Fundamentals of a Computer System)',
+        isAvailable: quiz1Available,
+        totalCount: q1List.length
+      },
+      quiz2: {
+        quizNumber: 2,
+        title: 'Follow-Up Quiz 2 (Information and Communication Technology)',
+        isAvailable: quiz2Available,
+        totalCount: q2List.length
+      }
+    });
+  } catch (error) {
+    console.error('Error getting follow-up group status:', error);
+    res.status(500).json({ message: 'Server error fetching group status' });
+  }
+};
+
+/**
+ * @desc Toggle availability of Follow-Up Quiz 1 or Follow-Up Quiz 2 for all students
+ * @route PUT /api/followup/toggle-group
+ */
+const toggleFollowUpQuizGroup = async (req, res) => {
+  try {
+    const { quizNumber, targetState } = req.body;
+    const num = Number(quizNumber);
+    if (num !== 1 && num !== 2) {
+      return res.status(400).json({ message: 'Invalid quizNumber. Must be 1 or 2.' });
+    }
+    const filter = getFilterForGroup(num);
+    const isAvailable = typeof targetState === 'boolean' ? targetState : true;
+
+    await FollowupQuiz.updateMany(filter, { isAvailable });
+
+    res.status(200).json({
+      message: `Follow-Up Quiz ${num} is now ${isAvailable ? 'Allowed' : 'Disabled'} for all students.`,
+      quizNumber: num,
+      isAvailable
+    });
+  } catch (error) {
+    console.error('Error toggling follow-up quiz group:', error);
+    res.status(500).json({ message: 'Server error toggling group availability' });
+  }
+};
+
 module.exports = {
   getOrGenerateFollowUpQuiz,
   submitFollowUpQuiz,
   generateFollowUpQuiz,
   getAllFollowUpQuizzes,
   toggleFollowUpAvailability,
+  toggleAllFollowUpAvailability,
+  getFollowUpGroupStatus,
+  toggleFollowUpQuizGroup,
   deleteFollowUpQuiz
 };
