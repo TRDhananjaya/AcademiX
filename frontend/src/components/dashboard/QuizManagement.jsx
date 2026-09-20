@@ -14,6 +14,8 @@ export default function QuizManagement() {
   const [isExporting, setIsExporting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteQuizTarget, setDeleteQuizTarget] = useState(null);
+  const [isDeletingQuiz, setIsDeletingQuiz] = useState(false);
 
   // State variables for report view have been delegated to QuizReportContent page.
 
@@ -26,12 +28,12 @@ export default function QuizManagement() {
           fetch('/api/quizzes'),
           fetch('/api/quiz-results')
         ]);
-        
+
         if (modulesRes.ok && quizzesRes.ok && resultsRes.ok) {
           const modulesData = await modulesRes.json();
           const quizzesData = await quizzesRes.json();
           const resultsData = await resultsRes.json();
-          
+
           setModules(modulesData);
           setQuizzes(quizzesData);
           setResults(resultsData);
@@ -46,7 +48,7 @@ export default function QuizManagement() {
         setIsLoading(false);
       }
     }
-    
+
     fetchData();
   }, []);
 
@@ -77,12 +79,12 @@ export default function QuizManagement() {
   };
 
   const activeQuizzes = quizzes.filter(q => q.questions && q.questions.length > 0);
-  
+
   // Calculate stats from results
   const avgScore = results.length > 0
     ? (results.reduce((sum, r) => sum + r.percentage, 0) / results.length).toFixed(1)
     : 'N/A';
-    
+
   const totalSubmissions = results.length;
   const flaggedCount = results.filter(r => r.percentage < 50).length;
 
@@ -90,29 +92,28 @@ export default function QuizManagement() {
     return activeQuizzes.some(aq => aq.quizCode === quizCode);
   };
 
-  const handleDeleteQuiz = async (quizId) => {
-    if (!window.confirm('Are you sure you want to delete this quiz? This will remove it from students\' available quizzes.')) {
-      return;
-    }
-    
+  const confirmDeleteQuiz = async () => {
+    if (!deleteQuizTarget) return;
+    setIsDeletingQuiz(true);
     try {
-      const response = await fetch(`/api/quizzes/${quizId}`, {
-        method: 'DELETE'
+      const response = await fetch(`/api/quizzes/${deleteQuizTarget._id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+        }
       });
       if (response.ok) {
-        // Refresh quizzes list
-        const quizzesRes = await fetch('/api/quizzes');
-        if (quizzesRes.ok) {
-          const quizzesData = await quizzesRes.json();
-          setQuizzes(quizzesData);
-        }
-        alert('Quiz deleted successfully');
+        invalidateCache('/api/quizzes');
+        setQuizzes(prev => prev.filter(q => q._id !== deleteQuizTarget._id));
+        setDeleteQuizTarget(null);
       } else {
         alert('Failed to delete quiz');
       }
     } catch (err) {
       console.error('Error deleting quiz:', err);
       alert('Error deleting quiz');
+    } finally {
+      setIsDeletingQuiz(false);
     }
   };
 
@@ -154,7 +155,7 @@ export default function QuizManagement() {
           <p className="text-[15px] text-slate-500 m-0">Manage and monitor all assessment activities across the ICT department.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
-          <button 
+          <button
             className="inline-flex items-center justify-center gap-2 bg-emerald-600 text-white px-5 py-3 rounded-lg border-none font-semibold text-[14.5px] cursor-pointer transition-opacity hover:opacity-90 disabled:opacity-50"
             onClick={handleDownloadCSV}
             disabled={isExporting}
@@ -170,7 +171,7 @@ export default function QuizManagement() {
             )}
             {isExporting ? 'Generating...' : 'Download Quiz Results CSV'}
           </button>
-          <button 
+          <button
             className="inline-flex items-center gap-2 bg-indigo-900 text-white px-5 py-3 rounded-lg border-none font-semibold text-[14.5px] cursor-pointer transition-opacity hover:opacity-90"
             onClick={() => {
               window.history.pushState({}, '', '/create-quiz');
@@ -178,7 +179,7 @@ export default function QuizManagement() {
             }}
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 4V16M4 10H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M10 4V16M4 10H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
             Create New Quiz
           </button>
@@ -218,7 +219,7 @@ export default function QuizManagement() {
                   <h2 className="text-lg font-bold text-slate-800 m-0">Active Quizzes (Live)</h2>
                   <span className="text-xs text-slate-400 font-medium">{activeQuizzes.length} Deployed</span>
                 </div>
-                
+
                 <div className="p-6 flex-1">
                   {activeQuizzes.length === 0 ? (
                     <div className="p-8 text-center text-slate-500 border-[1.5px] border-dashed border-slate-200 rounded-xl bg-slate-50/30 h-full flex flex-col items-center justify-center">
@@ -229,7 +230,7 @@ export default function QuizManagement() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {activeQuizzes.map((quiz) => {
                         return (
-                          <div 
+                          <div
                             className="flex flex-col justify-between p-4 border border-indigo-100 bg-indigo-50/10 hover:border-indigo-200 rounded-xl hover:shadow-sm transition-all cursor-pointer"
                             key={quiz._id}
                             onClick={() => handleViewResults(quiz)}
@@ -252,7 +253,7 @@ export default function QuizManagement() {
                               <div className="flex justify-between items-center text-xs font-semibold text-slate-400 border-t border-slate-100/55 pt-3" onClick={(e) => e.stopPropagation()}>
                                 <span>{quiz.questionCount || (quiz.questions ? quiz.questions.length : 0)} Questions</span>
                                 <div className="flex gap-3">
-                                  <button 
+                                  <button
                                     className="text-indigo-600 bg-transparent border-none font-bold hover:underline cursor-pointer"
                                     onClick={() => {
                                       window.history.pushState({ defaultModuleCode: quiz.quizCode }, '', '/create-quiz');
@@ -261,9 +262,9 @@ export default function QuizManagement() {
                                   >
                                     Edit
                                   </button>
-                                  <button 
+                                  <button
                                     className="text-red-500 bg-transparent border-none font-bold hover:underline cursor-pointer"
-                                    onClick={() => handleDeleteQuiz(quiz._id)}
+                                    onClick={() => setDeleteQuizTarget(quiz)}
                                   >
                                     Delete
                                   </button>
@@ -284,7 +285,7 @@ export default function QuizManagement() {
               <div className="bg-white border border-slate-100 rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] overflow-hidden h-full flex flex-col">
                 <div className="p-[20px_24px] flex justify-between items-center border-b border-slate-100">
                   <h2 className="text-lg font-bold text-slate-800 m-0">Recent Submissions</h2>
-                  <button 
+                  <button
                     className="text-xs text-indigo-900 bg-transparent border-none font-semibold hover:underline cursor-pointer"
                     onClick={() => {
                       window.history.pushState({}, '', '/analytics');
@@ -294,7 +295,7 @@ export default function QuizManagement() {
                     View All
                   </button>
                 </div>
-                
+
                 <div className="p-6 flex-1">
                   {results.length === 0 ? (
                     <div className="p-8 text-center text-slate-400 text-sm">
@@ -315,19 +316,18 @@ export default function QuizManagement() {
                                   ID: {result.studentId}
                                 </div>
                               </div>
-                              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded ${
-                                isPass 
-                                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' 
+                              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded ${isPass
+                                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
                                   : 'bg-red-50 text-red-600 border border-red-100'
-                              }`}>
+                                }`}>
                                 {result.percentage}%
                               </span>
                             </div>
-                            
+
                             <div className="text-xs text-slate-600 font-medium line-clamp-1" title={result.quizTitle || result.quizId}>
                               Attempted <span className="font-bold text-indigo-900">{result.quizId}</span> – {result.quizTitle || 'Quiz'}
                             </div>
-                            
+
                             <div className="flex justify-between items-center text-[11px] text-slate-400 border-t border-slate-100/60 pt-2 mt-1">
                               <span>Score: {result.score}/{result.totalQuestions}</span>
                               <button
@@ -390,12 +390,11 @@ export default function QuizManagement() {
                         {mod.bundleTopic}
                       </p>
                     </div>
-                    <button 
-                      className={`w-full py-2 rounded-lg border-none font-semibold text-xs cursor-pointer transition-colors ${
-                        isActive 
-                          ? 'bg-indigo-50 text-indigo-900 hover:bg-indigo-100' 
+                    <button
+                      className={`w-full py-2 rounded-lg border-none font-semibold text-xs cursor-pointer transition-colors ${isActive
+                          ? 'bg-indigo-50 text-indigo-900 hover:bg-indigo-100'
                           : 'bg-indigo-900 text-white hover:bg-indigo-700'
-                      }`}
+                        }`}
                       onClick={() => {
                         window.history.pushState({ defaultModuleCode: mod.quizCode }, '', '/create-quiz');
                         window.dispatchEvent(new PopStateEvent('popstate'));
@@ -445,6 +444,45 @@ export default function QuizManagement() {
                 className="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-semibold transition-colors text-sm shadow-sm cursor-pointer flex items-center justify-center gap-2"
               >
                 {isDeleting ? 'Deleting...' : 'Delete & Reset Attempt'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Quiz Confirmation Modal */}
+      {deleteQuizTarget && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mb-4 mx-auto">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-800 text-center mb-2">Delete Quiz?</h3>
+            <p className="text-sm text-slate-500 text-center mb-6 leading-relaxed">
+              Are you sure you want to delete <strong className="text-slate-800">{deleteQuizTarget.title || deleteQuizTarget.quizCode}</strong>?
+              <br /><br />
+              <span className="text-rose-700 font-medium bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200 block text-xs">
+                ⚠️ This will remove it from students' available quizzes.
+              </span>
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteQuizTarget(null)}
+                disabled={isDeletingQuiz}
+                className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl font-semibold text-slate-700 hover:bg-slate-50 transition-colors text-sm cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteQuiz}
+                disabled={isDeletingQuiz}
+                className="flex-1 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-semibold transition-colors text-sm shadow-sm cursor-pointer flex items-center justify-center gap-2"
+              >
+                {isDeletingQuiz ? 'Deleting...' : 'Delete Quiz'}
               </button>
             </div>
           </div>

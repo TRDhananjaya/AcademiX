@@ -71,8 +71,8 @@ const getOrGenerateFollowUpQuiz = async (req, res) => {
       const quizCode = match ? `Q${match[1]}` : null;
 
       let score = 50; // default 50% if unattempted
-      const matchedResult = studentResults.find(r => 
-        (quizCode && r.quizId === quizCode) || 
+      const matchedResult = studentResults.find(r =>
+        (quizCode && r.quizId === quizCode) ||
         (mod._id && r.quizId === mod._id.toString())
       );
 
@@ -252,15 +252,15 @@ const getOrGenerateFollowUpQuiz = async (req, res) => {
  */
 const submitFollowUpQuiz = async (req, res) => {
   try {
-    const { 
-      quizId, 
-      lessonId, 
-      studentId, 
-      studentName, 
-      score, 
-      totalQuestions = 20, 
-      timeTaken, 
-      answersDetails 
+    const {
+      quizId,
+      lessonId,
+      studentId,
+      studentName,
+      score,
+      totalQuestions = 20,
+      timeTaken,
+      answersDetails
     } = req.body;
 
     if (!studentId || score === undefined || score === null) {
@@ -319,8 +319,156 @@ const generateFollowUpQuiz = async (req, res) => {
   return getOrGenerateFollowUpQuiz(req, res);
 };
 
+/**
+ * @desc Get all follow-up quizzes for teacher management
+ * @route GET /api/followup/all
+ */
+const getAllFollowUpQuizzes = async (req, res) => {
+  try {
+    let quizzes = await FollowupQuiz.find({}).sort({ createdAt: 1 }).lean();
+
+    // If none exist yet, seed default follow-up quizzes for standard modules
+    if (!quizzes || quizzes.length === 0) {
+      const defaultFollowUps = [
+        {
+          quizCode: 'FQ1.1',
+          title: 'FQ1.1 - Intro to ICT Remedial Quiz',
+          moduleId: 'MODULE_1_1',
+          bundleTopic: 'Lesson 1: Information and Communication Technology (ICT) Concepts',
+          isAvailable: true,
+          questions: [
+            { text: 'Which of the following best defines Information in ICT?', options: ['Processed Data', 'Raw Facts', 'Hardware Only', 'Electrical Signals'], correctOption: 0 },
+            { text: 'What is the primary function of an Input Device?', options: ['Enter Data into System', 'Display Data to User', 'Store Data Long-Term', 'Process Data'], correctOption: 0 }
+          ]
+        },
+        {
+          quizCode: 'FQ1.2',
+          title: 'FQ1.2 - Applications of ICT Remedial Quiz',
+          moduleId: 'MODULE_1_2',
+          bundleTopic: 'Lesson 1: Applications of ICT in Daily Life',
+          isAvailable: true,
+          questions: [
+            { text: 'Which ICT application is widely used in modern healthcare for patient diagnosis?', options: ['Telemedicine', 'E-Banking', 'E-Commerce', 'Smart Grids'], correctOption: 0 }
+          ]
+        },
+        {
+          quizCode: 'FQ1.3',
+          title: 'FQ1.3 - ICT Trends & Ethics Remedial Quiz',
+          moduleId: 'MODULE_1_3',
+          bundleTopic: 'Lesson 1: Benefits and Challenges of ICT',
+          isAvailable: true,
+          questions: [
+            { text: 'What is a major ethical concern associated with widespread cloud storage?', options: ['Data Privacy & Security', 'Faster Network Speeds', 'Increased Storage Space', 'High Display Resolution'], correctOption: 0 }
+          ]
+        },
+        {
+          quizCode: 'FQ2.1',
+          title: 'FQ2.1 - Computer Concepts Remedial Quiz',
+          moduleId: 'MODULE_2_1',
+          bundleTopic: 'Lesson 2: Computer Concepts & Characteristics',
+          isAvailable: true,
+          questions: [
+            { text: 'Which computer component executes arithmetic and logic calculations?', options: ['ALU inside CPU', 'RAM', 'Hard Drive', 'BIOS'], correctOption: 0 }
+          ]
+        },
+        {
+          quizCode: 'FQ2.2',
+          title: 'FQ2.2 - System Architecture Remedial Quiz',
+          moduleId: 'MODULE_2_2',
+          bundleTopic: 'Lesson 2: Von Neumann Architecture & Memory',
+          isAvailable: true,
+          questions: [
+            { text: 'Which memory type retains its data even when the computer power is turned off?', options: ['ROM (Non-volatile)', 'RAM (Volatile)', 'Cache Level 1', 'CPU Registers'], correctOption: 0 }
+          ]
+        },
+        {
+          quizCode: 'FQ2.3',
+          title: 'FQ2.3 - Operating Systems Remedial Quiz',
+          moduleId: 'MODULE_2_3',
+          bundleTopic: 'Lesson 2: Operating Systems & System Configuration',
+          isAvailable: true,
+          questions: [
+            { text: 'In UNIX system configuration, which file stores encrypted user passwords securely?', options: ['/etc/shadow', '/etc/passwd', '/etc/group', '/etc/hosts'], correctOption: 0 }
+          ]
+        }
+      ];
+
+      await FollowupQuiz.insertMany(defaultFollowUps);
+      quizzes = await FollowupQuiz.find({}).sort({ createdAt: 1 }).lean();
+    }
+
+    res.status(200).json(quizzes);
+  } catch (error) {
+    console.error('Error fetching all follow-up quizzes:', error);
+    res.status(500).json({ message: 'Server error fetching follow-up quizzes' });
+  }
+};
+
+/**
+ * @desc Toggle availability of a follow-up quiz for students
+ * @route PUT /api/followup/:id/toggle
+ */
+const toggleFollowUpAvailability = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let quiz = null;
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      quiz = await FollowupQuiz.findById(id);
+    }
+    if (!quiz) {
+      quiz = await FollowupQuiz.findOne({ quizCode: id });
+    }
+
+    if (!quiz) {
+      return res.status(404).json({ message: 'Follow-up quiz not found' });
+    }
+
+    quiz.isAvailable = !quiz.isAvailable;
+    await quiz.save();
+
+    res.status(200).json({
+      message: `Follow-up quiz ${quiz.quizCode} is now ${quiz.isAvailable ? 'Available' : 'Hidden'} for students.`,
+      quiz
+    });
+  } catch (error) {
+    console.error('Error toggling follow-up quiz availability:', error);
+    res.status(500).json({ message: 'Server error toggling availability' });
+  }
+};
+
+/**
+ * @desc Delete a follow-up quiz
+ * @route DELETE /api/followup/:id
+ */
+const deleteFollowUpQuiz = async (req, res) => {
+  try {
+    const { id } = req.params;
+    let deleted = null;
+
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      deleted = await FollowupQuiz.findByIdAndDelete(id);
+    }
+    if (!deleted) {
+      deleted = await FollowupQuiz.findOneAndDelete({ quizCode: id });
+    }
+
+    if (!deleted) {
+      return res.status(404).json({ message: 'Follow-up quiz not found' });
+    }
+
+    res.status(200).json({ message: 'Follow-up quiz deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting follow-up quiz:', error);
+    res.status(500).json({ message: 'Server error deleting follow-up quiz' });
+  }
+};
+
 module.exports = {
   getOrGenerateFollowUpQuiz,
   submitFollowUpQuiz,
-  generateFollowUpQuiz
+  generateFollowUpQuiz,
+  getAllFollowUpQuizzes,
+  toggleFollowUpAvailability,
+  deleteFollowUpQuiz
 };

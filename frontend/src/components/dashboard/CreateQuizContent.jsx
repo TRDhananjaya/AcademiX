@@ -10,6 +10,8 @@ export default function CreateQuizContent() {
   const [questions, setQuestions] = useState([]);
   const [isLoadingModules, setIsLoadingModules] = useState(true);
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [showReshuffleConfirm, setShowReshuffleConfirm] = useState(false);
+  const [popupModal, setPopupModal] = useState(null);
   const [settings, setSettings] = useState({
     timeLimit: 30,
     passingScore: 50,
@@ -85,13 +87,13 @@ export default function CreateQuizContent() {
     }
   };
 
-  async function handleReshuffleQuestions() {
+  function handleReshuffleQuestions() {
     if (!selectedModuleCode) return;
-    
-    if (!window.confirm('This will replace the current questions with a new set of 20 random questions from the module bank. Are you sure?')) {
-      return;
-    }
+    setShowReshuffleConfirm(true);
+  }
 
+  async function triggerReshuffleQuestions() {
+    setShowReshuffleConfirm(false);
     setIsLoadingQuestions(true);
     try {
       const response = await fetch(`/api/quizzes/modules/${selectedModuleCode}/questions`);
@@ -107,7 +109,7 @@ export default function CreateQuizContent() {
     } finally {
       setIsLoadingQuestions(false);
     }
-  };
+  }
 
   const handleAddQuestion = () => {
     setQuestions([
@@ -123,7 +125,13 @@ export default function CreateQuizContent() {
   async function handlePublish() {
     const activeMod = modules.find(m => m.quizCode === selectedModuleCode);
     if (!activeMod) {
-      alert('Please select a valid module');
+      setPopupModal({
+        type: 'error',
+        title: 'Select Module Required',
+        message: 'Please select a valid module before publishing the quiz.',
+        buttonText: 'OK',
+        onConfirm: () => setPopupModal(null)
+      });
       return;
     }
 
@@ -143,15 +151,35 @@ export default function CreateQuizContent() {
         })
       });
       if (response.ok) {
-        alert('Quiz successfully published!');
-        window.history.pushState({}, '', '/teacher/quizzes');
-        window.dispatchEvent(new PopStateEvent('popstate'));
+        setPopupModal({
+          type: 'success',
+          title: 'Quiz Successfully Published!',
+          message: `The quiz "${title || activeMod.quizCode}" has been saved and is now live for all enrolled students.`,
+          buttonText: 'Continue to Quizzes',
+          onConfirm: () => {
+            setPopupModal(null);
+            window.history.pushState({}, '', '/teacher/quizzes');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }
+        });
       } else {
-        alert('Failed to publish quiz');
+        setPopupModal({
+          type: 'error',
+          title: 'Failed to Publish Quiz',
+          message: 'An error occurred while publishing the quiz. Please check all fields and try again.',
+          buttonText: 'OK',
+          onConfirm: () => setPopupModal(null)
+        });
       }
     } catch (error) {
       console.error(error);
-      alert('An error occurred');
+      setPopupModal({
+        type: 'error',
+        title: 'Connection Error',
+        message: 'Could not connect to server. Please check your internet connection.',
+        buttonText: 'OK',
+        onConfirm: () => setPopupModal(null)
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -307,53 +335,74 @@ export default function CreateQuizContent() {
                 </div>
                 <input type="number" value={settings.timeLimit} onChange={(e) => setSettings({...settings, timeLimit: parseInt(e.target.value) || 0})} className="w-20 text-center px-3 py-2 border-[1.5px] border-slate-200 rounded-lg text-[14.5px] text-slate-800 transition-all font-sans bg-white focus:outline-none focus:border-indigo-500 focus:ring-[3px] focus:ring-indigo-500/10" min="1" />
               </div>
-
-              <div className="flex justify-between items-center">
-                <div className="flex flex-col gap-1">
-                  <span className="font-semibold text-sm text-slate-800">Passing Score</span>
-                  <span className="text-xs text-slate-500">Percentage required to pass</span>
-                </div>
-                <div className="relative flex items-center">
-                  <input type="number" value={settings.passingScore} onChange={(e) => setSettings({...settings, passingScore: parseInt(e.target.value) || 0})} className="w-20 text-center pl-3 pr-7 py-2 border-[1.5px] border-slate-200 rounded-lg text-[14.5px] text-slate-800 transition-all font-sans bg-white focus:outline-none focus:border-indigo-500 focus:ring-[3px] focus:ring-indigo-500/10" min="1" max="100" />
-                  <span className="absolute right-3 text-slate-500 font-medium text-sm">%</span>
-                </div>
-              </div>
-
-              <div className="h-[1px] bg-slate-100 my-1"></div>
-
-              <label className="flex justify-between items-center cursor-pointer" onClick={(e) => { e.preventDefault(); setSettings({...settings, randomizeQuestions: !settings.randomizeQuestions}); }}>
-                <div className="flex flex-col gap-1">
-                  <span className="font-semibold text-sm text-slate-800">Randomize Questions</span>
-                  <span className="text-xs text-slate-500">Shuffle order for each student</span>
-                </div>
-                <div className={`w-11 h-6 rounded-full relative transition-all duration-300 ${settings.randomizeQuestions ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                  <div className={`w-[18px] h-[18px] bg-white rounded-full absolute top-[3px] transition-all duration-300 shadow-sm ${settings.randomizeQuestions ? 'left-[23px]' : 'left-[3px]'}`}></div>
-                </div>
-              </label>
-
-              <label className="flex justify-between items-center cursor-pointer" onClick={(e) => { e.preventDefault(); setSettings({...settings, showResultsImmediately: !settings.showResultsImmediately}); }}>
-                <div className="flex flex-col gap-1">
-                  <span className="font-semibold text-sm text-slate-800">Show Results Immediately</span>
-                  <span className="text-xs text-slate-500">Display score upon submission</span>
-                </div>
-                <div className={`w-11 h-6 rounded-full relative transition-all duration-300 ${settings.showResultsImmediately ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                  <div className={`w-[18px] h-[18px] bg-white rounded-full absolute top-[3px] transition-all duration-300 shadow-sm ${settings.showResultsImmediately ? 'left-[23px]' : 'left-[3px]'}`}></div>
-                </div>
-              </label>
-
-              <label className="flex justify-between items-center cursor-pointer" onClick={(e) => { e.preventDefault(); setSettings({...settings, allowMultipleAttempts: !settings.allowMultipleAttempts}); }}>
-                <div className="flex flex-col gap-1">
-                  <span className="font-semibold text-sm text-slate-800">Allow Multiple Attempts</span>
-                  <span className="text-xs text-slate-500">Students can retake the quiz</span>
-                </div>
-                <div className={`w-11 h-6 rounded-full relative transition-all duration-300 ${settings.allowMultipleAttempts ? 'bg-emerald-500' : 'bg-slate-300'}`}>
-                  <div className={`w-[18px] h-[18px] bg-white rounded-full absolute top-[3px] transition-all duration-300 shadow-sm ${settings.allowMultipleAttempts ? 'left-[23px]' : 'left-[3px]'}`}></div>
-                </div>
-              </label>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Reshuffle Confirmation Modal */}
+      {showReshuffleConfirm && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center mb-4 mx-auto">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-800 text-center mb-2">Reshuffle Module Questions?</h3>
+            <p className="text-sm text-slate-500 text-center mb-6 leading-relaxed">
+              This will replace the current questions with a new set of 20 random questions from the module question bank. Are you sure?
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowReshuffleConfirm(false)}
+                className="flex-1 px-4 py-2.5 border border-slate-200 rounded-xl font-semibold text-slate-700 hover:bg-slate-50 transition-colors text-sm cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={triggerReshuffleQuestions}
+                className="flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-colors text-sm shadow-sm cursor-pointer flex items-center justify-center gap-2"
+              >
+                Reshuffle Questions
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* General Notification / Success Popup Modal */}
+      {popupModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 mx-auto ${popupModal.type === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+              {popupModal.type === 'success' ? (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              )}
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-800 text-center mb-2">{popupModal.title}</h3>
+            <p className="text-sm text-slate-500 text-center mb-6 leading-relaxed">
+              {popupModal.message}
+            </p>
+
+            <button
+              onClick={popupModal.onConfirm}
+              className={`w-full py-2.5 px-4 rounded-xl font-semibold text-white transition-colors text-sm shadow-sm cursor-pointer ${popupModal.type === 'success' ? 'bg-[#3b28cc] hover:bg-indigo-700' : 'bg-rose-600 hover:bg-rose-700'}`}
+            >
+              {popupModal.buttonText || 'OK'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { 
-  getOrGenerateFollowUpQuiz, 
-  submitFollowUpQuiz, 
-  generateFollowUpQuiz 
+const {
+  getOrGenerateFollowUpQuiz,
+  submitFollowUpQuiz,
+  generateFollowUpQuiz
 } = require('../controllers/followUpController');
 
 // @route   GET /api/followup/lesson/:lessonId
