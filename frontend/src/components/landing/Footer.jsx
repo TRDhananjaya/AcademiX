@@ -136,19 +136,20 @@ export default function Footer() {
             <ul className="space-y-4 text-sm text-slate-400">
               <li className="flex items-start gap-3">
                 <FiMapPin className="text-indigo-400 w-4.5 h-4.5 mt-0.5 shrink-0" />
-                <span className="leading-relaxed text-sm">102 Galle Road, Colombo 03, Sri Lanka</span>
+                <span className="leading-relaxed text-sm">102 Galle Rd, Matara, Sri Lanka</span>
               </li>
               <li className="flex items-center gap-3">
                 <FiPhone className="text-indigo-400 w-4.5 h-4.5 shrink-0" />
-                <span className="text-sm">+94 11 234 5678</span>
+                <span className="text-sm">+94 76 927 8308</span>
               </li>
               <li className="flex items-center gap-3">
                 <FiMail className="text-indigo-400 w-4.5 h-4.5 shrink-0" />
                 <a
-                  href="mailto:support@academix.lk"
+                  href="mailto:	academix.akila@gmail.com
+"
                   className="hover:text-indigo-400 transition-colors text-sm"
                 >
-                  support@academix.lk
+                  academix.akila@gmail.com
                 </a>
               </li>
             </ul>
