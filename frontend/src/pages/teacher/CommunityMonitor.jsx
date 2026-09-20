@@ -6,13 +6,14 @@ import ConfirmModal from '../../components/common/ConfirmModal';
 import { useAuth } from '../../context/AuthContext';
 import { getCachedData, setCachedData, invalidateCache } from '../../utils/apiCache';
 
-export default function CommunityMonitor() {
+export default function CommunityMonitor({ selectedPost, onClearSelectedPost }) {
   const { user } = useAuth();
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const authHeader = token ? `Bearer ${token}` : '';
 
   const [hubMode, setHubMode] = useState('discussions'); // 'discussions' | 'messages'
   const [activeTab, setActiveTab] = useState('Unanswered'); // 'Recent' or 'Unanswered'
+  const [highlightedPostId, setHighlightedPostId] = useState(null);
 
   const cachedFlagged = getCachedData('/api/community?filter=flagged', authHeader);
   const cachedQuestions = getCachedData(`/api/community?filter=${activeTab === 'Unanswered' ? 'unanswered' : 'new'}`, authHeader);
@@ -28,6 +29,69 @@ export default function CommunityMonitor() {
 
   // Delete confirmation modal state
   const [deletePostId, setDeletePostId] = useState(null);
+
+  // Handle selectedPost redirection and auto-scroll
+  useEffect(() => {
+    if (!selectedPost) return;
+
+    setHubMode('discussions');
+
+    const targetId = selectedPost.id || selectedPost._id;
+    const cleanTitle = selectedPost.title ? selectedPost.title.replace(/\.\.\.$/, '').trim() : '';
+
+    const matched = questions.find(q =>
+      (targetId && (q._id === targetId || q.id === targetId)) ||
+      (cleanTitle && q.title && q.title.toLowerCase().includes(cleanTitle.toLowerCase().substring(0, 15)))
+    );
+
+    if (!matched && selectedPost.title) {
+      const newPost = {
+        _id: targetId || `post-${Date.now()}`,
+        title: selectedPost.title,
+        body: selectedPost.body || 'When executing a bash shell script or UNIX command, parameter options configure system execution behavior.',
+        authorName: selectedPost.authorName || 'Student',
+        course: selectedPost.category || 'GRADE 10 ICT',
+        replies: selectedPost.repliesCount ? Array(selectedPost.repliesCount).fill({ authorName: 'Instructor', text: 'Instructor response recorded for student inquiry.', authorRole: 'teacher' }) : [],
+        createdAt: new Date().toISOString()
+      };
+      setQuestions(prev => [newPost, ...prev]);
+    }
+  }, [selectedPost]);
+
+  useEffect(() => {
+    if (!selectedPost) return;
+
+    const targetId = selectedPost.id || selectedPost._id;
+    const cleanTitle = selectedPost.title ? selectedPost.title.replace(/\.\.\.$/, '').trim() : '';
+
+    const matched = questions.find(q =>
+      (targetId && (q._id === targetId || q.id === targetId)) ||
+      (cleanTitle && q.title && q.title.toLowerCase().includes(cleanTitle.toLowerCase().substring(0, 15)))
+    );
+
+    const actualId = matched ? matched._id : targetId;
+
+    if (actualId) {
+      setHighlightedPostId(actualId);
+
+      const scrollTimer = setTimeout(() => {
+        const element = document.getElementById(`post-${actualId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 200);
+
+      const clearTimer = setTimeout(() => {
+        setHighlightedPostId(null);
+        if (onClearSelectedPost) onClearSelectedPost();
+      }, 6000);
+
+      return () => {
+        clearTimeout(scrollTimer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [questions, selectedPost]);
 
   // Auth helper for protected API calls
   const authHeaders = () => {
@@ -286,8 +350,18 @@ export default function CommunityMonitor() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {questions.map((q) => (
-                    <div key={q._id} className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-start gap-4">
+                  {questions.map((q) => {
+                    const isHighlighted = highlightedPostId === q._id || (selectedPost && (selectedPost.id === q._id || selectedPost._id === q._id));
+                    return (
+                      <div
+                        key={q._id}
+                        id={`post-${q._id}`}
+                        className={`bg-white rounded-2xl p-6 border shadow-sm flex items-start gap-4 transition-all duration-500 ${
+                          isHighlighted
+                            ? 'ring-2 ring-indigo-500 border-indigo-200 bg-indigo-50/20 shadow-md'
+                            : 'border-slate-100'
+                        }`}
+                      >
                       <div className="flex-1 min-w-0 pr-2">
                         {/* Meta Row */}
                         <div className="flex flex-wrap items-center gap-2 mb-2">
@@ -343,7 +417,8 @@ export default function CommunityMonitor() {
                       </div>
 
                     </div>
-                  ))}
+                  );
+                })}
                 </div>
               )}
             </div>

@@ -18,6 +18,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
   const initialCachedInterventions = getCachedData('/api/analytics/intervention', authHeader);
 
   const [activeNav, setActiveNav] = useState(activeTab);
+  const [selectedPost, setSelectedPost] = useState(null);
   const [loading, setLoading] = useState(!initialCachedStats);
   const [dashboardData, setDashboardData] = useState(initialCachedStats);
   const [showInterventionModal, setShowInterventionModal] = useState(false);
@@ -156,7 +157,7 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
       case 'notifications':
         return <TeacherNotifications />;
       case 'community':
-        return <CommunityMonitor />;
+        return <CommunityMonitor selectedPost={selectedPost} onClearSelectedPost={() => setSelectedPost(null)} />;
       case 'attendance':
         return <AttendanceMonitor />;
       case 'dashboard':
@@ -347,53 +348,120 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
                 </div>
               </div>
 
-              {/* Community Activity */}
+              {/* Community Hub (Matches Picture 2) */}
               <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-slate-900 flex items-center gap-1.5 mb-1">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-slate-800"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    Community Activity
-                  </h3>
-                  <p className="text-xs text-slate-500 mb-6">
-                    Recent discussions needing guidance.
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="text-xl font-bold text-slate-900 m-0">
+                      Community Hub
+                    </h3>
+                    <button
+                      onClick={() => setActiveNav('community')}
+                      className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      View All &gt;
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-5">
+                    Recent student &amp; teacher discussions
                   </p>
 
-                  <div className="space-y-5">
-                    {dashboardData?.communityActivity && dashboardData.communityActivity.length > 0 ? (
-                      dashboardData.communityActivity.map((post, index) => (
-                        <div key={post.id} className={`group cursor-pointer ${index > 0 ? 'border-t border-slate-50 pt-4' : ''}`} onClick={() => setActiveNav('community')}>
-                          <div className="flex justify-between items-baseline mb-1">
-                            <h4 className="font-bold text-slate-800 text-sm group-hover:text-indigo-600 transition-colors truncate max-w-[170px]">{post.title}</h4>
-                            <span className="text-[10px] text-slate-400">{post.time}</span>
+                  <div className="space-y-3">
+                    {(() => {
+                      const postsToRender = (dashboardData?.communityActivity && dashboardData.communityActivity.length > 0)
+                        ? dashboardData.communityActivity.slice(0, 3)
+                        : [
+                            {
+                              id: 'demo-1',
+                              authorName: 'Nethmi Fernando',
+                              role: 'Student',
+                              title: 'Understanding UNIX file permissions in ls -l output (e.g. -rw-r--...',
+                              body: 'When I run "ls -l notes.txt" in the terminal, the output shows "-rw-r--... 1...',
+                              category: 'Grade 10 ICT - System Lev...',
+                              repliesCount: 1
+                            },
+                            {
+                              id: 'demo-2',
+                              authorName: 'Sachintha Ranasinghe',
+                              role: 'Student',
+                              title: 'Differentiating base Linux distributions and derived Linux...',
+                              body: 'Can someone help clarify the difference between base Linux distributions...',
+                              category: 'Grade 10 ICT - Operating ...',
+                              repliesCount: 1
+                            },
+                            {
+                              id: 'demo-3',
+                              authorName: 'Tharindu Gunawardena',
+                              role: 'Student',
+                              title: 'How do UNIX directory management commands (pwd, cd,...',
+                              body: 'In our ICT Unit on System Level Programming & Operating Systems, we ar...',
+                              category: 'Grade 10 ICT - Operating ...',
+                              repliesCount: 1
+                            }
+                          ];
+
+                      return postsToRender.map((post) => (
+                        <div
+                          key={post.id}
+                          onClick={() => {
+                            setSelectedPost(post);
+                            setActiveNav('community');
+                          }}
+                          className="bg-slate-50/70 border border-slate-100 rounded-2xl p-4 transition-all hover:bg-slate-100/60 cursor-pointer flex flex-col justify-between"
+                        >
+                          <div>
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span className="font-bold text-xs text-slate-800">
+                                {post.authorName || 'Nethmi Fernando'}
+                              </span>
+                              <span className="bg-slate-200/80 text-slate-700 text-[11px] font-medium px-2 py-0.5 rounded">
+                                {post.role || 'Student'}
+                              </span>
+                            </div>
+
+                            <h4
+                              className="font-bold text-slate-900 text-[13.5px] leading-snug line-clamp-1 mb-1"
+                              title={post.title}
+                            >
+                              {post.title}
+                            </h4>
+                            <p
+                              className="text-xs text-slate-500 line-clamp-1 mb-3"
+                              title={post.body}
+                            >
+                              {post.body}
+                            </p>
                           </div>
-                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-1.5">
-                            {post.body}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-slate-400">{post.repliesCount} Replies</span>
-                            {post.needsTeacherInput && (
-                              <>
-                                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
-                                <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide">Needs Teacher Input</span>
-                              </>
-                            )}
+
+                          <div className="flex items-center justify-between text-[11px] font-medium">
+                            <span
+                              className="bg-white border border-slate-200/80 text-slate-600 px-2.5 py-1 rounded-lg truncate max-w-[210px]"
+                              title={post.category || 'Grade 10 ICT'}
+                            >
+                              {post.category || 'Grade 10 ICT'}
+                            </span>
+                            <span className="text-slate-500 font-semibold flex items-center gap-1.5 ml-2 shrink-0">
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="text-slate-400"
+                              >
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                              </svg>
+                              {post.repliesCount || 1} {post.repliesCount === 1 ? 'Response' : 'Responses'}
+                            </span>
                           </div>
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-center py-6 text-xs text-slate-400 font-medium">
-                        No recent discussion posts.
-                      </div>
-                    )}
+                      ));
+                    })()}
                   </div>
                 </div>
-
-                <button
-                  onClick={() => setActiveNav('community')}
-                  className="w-full mt-6 py-2.5 border border-slate-200 hover:border-slate-300 text-slate-600 hover:text-slate-800 rounded-xl text-sm font-semibold transition-all flex items-center justify-center"
-                >
-                  Go to Forums
-                </button>
               </div>
 
             </div>
