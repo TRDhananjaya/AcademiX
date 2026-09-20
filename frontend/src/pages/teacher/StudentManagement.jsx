@@ -3,14 +3,18 @@ import Sidebar from '../../components/common/teacher/Sidebar';
 import TopBar from '../../components/dashboard/TopBar';
 import { FiUserPlus, FiEdit, FiSearch, FiSliders, FiUsers, FiCheckCircle, FiAlertTriangle, FiBookOpen } from 'react-icons/fi';
 import { isValidSriLankanPhone, formatSriLankanPhone } from '../../utils/phoneUtils';
+import { getCachedData, setCachedData, invalidateCache } from '../../utils/apiCache';
 
 export default function StudentManagement() {
+  const cachedStudents = getCachedData('/api/students');
+  const cachedAttendance = getCachedData('/api/attendance/today');
+
   const [activeNav, setActiveNav] = useState('students');
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState(cachedStudents || []);
   const [searchQuery, setSearchQuery] = useState('');
   const gradeFilter = 'All Grades';
   const [statusFilter, setStatusFilter] = useState('All Statuses');
-  const [todayAttendanceRecords, setTodayAttendanceRecords] = useState([]);
+  const [todayAttendanceRecords, setTodayAttendanceRecords] = useState(cachedAttendance || []);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -62,6 +66,7 @@ export default function StudentManagement() {
       if (response.ok) {
         const data = await response.json();
         setStudents(data);
+        setCachedData('/api/students', data);
       }
     } catch (error) {
       console.error('Error fetching students:', error);
@@ -76,7 +81,9 @@ export default function StudentManagement() {
       });
       if (response.ok) {
         const resData = await response.json();
-        setTodayAttendanceRecords(resData.data || []);
+        const records = resData.data || [];
+        setTodayAttendanceRecords(records);
+        setCachedData('/api/attendance/today', records);
       }
     } catch (error) {
       console.error('Error fetching today attendance:', error);
@@ -139,6 +146,8 @@ export default function StudentManagement() {
 
       if (response.ok) {
         const data = await response.json();
+        invalidateCache('/api/students');
+        invalidateCache('/api/analytics');
         if (newStudent._id) {
           setStudents(students.map(s => s._id === data._id ? data : s));
           setUpdateSuccessMessage(`Student "${data.name}" details updated successfully!`);

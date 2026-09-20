@@ -7,13 +7,18 @@ import propic from '../../assets/propic.png';
 import { FiEdit, FiFilter, FiTrendingUp, FiShield, FiMoreHorizontal, FiMessageSquare, FiShare2, FiBookmark, FiX, FiFlag, FiSend, FiMessageCircle } from 'react-icons/fi';
 import { BiUpvote, BiDownvote } from 'react-icons/bi';
 import { TbSpeakerphone } from 'react-icons/tb';
+import { getCachedData, setCachedData, invalidateCache } from '../../utils/apiCache';
 
 export default function CommunityHub() {
   const { user } = useAuth();
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const authHeader = token ? `Bearer ${token}` : '';
+  const cachedPosts = getCachedData('/api/community', authHeader);
+
   const [activeNav, setActiveNav] = useState('community');
   const [hubMode, setHubMode] = useState('discussions'); // 'discussions' | 'messages'
-  const [posts, setPosts] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [posts, setPosts] = useState(cachedPosts || []);
+  const [isLoading, setIsLoading] = useState(!cachedPosts);
 
   // Modal & Thread states
   const [showNewPostModal, setShowNewPostModal] = useState(false);
@@ -64,12 +69,17 @@ export default function CommunityHub() {
   };
 
   const fetchPosts = async () => {
-    setIsLoading(true);
+    const currentToken = localStorage.getItem('token');
+    const currentAuth = currentToken ? `Bearer ${currentToken}` : '';
+    if (!posts.length && !getCachedData('/api/community', currentAuth)) {
+      setIsLoading(true);
+    }
     try {
       const res = await fetch('/api/community', { headers: authHeaders() });
       const data = await res.json();
       if (Array.isArray(data)) {
         setPosts(data);
+        setCachedData('/api/community', data, currentAuth);
 
         // Check if navigated with a specific postId
         const params = new URLSearchParams(window.location.search);

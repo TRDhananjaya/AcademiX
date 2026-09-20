@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { getCachedData, setCachedData } from '../../utils/apiCache';
 
 export default function QuizManagement() {
-  const [modules, setModules] = useState([]);
-  const [quizzes, setQuizzes] = useState([]);
-  const [results, setResults] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const cachedModules = getCachedData('/api/quizzes/modules');
+  const cachedQuizzes = getCachedData('/api/quizzes');
+  const cachedResults = getCachedData('/api/quiz-results');
+  const hasCache = Boolean(cachedModules && cachedQuizzes && cachedResults);
+
+  const [modules, setModules] = useState(cachedModules || []);
+  const [quizzes, setQuizzes] = useState(cachedQuizzes || []);
+  const [results, setResults] = useState(cachedResults || []);
+  const [isLoading, setIsLoading] = useState(!hasCache);
   const [isExporting, setIsExporting] = useState(false);
 
   // State variables for report view have been delegated to QuizReportContent page.
@@ -12,6 +18,7 @@ export default function QuizManagement() {
   useEffect(() => {
     async function fetchData() {
       try {
+        if (!hasCache) setIsLoading(true);
         const [modulesRes, quizzesRes, resultsRes] = await Promise.all([
           fetch('/api/quizzes/modules'),
           fetch('/api/quizzes'),
@@ -26,13 +33,17 @@ export default function QuizManagement() {
           setModules(modulesData);
           setQuizzes(quizzesData);
           setResults(resultsData);
+
+          setCachedData('/api/quizzes/modules', modulesData);
+          setCachedData('/api/quizzes', quizzesData);
+          setCachedData('/api/quiz-results', resultsData);
         }
       } catch (err) {
         console.error('Error fetching quiz dashboard data:', err);
       } finally {
         setIsLoading(false);
       }
-    };
+    }
     
     fetchData();
   }, []);

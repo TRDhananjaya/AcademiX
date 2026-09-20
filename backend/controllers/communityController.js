@@ -101,33 +101,41 @@ const seedPosts = [
   }
 ];
 
+let hasCleanedUpLegacyData = false;
+
 // @desc    Get all community posts
 // @route   GET /api/community
 const getPosts = async (req, res) => {
   try {
-    // Remove legacy non-ICT dummy seed posts if present in database
-    await CommunityPost.deleteMany({
-      $or: [
-        { course: 'Advanced Calculus' },
-        { course: 'Physics 202' },
-        { title: { $regex: "Maxwell's Equations|Chain Rule|Thermodynamics", $options: 'i' } }
-      ]
-    });
+    // Only run database cleanup/seeding once on startup, not on every HTTP GET request
+    if (!hasCleanedUpLegacyData) {
+      hasCleanedUpLegacyData = true;
+      try {
+        await CommunityPost.deleteMany({
+          $or: [
+            { course: 'Advanced Calculus' },
+            { course: 'Physics 202' },
+            { title: { $regex: "Maxwell's Equations|Chain Rule|Thermodynamics", $options: 'i' } }
+          ]
+        });
 
-    // Update instructor name if legacy name is present in existing DB records
-    await CommunityPost.updateMany(
-      { authorName: /Wickramasinghe/i, authorRole: 'teacher' },
-      { $set: { authorName: 'Mr. Akila Savinda', authorAvatar: 'https://i.pravatar.cc/150?u=akila' } }
-    );
-    await CommunityPost.updateMany(
-      { 'replies.authorName': /Wickramasinghe/i, 'replies.authorRole': 'teacher' },
-      { $set: { 'replies.$[elem].authorName': 'Mr. Akila Savinda', 'replies.$[elem].authorAvatar': 'https://i.pravatar.cc/150?u=akila' } },
-      { arrayFilters: [{ 'elem.authorName': { $regex: /Wickramasinghe/i }, 'elem.authorRole': 'teacher' }] }
-    );
+        await CommunityPost.updateMany(
+          { authorName: /Wickramasinghe/i, authorRole: 'teacher' },
+          { $set: { authorName: 'Mr. Akila Savinda', authorAvatar: 'https://i.pravatar.cc/150?u=akila' } }
+        );
+        await CommunityPost.updateMany(
+          { 'replies.authorName': /Wickramasinghe/i, 'replies.authorRole': 'teacher' },
+          { $set: { 'replies.$[elem].authorName': 'Mr. Akila Savinda', 'replies.$[elem].authorAvatar': 'https://i.pravatar.cc/150?u=akila' } },
+          { arrayFilters: [{ 'elem.authorName': { $regex: /Wickramasinghe/i }, 'elem.authorRole': 'teacher' }] }
+        );
 
-    let count = await CommunityPost.countDocuments();
-    if (count === 0) {
-      await CommunityPost.insertMany(seedPosts);
+        const count = await CommunityPost.countDocuments();
+        if (count === 0) {
+          await CommunityPost.insertMany(seedPosts);
+        }
+      } catch (cleanupErr) {
+        console.warn('Community legacy data cleanup error:', cleanupErr.message);
+      }
     }
 
     const { filter, search } = req.query;
@@ -154,20 +162,50 @@ const getPosts = async (req, res) => {
 
     const posts = await CommunityPost.find(query).sort(sortOptions);
 
-    // Fetch all users to map names/usernames to their latest profile pictures
-    const users = await User.find({}, 'firstName lastName username profilePicture');
-    const profilePicMap = new Map();
-    users.forEach(u => {
-      if (u.profilePicture) {
-        const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim().toLowerCase();
-        if (fullName) {
-          profilePicMap.set(fullName, u.profilePicture);
-        }
-        if (u.username) {
-          profilePicMap.set(u.username.toLowerCase(), u.profilePicture);
-        }
-      }
+    // Only fetch profile pictures for users who authored posts or replies in this list
+    const authorNames = new Set();
+    posts.forEach(p => {
+      if (p.authorName) authorNames.add(p.authorName.trim());
+      (p.replies || []).forEach(r => {
+        if (r.authorName) authorNames.add(r.authorName.trim());
+      });
     });
+
+    const profilePicMap = new Map();
+    if (authorNames.size > 0) {
+      const queryOr = [];
+      authorNames.forEach(name => {
+        const cleanName = name.replace(/^(mr\.|mrs\.|ms\.|dr\.)\s*/i, '').trim();
+        queryOr.push({ username: new RegExp(`^${name}$`, 'i') });
+        queryOr.push({ username: new RegExp(`^${cleanName}$`, 'i') });
+
+        const parts = cleanName.split(/\s+/);
+        if (parts.length > 1) {
+          queryOr.push({
+            firstName: new RegExp(`^${parts[0]}$`, 'i'),
+            lastName: new RegExp(`^${parts.slice(1).join(' ')}$`, 'i')
+          });
+        } else if (parts[0]) {
+          queryOr.push({ firstName: new RegExp(`^${parts[0]}$`, 'i') });
+        }
+      });
+
+      const users = await User.find({ $or: queryOr }, 'firstName lastName username profilePicture').lean();
+      users.forEach(u => {
+        if (u.profilePicture) {
+          const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim().toLowerCase();
+          if (fullName) {
+            profilePicMap.set(fullName, u.profilePicture);
+            profilePicMap.set(`mr. ${fullName}`, u.profilePicture);
+            profilePicMap.set(`mrs. ${fullName}`, u.profilePicture);
+            profilePicMap.set(`dr. ${fullName}`, u.profilePicture);
+          }
+          if (u.username) {
+            profilePicMap.set(u.username.toLowerCase(), u.profilePicture);
+          }
+        }
+      });
+    }
 
     const enrichedPosts = posts.map(post => {
       const postObj = post.toObject();

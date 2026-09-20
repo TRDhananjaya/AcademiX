@@ -4,14 +4,22 @@ import { TbMessageReport, TbFlag, TbSpeakerphone } from 'react-icons/tb';
 import CommonCommunityChat from '../../components/dashboard/CommonCommunityChat';
 import ConfirmModal from '../../components/common/ConfirmModal';
 import { useAuth } from '../../context/AuthContext';
+import { getCachedData, setCachedData, invalidateCache } from '../../utils/apiCache';
 
 export default function CommunityMonitor() {
   const { user } = useAuth();
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const authHeader = token ? `Bearer ${token}` : '';
+
   const [hubMode, setHubMode] = useState('discussions'); // 'discussions' | 'messages'
   const [activeTab, setActiveTab] = useState('Unanswered'); // 'Recent' or 'Unanswered'
-  const [flaggedPosts, setFlaggedPosts] = useState([]);
-  const [questions, setQuestions] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const cachedFlagged = getCachedData('/api/community?filter=flagged', authHeader);
+  const cachedQuestions = getCachedData(`/api/community?filter=${activeTab === 'Unanswered' ? 'unanswered' : 'new'}`, authHeader);
+
+  const [flaggedPosts, setFlaggedPosts] = useState(cachedFlagged || []);
+  const [questions, setQuestions] = useState(cachedQuestions || []);
+  const [isLoading, setIsLoading] = useState(!cachedQuestions);
 
   // Guidance modal state
   const [guidancePost, setGuidancePost] = useState(null);
@@ -23,26 +31,37 @@ export default function CommunityMonitor() {
 
   // Auth helper for protected API calls
   const authHeaders = () => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    const currentToken = localStorage.getItem('token');
+    return currentToken ? { Authorization: `Bearer ${currentToken}` } : {};
   };
 
   const fetchCommunityData = async () => {
-    setIsLoading(true);
+    const currentToken = localStorage.getItem('token');
+    const currentAuth = currentToken ? `Bearer ${currentToken}` : '';
+    const filterParam = activeTab === 'Unanswered' ? 'unanswered' : 'new';
+    const cachedQ = getCachedData(`/api/community?filter=${filterParam}`, currentAuth);
+    
+    if (!cachedQ && !questions.length) {
+      setIsLoading(true);
+    }
     try {
-      // Fetch flagged posts for moderation card
-      const flaggedRes = await fetch('/api/community?filter=flagged', { headers: authHeaders() });
-      const flaggedData = await flaggedRes.json();
+      // Parallel fetch for flagged and questions
+      const [flaggedRes, qRes] = await Promise.all([
+        fetch('/api/community?filter=flagged', { headers: authHeaders() }),
+        fetch(`/api/community?filter=${filterParam}`, { headers: authHeaders() })
+      ]);
+      const [flaggedData, qData] = await Promise.all([
+        flaggedRes.json(),
+        qRes.json()
+      ]);
+
       if (Array.isArray(flaggedData)) {
         setFlaggedPosts(flaggedData);
+        setCachedData('/api/community?filter=flagged', flaggedData, currentAuth);
       }
-
-      // Fetch questions based on active tab
-      const filterParam = activeTab === 'Unanswered' ? 'unanswered' : 'new';
-      const qRes = await fetch(`/api/community?filter=${filterParam}`, { headers: authHeaders() });
-      const qData = await qRes.json();
       if (Array.isArray(qData)) {
         setQuestions(qData);
+        setCachedData(`/api/community?filter=${filterParam}`, qData, currentAuth);
       }
     } catch (err) {
       console.error('Error fetching teacher community data:', err);

@@ -3,17 +3,26 @@ import { useAuth } from '../../context/AuthContext';
 import Sidebar from '../../components/common/student/Sidebar';
 import StudentTopBar from '../../components/dashboard/StudentTopBar';
 import { navigate } from '../../App';
+import { getCachedData, setCachedData } from '../../utils/apiCache';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
-  const [activeNav, setActiveNav] = useState('dashboard');
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const authHeader = token ? `Bearer ${token}` : '';
 
-  const [loading, setLoading] = useState(true);
-  const [loadingPrediction, setLoadingPrediction] = useState(true);
-  const [loadingCommunity, setLoadingCommunity] = useState(true);
-  const [analytics, setAnalytics] = useState(null);
-  const [prediction, setPrediction] = useState(null);
-  const [communityPosts, setCommunityPosts] = useState([]);
+  const cachedAnalytics = user ? getCachedData(`/api/analytics/student/${user.username}`, authHeader) : null;
+  const cachedPrediction = user ? getCachedData(`/api/ml/predict/${user.username}`, authHeader) : null;
+  const cachedCommunity = getCachedData('/api/community', authHeader);
+
+  const [activeNav, setActiveNav] = useState('dashboard');
+  const [loading, setLoading] = useState(!cachedAnalytics);
+  const [loadingPrediction, setLoadingPrediction] = useState(!cachedPrediction);
+  const [loadingCommunity, setLoadingCommunity] = useState(!cachedCommunity);
+  const [analytics, setAnalytics] = useState(cachedAnalytics);
+  const [prediction, setPrediction] = useState(cachedPrediction);
+  const [communityPosts, setCommunityPosts] = useState(
+    Array.isArray(cachedCommunity) ? cachedCommunity.slice(0, 3) : []
+  );
   const [todayAttendance, setTodayAttendance] = useState(null);
 
   // Fetch Student Analytics
@@ -22,16 +31,20 @@ export default function StudentDashboard() {
 
     const fetchAnalytics = async () => {
       try {
-        setLoading(true);
-        const token = localStorage.getItem('token');
+        const currentToken = localStorage.getItem('token');
+        const currentAuth = currentToken ? `Bearer ${currentToken}` : '';
+        if (!analytics && !getCachedData(`/api/analytics/student/${user.username}`, currentAuth)) {
+          setLoading(true);
+        }
         const resAnalytics = await fetch(`/api/analytics/student/${user.username}`, {
           headers: {
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            ...(currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {})
           }
         });
         if (resAnalytics.ok) {
           const analyticsData = await resAnalytics.json();
           setAnalytics(analyticsData);
+          setCachedData(`/api/analytics/student/${user.username}`, analyticsData, currentAuth);
         }
       } catch (err) {
         console.error('Error loading analytics data:', err);
@@ -49,19 +62,23 @@ export default function StudentDashboard() {
 
     const fetchPrediction = async () => {
       try {
-        setLoadingPrediction(true);
-        const token = localStorage.getItem('token');
+        const currentToken = localStorage.getItem('token');
+        const currentAuth = currentToken ? `Bearer ${currentToken}` : '';
+        if (!prediction && !getCachedData(`/api/ml/predict/${user.username}`, currentAuth)) {
+          setLoadingPrediction(true);
+        }
         const resPrediction = await fetch('/api/ml/predict', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            ...(currentToken ? { 'Authorization': `Bearer ${currentToken}` } : {})
           },
-          body: JSON.stringify({ studentId: user.username, lessonId: '' }) // General prediction across all lessons
+          body: JSON.stringify({ studentId: user.username, lessonId: '' })
         });
         if (resPrediction.ok) {
           const predData = await resPrediction.json();
           setPrediction(predData);
+          setCachedData(`/api/ml/predict/${user.username}`, predData, currentAuth);
         }
       } catch (predErr) {
         console.error('Error fetching prediction:', predErr);

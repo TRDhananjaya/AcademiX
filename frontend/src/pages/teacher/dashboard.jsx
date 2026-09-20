@@ -9,25 +9,33 @@ import AttendanceMonitor from './AttendanceMonitor';
 import QuizReportContent from '../../components/dashboard/QuizReportContent';
 import { navigate } from '../../App';
 import ConfirmModal from '../../components/common/ConfirmModal';
+import { getCachedData, setCachedData, invalidateCache } from '../../utils/apiCache';
 
 export default function Dashboard({ activeTab = 'dashboard' }) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const authHeader = token ? `Bearer ${token}` : '';
+  const initialCachedStats = getCachedData('/api/analytics/teacher-dashboard', authHeader);
+  const initialCachedInterventions = getCachedData('/api/analytics/intervention', authHeader);
+
   const [activeNav, setActiveNav] = useState(activeTab);
-  const [loading, setLoading] = useState(true);
-  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(!initialCachedStats);
+  const [dashboardData, setDashboardData] = useState(initialCachedStats);
   const [showInterventionModal, setShowInterventionModal] = useState(false);
-  const [interventionData, setInterventionData] = useState(null);
+  const [interventionData, setInterventionData] = useState(initialCachedInterventions);
   const [resolvingIds, setResolvingIds] = useState(new Set());
   const [resolveConfirm, setResolveConfirm] = useState({ show: false, predictionId: null });
 
   const fetchInterventionAlerts = async (openModal = false) => {
     try {
-      const token = localStorage.getItem('token');
+      const currentToken = localStorage.getItem('token');
+      const currentAuth = currentToken ? `Bearer ${currentToken}` : '';
       const res = await fetch('/api/analytics/intervention', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+        headers: currentToken ? { Authorization: `Bearer ${currentToken}` } : {}
       });
       if (res.ok) {
         const data = await res.json();
         setInterventionData(data);
+        setCachedData('/api/analytics/intervention', data, currentAuth);
         if (openModal) setShowInterventionModal(true);
       }
     } catch (error) {
@@ -39,14 +47,18 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
 
   const fetchDashboardStats = async () => {
     try {
-      if (!dashboardData) setLoading(true);
-      const token = localStorage.getItem('token');
+      const currentToken = localStorage.getItem('token');
+      const currentAuth = currentToken ? `Bearer ${currentToken}` : '';
+      if (!dashboardData && !getCachedData('/api/analytics/teacher-dashboard', currentAuth)) {
+        setLoading(true);
+      }
       const res = await fetch('/api/analytics/teacher-dashboard', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {}
+        headers: currentToken ? { Authorization: `Bearer ${currentToken}` } : {}
       });
       if (res.ok) {
         const data = await res.json();
         setDashboardData(data);
+        setCachedData('/api/analytics/teacher-dashboard', data, currentAuth);
       }
     } catch (err) {
       console.error('Error fetching teacher stats:', err);
@@ -105,14 +117,23 @@ export default function Dashboard({ activeTab = 'dashboard' }) {
 
     const fetchStats = async () => {
       try {
-        if (!dashboardData) setLoading(true);
-        const token = localStorage.getItem('token');
+        const currentToken = localStorage.getItem('token');
+        const currentAuth = currentToken ? `Bearer ${currentToken}` : '';
+        const cached = getCachedData('/api/analytics/teacher-dashboard', currentAuth);
+        if (cached) {
+          setDashboardData(cached);
+          setLoading(false);
+        } else if (!dashboardData) {
+          setLoading(true);
+        }
+
         const res = await fetch('/api/analytics/teacher-dashboard', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+          headers: currentToken ? { Authorization: `Bearer ${currentToken}` } : {}
         });
         if (res.ok) {
           const data = await res.json();
           setDashboardData(data);
+          setCachedData('/api/analytics/teacher-dashboard', data, currentAuth);
         }
       } catch (err) {
         console.error('Error fetching teacher stats:', err);

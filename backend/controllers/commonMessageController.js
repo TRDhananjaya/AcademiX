@@ -3,23 +3,32 @@ const User = require('../models/User');
 
 const seedMessages = [];
 
+let hasCleanedUpLegacyMessages = false;
+
 // @desc    Get all global community messages
 // @route   GET /api/common-messages
 const getMessages = async (req, res) => {
   try {
-    // Delete legacy dummy seed messages
-    await CommonMessage.deleteMany({
-      $or: [
-        { senderId: { $in: ['drjenkins', 'alexchen', 'student1'] } },
-        { text: { $regex: "thermodynamics|AcademiX Common Learning Platform|Shared Resources section Alex", $options: 'i' } }
-      ]
-    });
+    // Only delete legacy dummy seed messages once on startup, not on 3s live polling
+    if (!hasCleanedUpLegacyMessages) {
+      hasCleanedUpLegacyMessages = true;
+      try {
+        await CommonMessage.deleteMany({
+          $or: [
+            { senderId: { $in: ['drjenkins', 'alexchen', 'student1'] } },
+            { text: { $regex: "thermodynamics|AcademiX Common Learning Platform|Shared Resources section Alex", $options: 'i' } }
+          ]
+        });
+      } catch (cleanupErr) {
+        console.warn('Common messages cleanup error:', cleanupErr.message);
+      }
+    }
 
     const messages = await CommonMessage.find({}).sort({ timestamp: 1 }).limit(200);
 
     // Map unique senderIds to their database-saved profile pictures (normalized to lowercase)
     const senderIds = [...new Set(messages.map(msg => (msg.senderId || '').toLowerCase()))];
-    const users = await User.find({ username: { $in: senderIds } }, 'username profilePicture');
+    const users = await User.find({ username: { $in: senderIds } }, 'username profilePicture').lean();
     const userMap = new Map();
     users.forEach(u => {
       if (u.username) {

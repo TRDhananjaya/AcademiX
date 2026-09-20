@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { FiSend, FiUsers, FiSmile, FiPaperclip, FiCheckCircle } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import propic from '../../assets/propic.png';
+import { getCachedData, setCachedData } from '../../utils/apiCache';
 
 export default function CommonCommunityChat() {
   const { user } = useAuth();
@@ -9,9 +10,13 @@ export default function CommonCommunityChat() {
   const currentUserName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username : '';
   const currentUserRole = user?.role || 'student';
 
-  const [messages, setMessages] = useState([]);
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const authHeader = token ? `Bearer ${token}` : '';
+  const cachedMessages = getCachedData('/api/common-messages', authHeader);
+
+  const [messages, setMessages] = useState(cachedMessages || []);
   const [inputText, setInputText] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!cachedMessages);
 
   const chatContainerRef = useRef(null);
 
