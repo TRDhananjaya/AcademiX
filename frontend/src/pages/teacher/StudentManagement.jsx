@@ -487,11 +487,10 @@ export default function StudentManagement() {
 
                         {/* Status Badge */}
                         <td className="p-4">
-                          <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider ${
-                            student.status === 'Active' 
-                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/50' 
-                              : 'bg-slate-100 text-slate-500 border border-slate-200/50'
-                          }`}>
+                          <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider ${student.status === 'Active'
+                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/50'
+                            : 'bg-slate-100 text-slate-500 border border-slate-200/50'
+                            }`}>
                             {student.status || 'Active'}
                           </span>
                         </td>
@@ -563,7 +562,7 @@ export default function StudentManagement() {
                           <label className="block text-slate-400 text-xs font-semibold uppercase mb-1.5">Username</label>
                           <input
                             type="text"
-                            placeholder="e.g. johndoe10"
+                            placeholder="e.g. yohan"
                             value={newStudent.username}
                             onBlur={() => markTouched('username')}
                             onChange={(e) => {
@@ -600,34 +599,29 @@ export default function StudentManagement() {
                               setNewStudent({ ...newStudent, password: e.target.value });
                               if (formError) setFormError('');
                             }}
-                            className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${
-                              newStudent.password.trim() !== ''
-                                ? newStudent.password.trim().length < 6
-                                  ? 'border-red-300 focus:border-red-400 bg-red-50/20'
-                                  : 'border-teal-300 focus:border-teal-400'
-                                : 'border-slate-200 focus:border-indigo-300'
-                            }`}
+                            className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${newStudent.password.trim() !== ''
+                              ? newStudent.password.trim().length < 6
+                                ? 'border-red-300 focus:border-red-400 bg-red-50/20'
+                                : 'border-teal-300 focus:border-teal-400'
+                              : 'border-slate-200 focus:border-indigo-300'
+                              }`}
                           />
                           {newStudent.password.trim().length > 0 && newStudent.password.trim().length < 6 && (
                             <span className="text-xs text-red-500 font-semibold mt-1 block">
                               ⚠️ Password must be at least 6 characters (currently {newStudent.password.trim().length}/6)
                             </span>
                           )}
-                          {newStudent.password.trim().length >= 6 && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(newStudent.password.trim()) && (
+                          {newStudent.password.trim().length >= 6 && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{6,}$/.test(newStudent.password.trim()) && (
                             <span className="text-xs text-amber-500 font-semibold mt-1 block">
                               ✅ Password meets minimum requirements (Not a strong password)
                             </span>
                           )}
-                          {newStudent.password.trim().length >= 6 && /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(newStudent.password.trim()) && (
+                          {newStudent.password.trim().length >= 6 && /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9]).{6,}$/.test(newStudent.password.trim()) && (
                             <span className="text-xs text-teal-600 font-semibold mt-1 block">
                               ✅ Strong password
                             </span>
                           )}
-                          {!newStudent.password.trim() && (
-                            <span className="text-xs text-slate-400 mt-1 block">
-                              Leave blank to auto-generate default password ({newStudent.username.trim() ? `${newStudent.username.trim().toLowerCase()}123` : 'stu-xxxx123'})
-                            </span>
-                          )}
+
                         </div>
                       </>
                     )}
@@ -639,20 +633,19 @@ export default function StudentManagement() {
                       </label>
                       <input
                         type="text"
-                        placeholder="e.g. John Doe"
+                        placeholder="e.g. Yohan Perera"
                         value={newStudent.name}
                         onBlur={() => markTouched('name')}
                         onChange={(e) => {
                           setNewStudent({ ...newStudent, name: e.target.value });
                           if (formError) setFormError('');
                         }}
-                        className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${
-                          touchedFields.name && !newStudent.name.trim()
-                            ? 'border-red-300 focus:border-red-400 bg-red-50/20'
-                            : newStudent.name.trim().length >= 2
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${touchedFields.name && !newStudent.name.trim()
+                          ? 'border-red-300 focus:border-red-400 bg-red-50/20'
+                          : newStudent.name.trim().length >= 2
                             ? 'border-teal-300 focus:border-teal-400'
                             : 'border-slate-200 focus:border-indigo-300'
-                        }`}
+                          }`}
                         required
                       />
                       {touchedFields.name && !newStudent.name.trim() && (
@@ -667,20 +660,19 @@ export default function StudentManagement() {
                       </label>
                       <input
                         type="email"
-                        placeholder="e.g. john.doe@university.edu"
+                        placeholder="e.g. yohan@gmail.com"
                         value={newStudent.email}
                         onBlur={() => markTouched('email')}
                         onChange={(e) => {
                           setNewStudent({ ...newStudent, email: e.target.value });
                           if (formError) setFormError('');
                         }}
-                        className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${
-                          (touchedFields.email && !newStudent.email.trim()) || (newStudent.email.trim() && !isEmailValid)
-                            ? 'border-red-300 focus:border-red-400 bg-red-50/20'
-                            : newStudent.email.trim() && isEmailValid
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${(touchedFields.email && !newStudent.email.trim()) || (newStudent.email.trim() && !isEmailValid)
+                          ? 'border-red-300 focus:border-red-400 bg-red-50/20'
+                          : newStudent.email.trim() && isEmailValid
                             ? 'border-teal-300 focus:border-teal-400'
                             : 'border-slate-200 focus:border-indigo-300'
-                        }`}
+                          }`}
                         required
                       />
                       {touchedFields.email && !newStudent.email.trim() && (
@@ -708,13 +700,12 @@ export default function StudentManagement() {
                           setNewStudent({ ...newStudent, studentMobile: e.target.value });
                           if (formError) setFormError('');
                         }}
-                        className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${
-                          (touchedFields.studentMobile && !newStudent.studentMobile.trim()) || (newStudent.studentMobile.trim() && !isStudentPhoneValid)
-                            ? 'border-red-300 focus:border-red-400 bg-red-50/20'
-                            : newStudent.studentMobile.trim() && isStudentPhoneValid
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${(touchedFields.studentMobile && !newStudent.studentMobile.trim()) || (newStudent.studentMobile.trim() && !isStudentPhoneValid)
+                          ? 'border-red-300 focus:border-red-400 bg-red-50/20'
+                          : newStudent.studentMobile.trim() && isStudentPhoneValid
                             ? 'border-teal-300 focus:border-teal-400'
                             : 'border-slate-200 focus:border-indigo-300'
-                        }`}
+                          }`}
                         required
                       />
                       {touchedFields.studentMobile && !newStudent.studentMobile.trim() && (
@@ -746,13 +737,12 @@ export default function StudentManagement() {
                           setNewStudent({ ...newStudent, parentMobile: e.target.value });
                           if (formError) setFormError('');
                         }}
-                        className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${
-                          (touchedFields.parentMobile && !newStudent.parentMobile.trim()) || (newStudent.parentMobile.trim() && !isParentPhoneValid)
-                            ? 'border-red-300 focus:border-red-400 bg-red-50/20'
-                            : newStudent.parentMobile.trim() && isParentPhoneValid
+                        className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/10 font-sans ${(touchedFields.parentMobile && !newStudent.parentMobile.trim()) || (newStudent.parentMobile.trim() && !isParentPhoneValid)
+                          ? 'border-red-300 focus:border-red-400 bg-red-50/20'
+                          : newStudent.parentMobile.trim() && isParentPhoneValid
                             ? 'border-teal-300 focus:border-teal-400'
                             : 'border-slate-200 focus:border-indigo-300'
-                        }`}
+                          }`}
                         required
                       />
                       {touchedFields.parentMobile && !newStudent.parentMobile.trim() && (
@@ -808,11 +798,10 @@ export default function StudentManagement() {
                     <button
                       type="submit"
                       disabled={isSubmitting || (!newStudent._id && (isUsernameTaken || isCheckingUsername))}
-                      className={`font-semibold py-2.5 px-6 rounded-xl text-sm transition-all flex items-center justify-center gap-2 ${
-                        isSubmitting || (!newStudent._id && (isUsernameTaken || isCheckingUsername))
-                          ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                          : 'bg-[#3b28cc] hover:bg-indigo-700 text-white cursor-pointer shadow-sm'
-                      }`}
+                      className={`font-semibold py-2.5 px-6 rounded-xl text-sm transition-all flex items-center justify-center gap-2 ${isSubmitting || (!newStudent._id && (isUsernameTaken || isCheckingUsername))
+                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        : 'bg-[#3b28cc] hover:bg-indigo-700 text-white cursor-pointer shadow-sm'
+                        }`}
                     >
                       {isSubmitting ? (
                         <>
