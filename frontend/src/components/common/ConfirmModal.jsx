@@ -37,33 +37,6 @@ export default function ConfirmModal({
     return () => document.removeEventListener('keydown', handleKey);
   }, [isOpen, onClose]);
 
-  // Browser Back Button Trap
-  useEffect(() => {
-    if (!isOpen) return;
-
-    // Trap the back button using a URL hash. This prevents pathname changes
-    // which stops App.jsx from navigating to other pages.
-    window.location.hash = 'modal';
-
-    const handlePopState = () => {
-      // If the user clicks back, the hash is removed.
-      // We immediately put it back to trap them.
-      if (window.location.hash !== '#modal') {
-        window.location.hash = 'modal';
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      // Clean up the hash when the modal closes naturally
-      if (window.location.hash === '#modal') {
-        window.history.back();
-      }
-    };
-  }, [isOpen]);
-
   // Focus trap
   useEffect(() => {
     if (isOpen && modalRef.current) {
@@ -126,10 +99,11 @@ export default function ConfirmModal({
             </button>
             <button
               onClick={onConfirm}
-              className={`flex-1 py-2.5 px-4 rounded-xl border-none text-white text-sm font-semibold cursor-pointer transition-all active:scale-[0.98] ${variant === 'indigo' || variant === 'purple'
+              className={`flex-1 py-2.5 px-4 rounded-xl border-none text-white text-sm font-semibold cursor-pointer transition-all active:scale-[0.98] ${
+                variant === 'indigo' || variant === 'purple'
                   ? 'bg-[#6338f0] hover:bg-[#522ce0] shadow-md shadow-indigo-200'
                   : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-md shadow-orange-500/20'
-                }`}
+              }`}
             >
               {confirmText}
             </button>
