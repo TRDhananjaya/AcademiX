@@ -40,8 +40,8 @@ def get_llm():
 
 def call_gemini(prompt: str) -> str:
     llm = get_llm()
-    max_retries = 1
-    retry_delay = 5
+    max_retries = 3
+    retry_delay = 15
     
     for attempt in range(max_retries + 1):
         try:
