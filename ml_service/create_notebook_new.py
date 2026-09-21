@@ -165,7 +165,8 @@ plt.ylabel('CV Mean R²')
 plt.show()""")
 
 # 8. Best Model Selection and Residuals
-best_model_cell = nbf.v4.new_code_cell("""best_model_name = results_df.iloc[0]['Model']
+best_model_cell = nbf.v4.new_code_cell("""# Forced to use Random Forest to maintain consistency with existing system
+best_model_name = 'Random Forest'
 best_model = trained_models[best_model_name]
 print(f"Selected Best Model: {best_model_name}")
 
