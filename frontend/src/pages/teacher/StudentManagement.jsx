@@ -613,9 +613,14 @@ export default function StudentManagement() {
                               ⚠️ Password must be at least 6 characters (currently {newStudent.password.trim().length}/6)
                             </span>
                           )}
-                          {newStudent.password.trim().length >= 6 && (
+                          {newStudent.password.trim().length >= 6 && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(newStudent.password.trim()) && (
+                            <span className="text-xs text-amber-500 font-semibold mt-1 block">
+                              ✅ Password meets minimum requirements (Not a strong password)
+                            </span>
+                          )}
+                          {newStudent.password.trim().length >= 6 && /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(newStudent.password.trim()) && (
                             <span className="text-xs text-teal-600 font-semibold mt-1 block">
-                              ✅ Password meets minimum requirement
+                              ✅ Strong password
                             </span>
                           )}
                           {!newStudent.password.trim() && (
