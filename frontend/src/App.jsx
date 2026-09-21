@@ -64,8 +64,12 @@ if (typeof window !== 'undefined' && !window.__academiX_history_wrapped) {
 }
 
 // Shared navigate helper — use this instead of <a href>
-export function navigate(path, state = {}) {
-  window.history.pushState(state, '', path);
+export function navigate(path, state = {}, replace = false) {
+  if (replace) {
+    window.history.replaceState(state, '', path);
+  } else {
+    window.history.pushState(state, '', path);
+  }
   window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
 }
 
@@ -79,6 +83,11 @@ function App() {
   useEffect(() => {
     userRef.current = user;
   }, [user]);
+
+  const showLogoutConfirmRef = useRef(showLogoutConfirm);
+  useEffect(() => {
+    showLogoutConfirmRef.current = showLogoutConfirm;
+  }, [showLogoutConfirm]);
 
   const teacherRoutes = [
     'teacher/dashboard', 'teacher/resources', 'teacher/quizzes', 'teacher/quiz-report',
@@ -129,6 +138,22 @@ function App() {
       const session = sessionStorage.getItem('academiX_auth_session');
 
       if (currentUser && session) {
+        // If logout confirmation popup is already visible and user clicks browser Back:
+        // Prevent going to login page or leaving, push safePath and stay on dashboard
+        if (showLogoutConfirmRef.current && e.isTrusted) {
+          const fallbackPath = currentUser.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
+          const safePath = (window.location.pathname.startsWith('/teacher') || window.location.pathname.startsWith('/student'))
+            ? window.location.pathname
+            : fallbackPath;
+
+          currentAuthDepth = 0;
+          if (rawPushState) {
+            rawPushState({ _authSession: session, _authDepth: 0 }, '', safePath);
+          }
+          setCurrentPage(currentUser.role === 'teacher' ? 'teacher/dashboard' : 'student/dashboard');
+          return;
+        }
+
         const isSessionEntry = state && state._authSession === session && typeof state._authDepth === 'number';
 
         if (isSessionEntry) {
@@ -166,29 +191,31 @@ function App() {
   const handleLogoutConfirm = () => {
     setShowLogoutConfirm(false);
     sessionStorage.removeItem('academiX_auth_session');
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
     if (setUser) setUser(null);
-    window.location.href = '/login';
   };
 
   const handleLogoutCancel = () => {
     setShowLogoutConfirm(false);
+    const session = sessionStorage.getItem('academiX_auth_session');
+    const safePath = user?.role === 'teacher' ? '/teacher/dashboard' : '/student/dashboard';
+    if (rawPushState && session) {
+      rawPushState({ _authSession: session, _authDepth: 0 }, '', safePath);
+    }
   };
 
   useEffect(() => {
     if (!user) {
       if (isTeacherRoute || isStudentRoute) {
-        navigate('/login');
+        navigate('/login', {}, true);
       }
     } else {
       if (user.role === 'teacher') {
-        if (isStudentRoute) {
-          navigate('/teacher/dashboard');
+        if (isStudentRoute || currentPage === 'login') {
+          navigate('/teacher/dashboard', {}, true);
         }
       } else if (user.role === 'student') {
-        if (isTeacherRoute) {
-          navigate('/student/dashboard');
+        if (isTeacherRoute || currentPage === 'login') {
+          navigate('/student/dashboard', {}, true);
         }
       }
     }
@@ -203,6 +230,9 @@ function App() {
     // Route rendering guards to prevent flashing protected content before redirect
     if (!user && (isTeacherRoute || isStudentRoute)) {
       return <Login />;
+    }
+    if (user && (currentPage === 'login' || currentPage === 'home')) {
+      return user.role === 'teacher' ? <TeacherDashboard activeTab="dashboard" /> : <StudentDashboard />;
     }
     if (user && user.role === 'student' && isTeacherRoute) {
       return <StudentDashboard />;

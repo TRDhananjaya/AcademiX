@@ -120,10 +120,8 @@ export default function StudentTopBar() {
   }, [isMobileMenuOpen]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('academiX_auth_session');
     setUser(null);
-    navigate('/login');
   };
 
   const currentPath = window.location.pathname;
@@ -149,7 +147,11 @@ export default function StudentTopBar() {
           </button>
 
           <div 
-            onClick={() => navigate('/student/dashboard')}
+            onClick={() => {
+              if (window.location.pathname !== '/student/dashboard') {
+                navigate('/student/dashboard');
+              }
+            }}
             className="flex items-center gap-2 cursor-pointer select-none"
           >
             <img src={favicon} alt="AcademiX" className="w-7 h-7 object-contain" />
@@ -166,7 +168,11 @@ export default function StudentTopBar() {
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Notifications */}
           <button 
-            onClick={() => navigate('/student/notifications')}
+            onClick={() => {
+              if (window.location.pathname !== '/student/notifications') {
+                navigate('/student/notifications');
+              }
+            }}
             className="flex items-center justify-center w-[38px] h-[38px] rounded-full border-none bg-slate-50 text-slate-600 cursor-pointer transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 active:scale-95 relative" 
             aria-label="Notifications"
           >
@@ -179,7 +185,11 @@ export default function StudentTopBar() {
 
           {/* User Avatar */}
           <button 
-            onClick={() => navigate('/student/profile')}
+            onClick={() => {
+              if (window.location.pathname !== '/student/profile') {
+                navigate('/student/profile');
+              }
+            }}
             className="flex items-center justify-center w-[38px] h-[38px] rounded-full border-2 border-slate-200 bg-slate-50 text-slate-500 cursor-pointer transition-all duration-200 hover:border-indigo-500 hover:ring-4 hover:ring-indigo-100 p-0 overflow-hidden active:scale-95" 
             aria-label="User profile"
           >
@@ -235,7 +245,9 @@ export default function StudentTopBar() {
             {/* User Profile Card */}
             <div 
               onClick={() => {
-                navigate('/student/profile');
+                if (window.location.pathname !== '/student/profile') {
+                  navigate('/student/profile');
+                }
                 setIsMobileMenuOpen(false);
               }}
               className="p-3.5 m-3 rounded-xl bg-gradient-to-br from-indigo-50/80 to-purple-50/40 border border-indigo-100/70 flex items-center gap-3 cursor-pointer hover:border-indigo-200 transition-all"
@@ -256,7 +268,9 @@ export default function StudentTopBar() {
                   <button
                     key={item.id}
                     onClick={() => {
-                      navigate(item.path);
+                      if (window.location.pathname !== item.path) {
+                        navigate(item.path);
+                      }
                       setIsMobileMenuOpen(false);
                     }}
                     className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[14.5px] font-medium transition-all text-left cursor-pointer border-none ${

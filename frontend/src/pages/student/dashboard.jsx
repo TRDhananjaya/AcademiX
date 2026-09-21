@@ -25,6 +25,25 @@ export default function StudentDashboard() {
   );
   const [todayAttendance, setTodayAttendance] = useState(null);
 
+  const tabToPath = {
+    dashboard: '/student/dashboard',
+    lessons: '/student/lessons',
+    quizzes: '/student/quizzes',
+    'study-plans': '/student/study-plans',
+    community: '/student/community',
+    notifications: '/student/notifications',
+    profile: '/student/profile'
+  };
+
+  const handleNavClick = (tabId) => {
+    const targetPath = tabToPath[tabId];
+    if (targetPath && window.location.pathname !== targetPath) {
+      navigate(targetPath);
+    } else {
+      setActiveNav(tabId);
+    }
+  };
+
   // Fetch Student Analytics
   useEffect(() => {
     if (!user) return;
@@ -163,7 +182,7 @@ export default function StudentDashboard() {
   if (loading) {
     return (
       <div className="flex min-h-screen font-sans bg-[#f8f9fb]" id="student-dashboard-layout">
-        <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
+        <Sidebar activeItem={activeNav} onNavigate={handleNavClick} />
         <div className="flex-1 flex flex-col min-w-0 ml-0 md:ml-[72px] lg:ml-[240px]">
           <StudentTopBar />
           <div className="flex-1 flex flex-col items-center justify-center p-8">
@@ -280,7 +299,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="flex min-h-screen font-sans bg-[#f8f9fb]" id="student-dashboard-layout">
-      <Sidebar activeItem={activeNav} onNavigate={setActiveNav} />
+      <Sidebar activeItem={activeNav} onNavigate={handleNavClick} />
 
       <div className="flex-1 flex flex-col min-w-0 ml-0 md:ml-[72px] lg:ml-[240px]">
         <StudentTopBar />
@@ -363,9 +382,7 @@ export default function StudentDashboard() {
                         </span>
                         <p className="text-2xl font-black text-slate-900 tracking-tight leading-tight mt-0.5">
                           {predictionScore.toFixed(1)} <span className="text-sm text-slate-400 font-normal">/ {predictionTotalMarks}</span>
-                          <span className="text-xs font-bold text-indigo-700 bg-indigo-100/70 border border-indigo-200/60 ml-2 px-2 py-0.5 rounded-full">
-                            {predictionScore.toFixed(0)}% Avg
-                          </span>
+
                         </p>
                         <p className="text-xs text-slate-500 font-medium mt-0.5">
                           Average of All Evaluated Lessons
@@ -512,7 +529,7 @@ export default function StudentDashboard() {
 
               <div className="pt-2">
                 <button
-                  onClick={() => navigate('/student/quizzes')}
+                  onClick={() => handleNavClick('quizzes')}
                   className="w-full bg-[#3b28cc] hover:bg-indigo-700 text-white px-5 py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                 >
                   <span>Browse All Quizzes</span>
@@ -544,7 +561,7 @@ export default function StudentDashboard() {
 
               <div className="space-y-3">
                 <div
-                  onClick={() => navigate('/student/lessons')}
+                  onClick={() => handleNavClick('lessons')}
                   className="p-3.5 rounded-xl border border-slate-100/90 hover:border-indigo-200 bg-slate-50/50 hover:bg-indigo-50/30 transition-all cursor-pointer flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-3.5">
@@ -564,7 +581,7 @@ export default function StudentDashboard() {
                 </div>
 
                 <div
-                  onClick={() => navigate('/student/quizzes')}
+                  onClick={() => handleNavClick('quizzes')}
                   className="p-3.5 rounded-xl border border-slate-100/90 hover:border-indigo-200 bg-slate-50/50 hover:bg-indigo-50/30 transition-all cursor-pointer flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-3.5">
@@ -584,7 +601,7 @@ export default function StudentDashboard() {
                 </div>
 
                 <div
-                  onClick={() => navigate('/student/study-plans')}
+                  onClick={() => handleNavClick('study-plans')}
                   className="p-3.5 rounded-xl border border-slate-100/90 hover:border-indigo-200 bg-slate-50/50 hover:bg-indigo-50/30 transition-all cursor-pointer flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-3.5">
@@ -613,7 +630,7 @@ export default function StudentDashboard() {
                   <p className="text-xs text-slate-400 font-medium mt-0.5">Recent student & teacher discussions</p>
                 </div>
                 <button
-                  onClick={() => navigate('/student/community')}
+                  onClick={() => handleNavClick('community')}
                   className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 hover:underline cursor-pointer"
                 >
                   View All
@@ -631,7 +648,12 @@ export default function StudentDashboard() {
                   {communityPosts.map((post) => (
                     <div
                       key={post._id}
-                      onClick={() => navigate(`/student/community?postId=${post._id}`)}
+                      onClick={() => {
+                        const target = `/student/community?postId=${post._id}`;
+                        if (window.location.pathname + window.location.search !== target) {
+                          navigate(target);
+                        }
+                      }}
                       className="p-3.5 rounded-xl border border-slate-100 hover:border-indigo-200 bg-slate-50/50 hover:bg-white transition-all cursor-pointer group"
                     >
                       <div className="flex items-center justify-between gap-2 mb-1.5">

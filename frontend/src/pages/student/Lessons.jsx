@@ -65,7 +65,6 @@ export default function Lessons() {
 
   // UI state
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTermTab, setActiveTermTab] = useState('All');
   const [resourceFilter, setResourceFilter] = useState('All');
   const [downloadingId, setDownloadingId] = useState(null);
 
@@ -318,8 +317,7 @@ export default function Lessons() {
     const filteredLessons = lessons.filter(l => {
       const matchesSearch = l.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (l.description && l.description.toLowerCase().includes(searchQuery.toLowerCase()));
-      const matchesTerm = activeTermTab === 'All' || l.term === Number(activeTermTab);
-      return matchesSearch && matchesTerm;
+      return matchesSearch;
     });
 
     return (
@@ -336,23 +334,6 @@ export default function Lessons() {
               className="bg-transparent border-none outline-none text-sm w-full text-slate-800 placeholder-slate-400"
             />
           </div>
-        </div>
-
-        {/* Term Tabs */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
-          {['All', '1', '2', '3'].map((term) => (
-            <button
-              key={term}
-              onClick={() => setActiveTermTab(term)}
-              className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer border
-                ${(term === 'All' ? activeTermTab === 'All' : Number(activeTermTab) === Number(term))
-                  ? 'bg-indigo-50 text-[#3b28cc] border-indigo-100 font-bold'
-                  : 'bg-white border-slate-200 text-slate-500 hover:text-slate-800'
-                }`}
-            >
-              {term === 'All' ? 'All Terms' : `Term 0${term}`}
-            </button>
-          ))}
         </div>
 
         {/* Lessons Cards Grid */}
@@ -849,7 +830,7 @@ export default function Lessons() {
             </h1>
             <p className="text-slate-500 text-[15px] mt-1">
               {currentView === 'lessons'
-                ? 'Access curriculum lessons and study materials organized by term.'
+                ? 'Access curriculum lessons and study materials.'
                 : currentView === 'modules'
                   ? 'Choose a chapter module to view its lecture recordings, PDFs, and notes.'
                   : 'Download files and view web links for your class topics.'

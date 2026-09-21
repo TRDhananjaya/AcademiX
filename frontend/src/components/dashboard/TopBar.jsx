@@ -148,10 +148,8 @@ export default function TopBar() {
   }, [isMobileMenuOpen]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('academiX_auth_session');
     setUser(null);
-    window.location.href = '/login';
   };
 
   const currentPath = window.location.pathname;
