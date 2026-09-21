@@ -235,13 +235,6 @@ export default function QuizManagement() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
         <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
-          <div className="text-xs font-semibold text-slate-500 tracking-wide mb-2 uppercase">AVG. DEPT SCORE</div>
-          <div className="text-[32px] font-bold text-slate-800 flex items-baseline gap-2">
-            {avgScore !== 'N/A' ? `${avgScore}%` : 'N/A'}
-            {avgScore !== 'N/A' && <span className="text-[13px] font-semibold text-emerald-500">+2.4%</span>}
-          </div>
-        </div>
-        <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
           <div className="text-xs font-semibold text-slate-500 tracking-wide mb-2 uppercase">ACTIVE QUIZZES</div>
           <div className="text-[32px] font-bold text-slate-800 flex items-baseline gap-2">
             {activeQuizzes.length} <span className="text-[14px] font-medium text-slate-500">Live</span>
