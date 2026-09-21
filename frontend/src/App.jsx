@@ -35,7 +35,7 @@ let currentAuthDepth = 0;
 if (typeof window !== 'undefined' && !window.__academiX_history_wrapped) {
   window.__academiX_history_wrapped = true;
 
-  window.history.pushState = function(state, unused, url) {
+  window.history.pushState = function (state, unused, url) {
     const authSession = sessionStorage.getItem('academiX_auth_session');
     if (authSession) {
       currentAuthDepth += 1;
@@ -49,7 +49,7 @@ if (typeof window !== 'undefined' && !window.__academiX_history_wrapped) {
     return rawPushState(state, unused, url);
   };
 
-  window.history.replaceState = function(state, unused, url) {
+  window.history.replaceState = function (state, unused, url) {
     const authSession = sessionStorage.getItem('academiX_auth_session');
     if (authSession) {
       const taggedState = {
